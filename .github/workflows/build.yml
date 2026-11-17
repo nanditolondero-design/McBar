@@ -1,0 +1,62 @@
+# McBar — Creado por Andrés Londero
+# Al subir mc.zip a la rama main: lo descomprime, sube los archivos al repo, borra mc.zip,
+# corre las pruebas y compila McBar.exe (un solo archivo, no necesita instalar .NET).
+name: Compilar McBar
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Bajar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Descomprimir mc.zip (si se subió)
+        shell: pwsh
+        run: |
+          if (Test-Path mc.zip) {
+            Expand-Archive -Path mc.zip -DestinationPath . -Force
+            Remove-Item mc.zip
+            # El propio workflow no se puede actualizar desde acá (GitHub no lo permite con este token):
+            # si cambia, hay que subirlo a mano. Se deja el que ya estaba en el repo.
+            git checkout HEAD -- .github/workflows 2>$null
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git diff --cached --quiet
+            if ($LASTEXITCODE -ne 0) {
+              git commit -m "Actualizar código desde mc.zip"
+              git push
+              if ($LASTEXITCODE -ne 0) { Write-Error "No se pudo subir el código"; exit 1 }
+            }
+          } else {
+            Write-Host "No hay mc.zip: se compila el código del repo."
+          }
+          exit 0
+
+      - name: Instalar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Pruebas
+        run: dotnet test tests/McBar.Tests/McBar.Tests.csproj -c Release --nologo
+
+      - name: Compilar McBar.exe
+        run: >
+          dotnet publish src/McBar/McBar.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishReadyToRun=true -o publish --nologo
+
+      - name: Guardar McBar.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: McBar-win-x64
+          path: publish/McBar.exe
