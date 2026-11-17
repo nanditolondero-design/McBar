@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- McBar — Creado por Andrés Londero -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>McBar</AssemblyName>
+    <RootNamespace>McBar</RootNamespace>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Authors>Andrés Londero</Authors>
+    <Company>Andrés Londero</Company>
+    <Product>McBar</Product>
+    <Description>Dock y barra de menú estilo macOS para Windows</Description>
+    <Copyright>Creado por Andrés Londero</Copyright>
+    <ApplicationIcon>Assets\McBar.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>x64</PlatformTarget>
+    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <!-- Bajo consumo: recolector de basura simple, sin hilo de fondo extra -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <NoWarn>$(NoWarn);CA1416;CS8618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\McBar.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="McBar.Tests" />
+  </ItemGroup>
+</Project>

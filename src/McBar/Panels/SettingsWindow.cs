@@ -1,0 +1,201 @@
+// McBar — Creado por Andrés Londero
+// Preferencias de McBar. Cada cambio se aplica al instante y se guarda en settings.json.
+using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Threading;
+using McBar.Core;
+using McBar.Native;
+
+namespace McBar.Panels
+{
+    internal sealed class SettingsWindow : Window
+    {
+        private readonly DispatcherTimer _apply;
+
+        public SettingsWindow()
+        {
+            Title = "Preferencias de McBar";
+            Width = 540;
+            Height = 700;
+            MinWidth = 460;
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            SetResourceReference(BackgroundProperty, "Mc.WindowBg");
+            SetResourceReference(FontFamilyProperty, "Mc.Font");
+            Icon = McDialog.Logo();
+
+            _apply = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _apply.Tick += (_, _) => { _apply.Stop(); SettingsStore.NotifyChanged(); };
+
+            SourceInitialized += (_, _) => WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark);
+            ThemeManager.ThemeChanged += OnTheme;
+            Closed += (_, _) => { ThemeManager.ThemeChanged -= OnTheme; if (_apply.IsEnabled) { _apply.Stop(); SettingsStore.NotifyChanged(); } App.ScheduleTrim(); };
+
+            Content = new ScrollViewer { Content = Build(), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(26, 18, 26, 22) };
+        }
+
+        private void OnTheme()
+        {
+            if (new WindowInteropHelper(this).Handle != IntPtr.Zero) WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark);
+        }
+
+        private void Changed() { _apply.Stop(); _apply.Start(); }
+
+        private UIElement Build()
+        {
+            var s = SettingsStore.Current;
+            var root = new StackPanel();
+
+            // ---------- Dock ----------
+            root.Children.Add(Header("Dock"));
+            var dock = new StackPanel();
+            dock.Children.Add(SliderSetting("Tamaño", 32, 80, s.DockIconSize, v => { s.DockIconSize = (int)v; if (s.MagnifiedSize < s.DockIconSize) s.MagnifiedSize = s.DockIconSize; }));
+            dock.Children.Add(Switch("Ampliación", s.Magnification, v => s.Magnification = v));
+            dock.Children.Add(SliderSetting("Tamaño ampliado", 48, 160, s.MagnifiedSize, v => s.MagnifiedSize = Math.Max((int)v, s.DockIconSize)));
+            dock.Children.Add(Switch("Ocultar y mostrar el Dock automáticamente", s.DockAutoHide, v => s.DockAutoHide = v));
+            dock.Children.Add(Switch("Animar al abrir aplicaciones", s.BounceOnLaunch, v => s.BounceOnLaunch = v));
+            dock.Children.Add(Switch("Mostrar indicadores de apps abiertas", s.ShowIndicators, v => s.ShowIndicators = v));
+            dock.Children.Add(Switch("Clic en la app activa la minimiza (como Windows)", s.ClickMinimizes, v => s.ClickMinimizes = v));
+            root.Children.Add(Group(dock));
+
+            // ---------- Barra de menú ----------
+            root.Children.Add(Header("Barra de menú"));
+            var bar = new StackPanel();
+            bar.Children.Add(Switch("Mostrar la barra de menú arriba", s.ShowMenuBar, v => s.ShowMenuBar = v));
+            bar.Children.Add(Switch("Mostrar el porcentaje de batería", s.ShowBatteryPercent, v => s.ShowBatteryPercent = v));
+            bar.Children.Add(Switch("Mostrar la fecha en el reloj", s.ShowDateInClock, v => s.ShowDateInClock = v));
+            root.Children.Add(Group(bar));
+
+            // ---------- General ----------
+            root.Children.Add(Header("General"));
+            var gen = new StackPanel();
+            gen.Children.Add(Switch("Ocultar la barra de tareas de Windows", s.HideWindowsTaskbar, v => s.HideWindowsTaskbar = v));
+            gen.Children.Add(Switch("Abrir McBar al iniciar Windows", s.StartWithWindows, v => s.StartWithWindows = v));
+            gen.Children.Add(ThemeSelector(s));
+            root.Children.Add(Group(gen));
+
+            // ---------- Widgets ----------
+            root.Children.Add(Header("Widgets"));
+            var wid = new StackPanel();
+            wid.Children.Add(CityEditor(s));
+            wid.Children.Add(Switch("Calendario", s.WidgetCalendar, v => s.WidgetCalendar = v));
+            wid.Children.Add(Switch("Clima", s.WidgetWeather, v => s.WidgetWeather = v));
+            wid.Children.Add(Switch("Batería", s.WidgetBattery, v => s.WidgetBattery = v));
+            wid.Children.Add(Switch("Sistema (procesador y memoria)", s.WidgetSystem, v => s.WidgetSystem = v));
+            wid.Children.Add(Switch("Notas", s.WidgetNotes, v => s.WidgetNotes = v));
+            root.Children.Add(Group(wid));
+
+            // ---------- Pie ----------
+            var foot = new Grid { Margin = new Thickness(0, 18, 0, 0) };
+            var about = new Button { Content = "Acerca de McBar", HorizontalAlignment = HorizontalAlignment.Left };
+            about.SetResourceReference(StyleProperty, "McButton");
+            about.Click += (_, _) => McDialog.ShowAbout();
+            var quit = new Button { Content = "Salir de McBar", HorizontalAlignment = HorizontalAlignment.Right };
+            quit.SetResourceReference(StyleProperty, "McButton");
+            quit.Click += (_, _) =>
+            {
+                if (McDialog.Confirm("¿Salir de McBar?", "Se va a volver a mostrar la barra de tareas de Windows.", "Salir")) App.Quit();
+            };
+            foot.Children.Add(about);
+            foot.Children.Add(quit);
+            root.Children.Add(foot);
+
+            var credit = new TextBlock { Text = "Creado por Andrés Londero", FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 16, 0, 0) };
+            credit.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            root.Children.Add(credit);
+            return root;
+        }
+
+        private static TextBlock Header(string text)
+        {
+            var t = new TextBlock { Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(4, 16, 0, 6) };
+            t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            return t;
+        }
+
+        private static Border Group(UIElement child)
+        {
+            var b = new Border { Child = child, Padding = new Thickness(14, 8, 14, 8), CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1) };
+            b.SetResourceReference(Border.BackgroundProperty, "Mc.TileBg");
+            b.SetResourceReference(Border.BorderBrushProperty, "Mc.TileBorder");
+            return b;
+        }
+
+        private CheckBox Switch(string text, bool value, Action<bool> set)
+        {
+            var c = new CheckBox { Content = text, IsChecked = value };
+            c.SetResourceReference(StyleProperty, "McSwitch");
+            c.Checked += (_, _) => { set(true); Changed(); };
+            c.Unchecked += (_, _) => { set(false); Changed(); };
+            return c;
+        }
+
+        private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set)
+        {
+            var g = new Grid { Margin = new Thickness(0, 6, 0, 6) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
+            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            var val = new TextBlock { Text = ((int)value).ToString(), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+            val.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            var s = new Slider { Minimum = min, Maximum = max, Value = value, IsSnapToTickEnabled = true, TickFrequency = 2 };
+            s.SetResourceReference(StyleProperty, "McSlider");
+            s.ValueChanged += (_, e) => { val.Text = ((int)e.NewValue).ToString(); set(e.NewValue); Changed(); };
+            Grid.SetColumn(s, 1);
+            Grid.SetColumn(val, 2);
+            g.Children.Add(label);
+            g.Children.Add(s);
+            g.Children.Add(val);
+            return g;
+        }
+
+        private UIElement ThemeSelector(AppSettings s)
+        {
+            var g = new Grid { Margin = new Thickness(0, 6, 0, 4) };
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var label = new TextBlock { Text = "Apariencia", VerticalAlignment = VerticalAlignment.Center };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            g.Children.Add(label);
+
+            var seg = new StackPanel { Orientation = Orientation.Horizontal };
+            var segBorder = new Border { Child = seg, CornerRadius = new CornerRadius(8), Padding = new Thickness(1) };
+            segBorder.SetResourceReference(Border.BackgroundProperty, "Mc.Hover");
+            foreach (var (key, name) in new[] { ("auto", "Automática"), ("light", "Clara"), ("dark", "Oscura") })
+            {
+                var rb = new RadioButton { Content = name, GroupName = "McTheme", IsChecked = s.Theme == key };
+                rb.SetResourceReference(StyleProperty, "McSegment");
+                var k = key;
+                rb.Checked += (_, _) => { s.Theme = k; SettingsStore.Save(); ThemeManager.Apply(); };
+                seg.Children.Add(rb);
+            }
+            Grid.SetColumn(segBorder, 1);
+            g.Children.Add(segBorder);
+            return g;
+        }
+
+        private UIElement CityEditor(AppSettings s)
+        {
+            var g = new Grid { Margin = new Thickness(0, 6, 0, 6) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var label = new TextBlock { Text = "Ciudad del clima", VerticalAlignment = VerticalAlignment.Center };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            var box = new TextBox { Text = s.WeatherCity };
+            box.SetResourceReference(StyleProperty, "McTextBox");
+            var save = new Button { Content = "Aplicar", Margin = new Thickness(8, 0, 0, 0) };
+            save.SetResourceReference(StyleProperty, "McButton");
+            save.Click += (_, _) => { s.WeatherCity = box.Text.Trim(); s.WeatherResolvedFor = null; SettingsStore.Save(); };
+            Grid.SetColumn(box, 1);
+            Grid.SetColumn(save, 2);
+            g.Children.Add(label);
+            g.Children.Add(box);
+            g.Children.Add(save);
+            return g;
+        }
+    }
+}

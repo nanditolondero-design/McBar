@@ -1,0 +1,28 @@
+<!-- McBar — Creado por Andrés Londero.
+     El Dock: ventana transparente a lo ancho de la pantalla, abajo. Las zonas transparentes dejan pasar
+     los clics a las ventanas de atrás; solo la barra y los íconos reciben el mouse. -->
+<Window x:Class="McBar.Dock.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="McBar Dock"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ShowActivated="False" ResizeMode="NoResize"
+        AllowDrop="True" Width="1200" Height="200" Left="0" Top="0"
+        FontFamily="{StaticResource Mc.Font}">
+    <Grid x:Name="Root">
+        <Canvas x:Name="Stage">
+            <Canvas.RenderTransform>
+                <TranslateTransform x:Name="HideShift"/>
+            </Canvas.RenderTransform>
+            <Border x:Name="Bar" CornerRadius="18" BorderThickness="1"
+                    Background="{DynamicResource Mc.DockBg}" BorderBrush="{DynamicResource Mc.DockBorder}"/>
+            <Border x:Name="Label" Panel.ZIndex="1000" IsHitTestVisible="False" Visibility="Collapsed"
+                    Padding="10,4" CornerRadius="7" BorderThickness="1"
+                    Background="{DynamicResource Mc.LabelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}">
+                <TextBlock x:Name="LabelText" FontSize="13" Foreground="{DynamicResource Mc.Text}"/>
+            </Border>
+        </Canvas>
+        <!-- Franja para mostrar el Dock cuando está oculto -->
+        <Border x:Name="HotZone" VerticalAlignment="Bottom" Height="3" Background="#01000000" Visibility="Collapsed"/>
+    </Grid>
+</Window>
