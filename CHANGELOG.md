@@ -1,5 +1,15 @@
 # Cambios
 
+## 0.5.0 — 22/11/2026 (etapa 5: instalador y arranque)
+- **Instalador propio estilo Mac**: McBar.exe es su propio instalador. Abierto desde fuera de la carpeta instalada muestra una ventana de vidrio con semáforo, el ícono flotando, opciones (iniciar con Windows, accesos directos en Inicio y escritorio, traer las apps fijadas de la barra de Windows, tema Vidrio), barra de progreso animada y pantalla de "¡Listo!".
+  - Sin permisos de administrador: se instala en `%LocalAppData%\Programs\McBar`.
+  - Aparece en **Aplicaciones instaladas** (nombre, versión, editor "Andrés Londero", ícono y tamaño).
+  - **Actualizar**: abrir un McBar.exe más nuevo ofrece "Actualizar" y mantiene ajustes, apps fijadas y carpetas. Si la versión es igual o más vieja, abre la instalada.
+  - **Desinstalar** desde Aplicaciones instaladas: pide confirmación, devuelve la barra de Windows tal como estaba, quita inicio automático, accesos directos y registro, y borra la carpeta. Los ajustes se conservan.
+  - **Probar sin instalar** (o `--portable`): esa copia no vuelve a preguntar.
+  - Las apps fijadas de la barra de Windows se copian a `%AppData%\McBar\Accesos` para que el Dock no las pierda si después se desfijan.
+- **Arranque sin parpadeo**: al apagar o cerrar sesión, si McBar arranca con Windows, la barra de Windows queda oculta (ocultar automático), así al volver a entrar no aparece antes de que McBar abra.
+
 ## 0.4.4 — 22/11/2026
 - **Isla sin app activa en un solo renglón** (pedido de Andrés): cuando no hay ventana elegida, la primera fila quedaba solo con el logo de McBar. Ahora el logo pasa a la derecha, después de la bandeja, el clima, la red, el volumen y el reloj, y todo queda en una sola fila (la isla se achica). Al elegir una app vuelven las dos filas con sus menús.
 

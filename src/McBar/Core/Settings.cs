@@ -105,6 +105,8 @@ namespace McBar.Core
         public List<string> LaunchpadOrder { get; set; } = new List<string>();
         /// <summary>Carpeta del paquete de íconos (vacío = íconos de Windows). 0.4.3.</summary>
         public string IconPackPath { get; set; } = "";
+        /// <summary>Ruta del .exe que el usuario eligió "Probar sin instalar" (no se le vuelve a ofrecer instalar). 0.5.0.</summary>
+        public string PortablePath { get; set; } = "";
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -234,6 +236,7 @@ namespace McBar.Core
             s.LaunchpadHidden ??= new List<string>();
             s.LaunchpadOrder ??= new List<string>();
             s.IconPackPath ??= "";
+            s.PortablePath ??= "";
             s.LaunchpadFolders.RemoveAll(f => f == null || f.Targets == null || f.Targets.Count == 0);
             if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
             if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";

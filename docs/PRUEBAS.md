@@ -179,6 +179,18 @@ Tema:
 ### Versión 0.4.4
 - [ ] Isla: minimizar todo y pasar el mouse por la isla: un solo renglón con el logo de McBar a la derecha. Elegir una ventana: vuelven las dos filas con el nombre de la app y sus menús.
 
+### Versión 0.5.0 (instalador)
+- [ ] Abrir McBar.exe desde Descargas: aparece el instalador (vidrio, ícono flotando, versión 0.5.0).
+- [ ] Instalar con todo marcado: progreso animado, "¡Listo!", "Abrir McBar" abre la copia de `%LocalAppData%\Programs\McBar`.
+- [ ] Menú Inicio y escritorio: acceso directo "McBar" con su ícono.
+- [ ] Configuración → Aplicaciones instaladas: aparece McBar 0.5.0, de Andrés Londero.
+- [ ] El Dock trae las apps que estaban fijadas en la barra de Windows.
+- [ ] Reiniciar la PC: McBar arranca solo y la barra de Windows no aparece antes.
+- [ ] Abrir de nuevo el mismo McBar.exe de Descargas: abre la instalada (no vuelve a instalar).
+- [ ] Con una versión más nueva: ofrece "Actualizar", cierra la vieja y mantiene los ajustes.
+- [ ] "Probar sin instalar": funciona y al abrirlo otra vez no pregunta.
+- [ ] Desinstalar desde Aplicaciones instaladas: confirma, la barra de Windows vuelve, desaparecen los accesos directos y la carpeta; `%AppData%\McBar` sigue.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

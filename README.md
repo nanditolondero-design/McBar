@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.4.4)
+## Qué incluye (versión 0.5.0)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -65,9 +65,17 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 
 > Si en el futuro cambia el workflow, hay que subirlo a mano: GitHub no deja que el propio workflow se modifique a sí mismo.
 
+## Instalar (0.5.0)
+
+- Abrir `McBar.exe` (por ejemplo desde Descargas): aparece el **instalador** estilo Mac. Opciones: iniciar con Windows, accesos directos en el menú Inicio y el escritorio, traer las apps fijadas de la barra de Windows y usar el tema Vidrio.
+- Se instala para el usuario, **sin permisos de administrador**, en `%LocalAppData%\Programs\McBar`, y aparece en **Configuración → Aplicaciones instaladas**.
+- Para **actualizar**: abrir el `McBar.exe` nuevo; si es más nuevo que el instalado, ofrece "Actualizar" y conserva todos los ajustes.
+- Para **desinstalar**: Configuración → Aplicaciones instaladas → McBar → Desinstalar (o `McBar.exe --uninstall`). Devuelve la barra de Windows y borra McBar; los ajustes quedan en `%AppData%\McBar`.
+- **Probar sin instalar**: botón del instalador (o `McBar.exe --portable`). Esa copia no vuelve a preguntar.
+
 ## Usar
 
-- Ejecutar `McBar.exe`. La barra de Windows se oculta y aparecen el Dock y la barra de menú.
+- Abrir McBar. La barra de Windows se oculta y aparecen el Dock y la barra de menú.
 - Para salir: menú de McBar (arriba a la izquierda) → **Salir de McBar**. La barra de Windows vuelve.
 - Si algo sale mal y la barra de Windows queda oculta: ejecutar `McBar.exe --restaurar` (devuelve la barra, el espacio de las ventanas y la animación de Windows como estaban).
 - Los ajustes están en `%AppData%\McBar\settings.json`; el registro de errores en `%AppData%\McBar\mcbar.log`.

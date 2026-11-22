@@ -56,6 +56,7 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).
 - `WindowTracker`: el delegado del hook debe quedar referenciado en un campo (si no, el GC lo borra y la app se cae).
 - Ventanas del Dock y la barra: `WS_EX_NOACTIVATE`, así la app activa no pierde el foco y los menús Archivo/Edición le mandan los atajos a ella.
+- Instalador: no tocar `Installer.InstallDir` ni la clave `Uninstall\McBar` sin migrar; `--uninstall` lo llama Windows. Lo que corre antes del mutex (instalar/desinstalar) no puede depender de ventanas de McBar ya creadas: solo `ThemeManager.Apply()` y diálogos.
 - `MenuBarContent.ApplyRows`: en la isla, sin app activa, el logo se mueve a `RightGroup` y queda una sola fila (`IsTwoRowsNow`, evento `RowsChanged` → la isla se vuelve a medir).
 - La gota se quitó en la 0.4.3 (Sanitize la pasa a isla). `IsIslandLike` queda por si vuelve otro modo con la ventana de la isla.
 - Colores nuevos: agregarlos a Dark.xaml y Light.xaml, y si cambian con el vidrio, también a Glass.xaml (que solo pisa claves).

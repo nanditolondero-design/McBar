@@ -70,6 +70,42 @@ namespace McBar
                 return;
             }
 
+            // 0.5.0: desinstalar (lo llama Windows desde "Aplicaciones instaladas")
+            if (e.Args.Any(a => a.Equals("--uninstall", StringComparison.OrdinalIgnoreCase)))
+            {
+                ThemeManager.Apply();
+                if (McDialog.Confirm("¿Desinstalar McBar?",
+                        "Se va a devolver la barra de Windows tal como estaba y se va a borrar McBar de esta PC. Tus ajustes quedan guardados por si lo volvés a instalar.",
+                        "Desinstalar", danger: true))
+                {
+                    Installer.CloseOtherInstances();
+                    try { WorkArea.Reset(); } catch { }
+                    try { Taskbar.Restore(); } catch { }
+                    try { ShellHook.RestoreAnimation(); } catch { }
+                    Installer.Uninstall();
+                    McDialog.Info("McBar se desinstaló", "La barra de Windows volvió a la normalidad. ¡Gracias por usar McBar!");
+                }
+                Shutdown();
+                return;
+            }
+
+            // 0.5.0: McBar.exe es su propio instalador. Si se abre desde fuera de la carpeta instalada, ofrece
+            // instalar (o actualizar). "Probar sin instalar" recuerda esa ruta y no vuelve a preguntar.
+            bool portable = e.Args.Any(a => a.Equals("--portable", StringComparison.OrdinalIgnoreCase))
+                            || string.Equals(SettingsStore.Current.PortablePath, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
+            if (!portable && !Installer.IsRunningInstalled && !System.Diagnostics.Debugger.IsAttached)
+            {
+                var decision = Installer.Decide(Installer.CurrentVersion, Installer.InstalledVersion());
+                if (decision == "launchInstalled") { Installer.LaunchInstalled(); Shutdown(); return; }
+                ThemeManager.Apply();
+                var setup = new InstallerWindow(decision == "update");
+                setup.ShowDialog();
+                if (setup.Result == "installed") { Installer.LaunchInstalled(); Shutdown(); return; }
+                if (setup.Result != "portable") { Shutdown(); return; }
+                SettingsStore.Current.PortablePath = Environment.ProcessPath ?? "";
+                SettingsStore.Save();
+            }
+
             _mutex = new Mutex(true, "McBar.InstanciaUnica", out bool created);
             if (!created) { Shutdown(); return; }
 
@@ -83,7 +119,10 @@ namespace McBar
                 Log.Write("Error fatal: " + a.ExceptionObject);
                 SafeCleanup();
             };
-            Microsoft.Win32.SystemEvents.SessionEnding += (_, _) => SafeCleanup();
+            // 0.5.0 (arranque sin parpadeo): al apagar o cerrar sesión la barra de Windows queda oculta si McBar
+            // arranca con Windows, así al volver a entrar no aparece antes de que McBar abra.
+            Microsoft.Win32.SystemEvents.SessionEnding += (_, _) =>
+                SafeCleanup(keepTaskbarHidden: SettingsStore.Current.StartWithWindows && SettingsStore.Current.HideWindowsTaskbar);
 
             Scale = Win32.SystemScale();
             var s = SettingsStore.Current;
@@ -544,7 +583,7 @@ namespace McBar
             Current.Shutdown();
         }
 
-        private static void SafeCleanup()
+        private static void SafeCleanup(bool keepTaskbarHidden = false)
         {
             if (_cleanedUp) return;
             _cleanedUp = true;
@@ -560,7 +599,10 @@ namespace McBar
             try { Fullscreen?.Dispose(); } catch { }
             try { Tracker?.Dispose(); } catch { }
             try { WorkArea.Reset(); } catch { }
-            try { if (Taskbar.IsHiddenByUs || SettingsStore.Current.TaskbarModified) Taskbar.Restore(); } catch { }
+            if (!keepTaskbarHidden)
+            {
+                try { if (Taskbar.IsHiddenByUs || SettingsStore.Current.TaskbarModified) Taskbar.Restore(); } catch { }
+            }
             try { ShellHook.RestoreAnimation(); } catch { }
         }
     }

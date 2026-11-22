@@ -86,6 +86,13 @@ namespace McBar.Panels
             catch { return null; }
         }
 
+        /// <summary>Aviso con un solo botón "Aceptar".</summary>
+        public static void Info(string title, string message)
+        {
+            var d = new McDialog(title, message, "Aceptar", null, false, null);
+            d.ShowDialog();
+        }
+
         public static bool Confirm(string title, string message, string okText, bool danger = false)
         {
             var d = new McDialog(title, message, okText, "Cancelar", danger, null);

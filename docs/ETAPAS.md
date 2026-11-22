@@ -60,6 +60,15 @@ Launchpad: selección múltiple, carpetas ocultables y movibles, orden propio, d
 ## Versión 0.4.4 (22/11/2026)
 Isla en un solo renglón (logo a la derecha) cuando no hay app activa.
 
+## Etapa 5 — versión 0.5.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Pedido de Andrés: "un instalador copado, lindo" e integrarse mejor a Windows tapando todo lo posible. Plan acordado:
+1. **0.5.0 — Instalador y arranque** (hecho): instalador propio, Aplicaciones instaladas, desinstalador, actualizar, arranque sin parpadeo.
+2. **0.6.0 — Inicio, buscador y avisos**: tecla Windows → Launchpad, buscador tipo Spotlight (apps, archivos, calculadora), carteles de volumen/brillo en la isla.
+3. **0.7.0 — Wi-Fi, Bluetooth y sonido propios**.
+4. **0.8.0 — Ventanas estilo Mac**: vista previa en el Dock, Alt+Tab propio, Win+Tab tipo Mission Control.
+Pendiente aparte: **actualización automática** — necesita que el workflow publique un *Release* en GitHub (hoy deja el .exe como *Artifact*, que pide iniciar sesión para bajarlo). El workflow solo se puede cambiar subiéndolo a mano.
+No se puede tapar desde una app: inicio de sesión, avisos de UAC, la app Configuración y las ventanas del Explorador de archivos. Reemplazar el shell (explorer.exe) se descartó: rompe la Tienda, las notificaciones y otras partes.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.

@@ -94,6 +94,9 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Instalador (0.5.0)
+`App.OnStartup` decide antes de crear el mutex: `--uninstall` → confirmación + `Installer.Uninstall()`; si el .exe no está en `Installer.InstallDir` (y no es `--portable` ni `PortablePath`), `Installer.Decide` → `InstallerWindow` (instalar/actualizar) o abrir la instalada. `Core/Installer.cs` tiene todo lo que toca disco y registro (HKCU\...\Uninstall\McBar, Run, accesos directos con WScript.Shell). `SafeCleanup(keepTaskbarHidden)` al cerrar sesión no devuelve la barra si McBar arranca con Windows.
+
 ## Launchpad 0.4.3
 - Claves: `LaunchpadEntry.Key` = Target de la app o `folder:<id>`. `LaunchpadHidden` guarda claves de apps y de carpetas; `LaunchpadOrder` el orden (`ApplyOrder`, `Move`); `WithoutHidden` filtra. Todo puro y con pruebas.
 - Arrastre: `DataObject` con `McBar.LaunchpadKey` (mover/carpetas), `McBar.Pin` ("nombre\ntarget", lo entiende el Dock) y "Shell IDList Array" (de `ShellCom.ShellDataObject`, el escritorio crea el acceso directo). `QueryContinueDrag` esconde el Launchpad si el puntero va abajo o a los bordes.
