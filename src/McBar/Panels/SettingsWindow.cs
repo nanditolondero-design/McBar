@@ -1,10 +1,13 @@
 // McBar — Creado por Andrés Londero
 // Preferencias de McBar. Cada cambio se aplica al instante y se guarda en settings.json.
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Input;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using McBar.Core;
 using McBar.Native;
@@ -19,9 +22,10 @@ namespace McBar.Panels
         public SettingsWindow()
         {
             Title = "Preferencias de McBar";
-            Width = 540;
-            Height = 700;
-            MinWidth = 460;
+            Width = 780;
+            Height = 640;
+            MinWidth = 640;
+            MinHeight = 420;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             SetResourceReference(BackgroundProperty, "Mc.WindowBg");
             SetResourceReference(FontFamilyProperty, "Mc.Font");
@@ -34,7 +38,7 @@ namespace McBar.Panels
             ThemeManager.ThemeChanged += OnTheme;
             Closed += (_, _) => { ThemeManager.ThemeChanged -= OnTheme; if (_apply.IsEnabled) { _apply.Stop(); SettingsStore.NotifyChanged(); } App.ScheduleTrim(); };
 
-            Content = new ScrollViewer { Content = Build(), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(26, 18, 26, 22) };
+            Content = Tabbed(Build());
         }
 
         private void OnTheme()
@@ -67,6 +71,10 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Cada Dock muestra solo las apps abiertas en su monitor", s.DockAppsPerMonitor, v => s.DockAppsPerMonitor = v));
             dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
             dock.Children.Add(Switch("Animar ventanas al minimizar y restaurar (hacia el Dock)", s.AnimateWindows, v => s.AnimateWindows = v));
+            var restore = new Button { Content = "Volver a poner la Papelera y Descargas", Margin = new Thickness(0, 10, 0, 4), HorizontalAlignment = HorizontalAlignment.Left };
+            restore.SetResourceReference(StyleProperty, "McButton");
+            restore.Click += (_, _) => App.Dock?.RestoreDefaultStacks();
+            dock.Children.Add(restore);
             root.Children.Add(Group(dock));
 
             // ---------- Barra de menú ----------
@@ -146,7 +154,7 @@ namespace McBar.Panels
             root.Children.Add(Group(wid));
 
             // ---------- Pie ----------
-            var foot = new Grid { Margin = new Thickness(0, 18, 0, 0) };
+            var foot = new Grid { Margin = new Thickness(0, 10, 0, 0), Tag = "tail" };
             var about = new Button { Content = "Acerca de McBar", HorizontalAlignment = HorizontalAlignment.Left };
             about.SetResourceReference(StyleProperty, "McButton");
             about.Click += (_, _) => McDialog.ShowAbout();
@@ -160,15 +168,100 @@ namespace McBar.Panels
             foot.Children.Add(quit);
             root.Children.Add(foot);
 
-            var credit = new TextBlock { Text = "Creado por Andrés Londero", FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 16, 0, 0) };
+            var credit = new TextBlock { Text = "Creado por Andrés Londero", FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0), Tag = "tail" };
             credit.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             root.Children.Add(credit);
             return root;
         }
 
+        // ================== Pestañas (0.4.1) ==================
+
+        private static string _lastTab = "";
+
+        /// <summary>
+        /// Ordena las Preferencias en pestañas, como en macOS: lista de secciones a la izquierda y el
+        /// contenido de la elegida a la derecha. Cada sección empieza en un título (Header) y los botones de
+        /// abajo (Acerca de / Salir) quedan siempre visibles.
+        /// </summary>
+        private UIElement Tabbed(StackPanel built)
+        {
+            var sections = new List<(string title, StackPanel body)>();
+            var tail = new StackPanel { Margin = new Thickness(26, 0, 26, 14) };
+            var items = built.Children.Cast<UIElement>().ToList();
+            built.Children.Clear();
+            StackPanel? cur = null;
+            foreach (var el in items)
+            {
+                if (el is FrameworkElement fe && Equals(fe.Tag, "tail")) { tail.Children.Add(el); continue; }
+                if (el is TextBlock tb && Equals(tb.Tag, "header"))
+                {
+                    cur = new StackPanel();
+                    sections.Add((tb.Text, cur));
+                    tb.Margin = new Thickness(4, 0, 0, 12);
+                    tb.FontSize = 20;
+                    tb.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                    cur.Children.Add(tb);
+                    continue;
+                }
+                if (cur == null) { cur = new StackPanel(); sections.Add(("General", cur)); }
+                cur.Children.Add(el);
+            }
+
+            var content = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(26, 20, 26, 16) };
+            var side = new StackPanel { Margin = new Thickness(10, 16, 10, 10) };
+            var buttons = new List<Border>();
+            void Select(int i)
+            {
+                _lastTab = sections[i].title;
+                content.Content = sections[i].body;
+                content.ScrollToTop();
+                for (int k = 0; k < buttons.Count; k++)
+                {
+                    if (k == i) buttons[k].SetResourceReference(Border.BackgroundProperty, "Mc.Accent");
+                    else buttons[k].Background = Brushes.Transparent;
+                    if (buttons[k].Child is TextBlock t)
+                    {
+                        if (k == i) t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.AccentText");
+                        else t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                    }
+                }
+            }
+            for (int i = 0; i < sections.Count; i++)
+            {
+                int idx = i;
+                var t = new TextBlock { Text = sections[i].title, FontSize = 13 };
+                var b = new Border { Child = t, Padding = new Thickness(12, 7, 12, 7), CornerRadius = new CornerRadius(7), Margin = new Thickness(0, 1, 0, 1), Cursor = Cursors.Hand, Background = Brushes.Transparent };
+                b.MouseLeftButtonUp += (_, _) => Select(idx);
+                buttons.Add(b);
+                side.Children.Add(b);
+            }
+
+            var sideHost = new Border { Child = side, BorderThickness = new Thickness(0, 0, 1, 0) };
+            sideHost.SetResourceReference(Border.BackgroundProperty, "Mc.TileBg");
+            sideHost.SetResourceReference(Border.BorderBrushProperty, "Mc.TileBorder");
+
+            var right = new Grid();
+            right.RowDefinitions.Add(new RowDefinition());
+            right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            right.Children.Add(content);
+            Grid.SetRow(tail, 1);
+            right.Children.Add(tail);
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(190) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.Children.Add(sideHost);
+            Grid.SetColumn(right, 1);
+            grid.Children.Add(right);
+
+            int start = Math.Max(0, sections.FindIndex(x => x.title == _lastTab));
+            if (sections.Count > 0) Select(start);
+            return grid;
+        }
+
         private static TextBlock Header(string text)
         {
-            var t = new TextBlock { Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(4, 16, 0, 6) };
+            var t = new TextBlock { Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(4, 16, 0, 6), Tag = "header" };
             t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             return t;
         }

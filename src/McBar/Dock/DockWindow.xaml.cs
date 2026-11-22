@@ -147,16 +147,17 @@ namespace McBar.Dock
             if (!S.DockAutoHide) _hidden = false;
 
             Bar.CornerRadius = new CornerRadius(Radius);
-            if (S.DockStyle == "floating")
-            {
-                Bar.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 6, Opacity = 0.35 };
-                Bar.CacheMode = new BitmapCache();
-            }
-            else
-            {
-                Bar.Effect = null;
-                Bar.CacheMode = null;
-            }
+            BarShadow1.CornerRadius = new CornerRadius(Radius + 1);
+            BarShadow2.CornerRadius = new CornerRadius(Radius + 3);
+            // 0.4.1: sin DropShadowEffect ni BitmapCache (se recalculaban en cada cuadro de la lupa).
+            Bar.Effect = null;
+            Bar.CacheMode = null;
+            var shadow = S.DockStyle == "floating" ? Visibility.Visible : Visibility.Collapsed;
+            BarShadow1.Visibility = shadow;
+            BarShadow2.Visibility = shadow;
+            // Con el desenfoque de Windows el fondo es el de siempre; sin él, el vidrio dibujado por McBar.
+            Bar.SetResourceReference(Border.BackgroundProperty, S.BackdropBlur ? "Mc.DockBg" : "Mc.DockGlass");
+            Bar.SetResourceReference(Border.BorderBrushProperty, S.BackdropBlur ? "Mc.DockBorder" : "Mc.DockGlassBorder");
             foreach (var it in _items) it.View.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
             _shapeKey = "";
             App.UpdateWorkAreas();
@@ -458,6 +459,13 @@ namespace McBar.Dock
             _dragging && it == _pressItem && (it.Removable || ClosesOnDrag(it)) && _pressPoint.Y - _dragPos.Y > PullOutDistance;
 
         /// <summary>
+        /// 0.4.1: para quitar o cerrar hay que mantener el ícono afuera un momento (se ve el cartel) — así no
+        /// se pierde la Papelera u otro ícono por un tirón sin querer. Como en macOS.
+        /// </summary>
+        private DateTime _pulledSince = DateTime.MaxValue;
+        private bool ConfirmedPullOut(DockItem it) => IsPulledOut(it) && (DateTime.Now - _pulledSince).TotalMilliseconds >= 450;
+
+        /// <summary>
         /// 0.4.0 (pedido de Andrés): una app abierta que NO está fijada se puede arrastrar fuera del Dock
         /// y al soltarla se cierra (se les pide cerrar a sus ventanas, como "Salir").
         /// </summary>
@@ -541,6 +549,13 @@ namespace McBar.Dock
             Canvas.SetTop(Bar, BarTop);
             if (Math.Abs(Bar.Width - barW) > 0.01 || double.IsNaN(Bar.Width)) Bar.Width = Math.Max(0, barW);
             if (Math.Abs(Bar.Height - BarHeight) > 0.01 || double.IsNaN(Bar.Height)) Bar.Height = BarHeight;
+            if (BarShadow1.Visibility == Visibility.Visible)
+            {
+                Canvas.SetLeft(BarShadow1, barLeft - 1); Canvas.SetTop(BarShadow1, BarTop + 1.5);
+                BarShadow1.Width = Math.Max(0, barW + 2); BarShadow1.Height = BarHeight + 1.5;
+                Canvas.SetLeft(BarShadow2, barLeft - 3); Canvas.SetTop(BarShadow2, BarTop + 2);
+                BarShadow2.Width = Math.Max(0, barW + 6); BarShadow2.Height = BarHeight + 4;
+            }
             _backdrop.Place(_winLeftPx + (int)Math.Round(barLeft * sc), _winTopPx + (int)Math.Round((BarTop + hy) * sc),
                             (int)Math.Round(barW * sc), (int)Math.Round(BarHeight * sc), (int)Math.Round(Radius * sc));
 
@@ -593,6 +608,11 @@ namespace McBar.Dock
             // etiqueta: nombre al pasar el mouse, o "Quitar del Dock" al arrastrar afuera
             DockItem? labelFor = null;
             string? labelText = null;
+            if (_pressItem != null && IsPulledOut(_pressItem))
+            {
+                if (_pulledSince == DateTime.MaxValue) _pulledSince = DateTime.Now;
+            }
+            else _pulledSince = DateTime.MaxValue;
             if (_pressItem != null && IsPulledOut(_pressItem)) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; }
             else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
             { labelFor = _hoverItem; labelText = _hoverItem.Name; }
@@ -634,26 +654,35 @@ namespace McBar.Dock
             double sc = App.Scale;
             int R(double v) => (int)Math.Round(v * sc);
             double barTop = BarTop + hy;
-            var extra = new List<(int x, int y, int w, int h)>();
+            const double m = 6; // margen para las esquinas suavizadas y la sombra (las dibuja WPF)
+            var rects = new List<(int x, int y, int w, int h)>();
             if (active)
             {
-                // margen generoso: lo que más puede crecer la fila hacia cada lado + la etiqueta
+                // UNA zona fija calculada con la barra en reposo: no cambia mientras la lupa se mueve, así
+                // Windows no recorta los íconos ni hay que cambiar la forma en cada cuadro.
+                double baseW = Magnifier.TotalWidth(_items.Select(BaseOf).ToArray(), Gap) + BarPadX * 2;
+                double restLeft = S.DockStyle == "full" ? barLeft : ActualWidth / 2 - baseW / 2;
                 double grow = (MaxSize - BaseSize) * 3 + 60;
-                // (no depende de dónde están los íconos en este cuadro, así no cambia mientras se mueven)
-                double l = Math.Max(0, barLeft - grow);
-                double r = Math.Min(ActualWidth, barLeft + barW + grow);
+                double l = Math.Max(0, Math.Min(restLeft, barLeft) - grow);
+                double r = Math.Min(ActualWidth, Math.Max(restLeft + baseW, barLeft + barW) + grow);
                 double t = Math.Max(0, barTop - (MaxSize - BaseSize) - BaseSize * 0.6 - LabelSpace);
                 if (zr > zl) { l = Math.Max(0, Math.Min(l, zl - 4)); r = Math.Min(ActualWidth, Math.Max(r, zr + 4)); t = Math.Max(0, Math.Min(t, zt + hy - 4)); }
-                extra.Add((R(l), R(t), R(r - l), R(barTop - t) + 6));
+                double bottom = Math.Min(ActualHeight, barTop + BarHeight + m);
+                rects.Add((R(l), R(t), R(r - l), R(bottom - t)));
             }
-            else if (zr > zl && zt < barTop - 0.5)
-                extra.Add((R(zl), R(zt + hy) - 2, R(zr - zl) + 1, R(barTop - zt) + 6));
+            else
+            {
+                rects.Add((R(barLeft - m), R(barTop - m), R(barW + m * 2), R(BarHeight + m * 2)));
+                if (zr > zl && zt < barTop - 0.5)
+                    rects.Add((R(zl), R(zt + hy) - 2, R(zr - zl) + 1, R(barTop - zt) + 6));
+            }
             if (S.DockAutoHide)
-                extra.Add((0, R(ActualHeight) - R(3) - 1, R(ActualWidth), R(3) + 2));
-            string key = $"{R(barLeft)},{R(barTop)},{R(barW)},{R(BarHeight)}|" + string.Join(";", extra);
+                rects.Add((0, R(ActualHeight) - R(3) - 1, R(ActualWidth), R(3) + 2));
+            string key = string.Join(";", rects);
             if (key == _shapeKey) return;
             _shapeKey = key;
-            WindowOps.SetShape(_hwnd, R(barLeft), R(barTop), R(barW), R(BarHeight), R(Radius), extra.ToArray());
+            var first = rects[0];
+            WindowOps.SetShape(_hwnd, first.x, first.y, first.w, first.h, 0, rects.Skip(1).ToArray());
         }
 
         // ================== Mouse ==================
@@ -701,7 +730,8 @@ namespace McBar.Dock
         {
             var item = _pressItem;
             bool wasDragging = _dragging;
-            bool pulledOut = item != null && IsPulledOut(item);
+            bool pulledOut = item != null && ConfirmedPullOut(item);
+            _pulledSince = DateTime.MaxValue;
             _pressItem = null;
             _dragging = false;
             if (Stage.IsMouseCaptured) Stage.ReleaseMouseCapture();
@@ -903,6 +933,12 @@ namespace McBar.Dock
             LoadIcon(item);
             SavePins();
             SyncWindows();
+        }
+
+        /// <summary>Vuelve a poner en el Dock la Papelera y Descargas si se habían quitado.</summary>
+        public void RestoreDefaultStacks()
+        {
+            foreach (var d in AppSettings.DefaultStacks()) AddStack(d.Name, d.Target);
         }
 
         public void AddStack(string name, string target)

@@ -135,5 +135,40 @@ namespace McBar.Tests
             Assert.Equal(new[] { "WhatsApp", "Correo", "Notificaciones" }, g.Select(x => x.Key));
             Assert.Equal(new long[] { 3, 1 }, g[0].Select(x => x.Id));
         }
+            // ---------- 0.4.1 ----------
+
+        [Fact]
+        public void Migracion_PasaAlNuevoAspectoUnaSolaVez_YDevuelveLaPapelera()
+        {
+            var s = new AppSettings { DockBackgroundStretch = false, BackdropBlur = true, Stacks = new List<PinnedApp>(), LookVersion = 0 };
+            SettingsStore.Migrate(s, save: false);
+            Assert.True(s.DockBackgroundStretch);
+            Assert.False(s.BackdropBlur);
+            Assert.Contains(s.Stacks, x => x.Target == "mcbar:trash");
+            // si después el usuario lo cambia, no se vuelve a pisar
+            s.BackdropBlur = true;
+            s.Stacks.Clear();
+            SettingsStore.Migrate(s, save: false);
+            Assert.True(s.BackdropBlur);
+            Assert.Empty(s.Stacks);
+        }
+
+        [Fact]
+        public void Clima_LeeLosProximosDias()
+        {
+            const string json = @"{
+              ""current"": { ""temperature_2m"": 21.4, ""weather_code"": 2, ""apparent_temperature"": 23.0, ""relative_humidity_2m"": 61, ""wind_speed_10m"": 12.5 },
+              ""daily"": { ""time"": [""2026-11-22"", ""2026-11-23""], ""temperature_2m_max"": [25.1, 28], ""temperature_2m_min"": [14.0, 16], ""weather_code"": [1, 61], ""precipitation_probability_max"": [5, 80] },
+              ""hourly"": { ""time"": [""2026-11-22T15:00"", ""2026-11-22T16:00""], ""temperature_2m"": [20, 21], ""weather_code"": [0, 1] }
+            }";
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var w = WeatherService.Parse(doc.RootElement, "Rosario", new DateTime(2026, 11, 22, 15, 10, 0));
+            Assert.Equal(2, w.Days.Count);
+            Assert.Equal(61, w.Days[1].Code);
+            Assert.Equal(80, w.Days[1].RainChance);
+            Assert.Equal(61, w.Humidity);
+            Assert.Equal(23.0, w.FeelsLike, 3);
+            Assert.Equal(2, w.Hours24.Count);
+        }
     }
 }

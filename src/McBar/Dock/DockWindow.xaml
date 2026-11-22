@@ -15,8 +15,12 @@
             <Canvas.RenderTransform>
                 <TranslateTransform x:Name="HideShift"/>
             </Canvas.RenderTransform>
+            <!-- 0.4.1: sombra liviana dibujada con dos bordes (antes era un DropShadowEffect: costoso en cada
+                 cuadro y la forma de la ventana lo cortaba, dejando bordes duros alrededor del Dock). -->
+            <Border x:Name="BarShadow2" CornerRadius="21" Background="#14000000" IsHitTestVisible="False"/>
+            <Border x:Name="BarShadow1" CornerRadius="19" Background="#1F000000" IsHitTestVisible="False"/>
             <Border x:Name="Bar" CornerRadius="18" BorderThickness="1"
-                    Background="{DynamicResource Mc.DockBg}" BorderBrush="{DynamicResource Mc.DockBorder}"/>
+                    Background="{DynamicResource Mc.DockGlass}" BorderBrush="{DynamicResource Mc.DockGlassBorder}"/>
             <Border x:Name="Label" Panel.ZIndex="1000" IsHitTestVisible="False" Visibility="Collapsed"
                     Padding="10,4" CornerRadius="7" BorderThickness="1"
                     Background="{DynamicResource Mc.LabelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}">

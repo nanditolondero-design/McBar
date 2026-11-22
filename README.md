@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.4)
+## Qué incluye (versión 0.4.1)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -39,6 +39,8 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 **Centro de control**: Wi-Fi, Bluetooth, modo avión, modo oscuro (cambia Windows de verdad), concentración, brillo (notebooks) y sonido.
 
 **Notificaciones propias** (0.4): McBar junta las notificaciones de Windows en su propio centro, agrupadas por app. Con la isla se abre como cajón desde la píldora; con la barra, tocando el reloj (arriba de los widgets). Win+N y Win+A abren las de McBar en vez de los paneles de Windows. Opcional: ocultar el cartelito de Windows.
+
+**Clima** (tocando el clima de la barra o la isla): ahora, sensación, humedad, viento, 24 horas y 7 días.
 
 **Widgets** (tocando el reloj): calendario, clima (Open-Meteo, sin clave), batería, procesador y memoria, notas.
 

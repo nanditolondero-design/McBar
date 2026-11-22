@@ -1,5 +1,23 @@
 # Cambios
 
+## 0.4.1 — 22/11/2026
+Pedidos de Andrés después de probar la 0.4.0 (registro de su PC revisado):
+- **Ventanas que "querían acomodarse y no podían"**: el registro mostraba que McBar y el Explorador se peleaban por el área de trabajo cada pocos minutos. Ahora las correcciones de McBar son silenciosas (no avisan a todas las ventanas, así nada se sacude ni el Explorador reacciona) y, si la pelea sigue, McBar deja de corregir hasta que cambie algo (monitores, Preferencias o reinicio del Explorador).
+- **Rendimiento**:
+  - El Dock flotante tenía una sombra con efecto (DropShadowEffect + caché) que se recalculaba en cada cuadro de la lupa: ahora es una sombra dibujada, sin costo.
+  - El Dock ya no cambia su forma en cada cuadro mientras el mouse está encima.
+  - El Launchpad usa ventana rápida (antes era una ventana "en capas" de pantalla completa: Windows copiaba toda la pantalla en cada cuadro).
+  - La ventana de la isla vuelve a medir 300 de alto y solo crece mientras un cajón lo necesita.
+- **Dock** (elegido por Andrés):
+  - El fondo crece con la lupa como en macOS: los íconos ya no se salen.
+  - "Vidrio dibujado por McBar" en lugar del desenfoque de Windows: esquinas suaves, sin bordes dentados ni cortes de la sombra. El desenfoque sigue como opción en Preferencias → Dock.
+  - La forma de la ventana ya no recorta las esquinas (Windows no las suaviza): las dibuja WPF.
+- **Papelera que desaparecía**: para quitar o cerrar un ícono arrastrándolo hay que mantenerlo afuera un momento (se ve el cartel), así no se pierde por un tirón sin querer. Si la Papelera y Descargas no estaban, vuelven solas al actualizar; también hay un botón en Preferencias → Dock para volver a ponerlas.
+- **Clima propio** (elegido por Andrés): tocar el clima de la barra o de la isla abre un widget con el tiempo de ahora, sensación térmica, humedad, viento, las próximas 24 horas y los próximos 7 días (con barrita de mínima/máxima y probabilidad de lluvia). Datos de Open-Meteo, nada de Windows.
+- **Isla con estilo Vidrio**: dibujaba un cuadrado oscuro enorme (el desenfoque de Windows no respeta la forma de la ventana). Ahora es vidrio dibujado por McBar.
+- **Launchpad muy transparente**: la escala de transparencia ahora va de casi opaco (0) a casi nada (100), pareja; con desenfoque el velo va a la mitad.
+- **Preferencias en pestañas**: secciones a la izquierda (Dock, Barra superior, Isla dinámica, Notificaciones, Launchpad, Bandeja, General, Widgets) y su contenido a la derecha; recuerda la última abierta.
+
 ## 0.4.0 — 22/11/2026
 Pedidos de Andrés: fondo del Launchpad más transparente, carpetas, y dejar de usar el panel lateral de notificaciones de Windows. Más los errores vistos en su video del 22/11 (15:06).
 

@@ -56,6 +56,9 @@ namespace McBar.Panels
         private int _page, _pageCount = 1;
         private DateTime _lastWheel = DateTime.MinValue;
         private bool _closing, _loaded;
+        private readonly bool _fast;
+        /// <summary>Lo que se funde al abrir/cerrar: la ventana (modo en capas) o su contenido (modo rápido).</summary>
+        private UIElement Fader => _fast ? _root : this;
 
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
 
@@ -63,7 +66,10 @@ namespace McBar.Panels
         {
             Title = "Launchpad";
             WindowStyle = WindowStyle.None;
-            AllowsTransparency = true;
+            // 0.4.1: con "Animaciones rápidas" es una ventana común con vidrio de DWM (una ventana "en capas"
+            // de pantalla completa obligaba a Windows a copiar toda la pantalla en cada cuadro: lento).
+            _fast = SettingsStore.Current.FastWindows;
+            AllowsTransparency = !_fast;
             Background = Brushes.Transparent;
             Topmost = true;
             ShowInTaskbar = false;
@@ -74,7 +80,7 @@ namespace McBar.Panels
             Width = monitor.Bounds.Width / sc;
             Height = monitor.Bounds.Height / sc;
             SetResourceReference(FontFamilyProperty, "Mc.Font");
-            Opacity = 0;
+            if (_fast) _root.Opacity = 0; else Opacity = 0;
 
             _root.Background = DimBrush();
             _root.Children.Add(_content);
@@ -112,6 +118,7 @@ namespace McBar.Panels
             SourceInitialized += (_, _) =>
             {
                 WindowOps.MakeTool(this);
+                if (_fast) WindowOps.MakeGlass(this);
                 if (SettingsStore.Current.LaunchpadBlur) WindowOps.EnableBlur(this, Scaled(ThemeManager.GetColor("Mc.LaunchpadTint")));
             };
             Deactivated += (_, _) => { if (!_dragging) CloseAnimated(); };
@@ -148,7 +155,7 @@ namespace McBar.Panels
             Show();
             Activate();
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200)));
+            Fader.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200)));
             _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
             _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
         }
@@ -158,9 +165,9 @@ namespace McBar.Panels
             if (_closing) return;
             _closing = true;
             ClosedAt = DateTime.Now;
-            var fade = new DoubleAnimation(Opacity, 0, TimeSpan.FromMilliseconds(160));
+            var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(160));
             fade.Completed += (_, _) => { Close(); _icons.Clear(); App.ScheduleTrim(); };
-            BeginAnimation(OpacityProperty, fade);
+            Fader.BeginAnimation(OpacityProperty, fade);
             _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
             _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
         }
@@ -239,19 +246,21 @@ namespace McBar.Panels
 
         // ================== Fondo ==================
 
-        /// <summary>Escala la opacidad según Preferencias → Launchpad → Transparencia (50 = como antes).</summary>
-        private static Color Scaled(Color c)
-        {
-            double f = (100 - SettingsStore.Current.LaunchpadTransparency) / 50.0; // 0..2
-            return Color.FromArgb((byte)Math.Clamp(Math.Round(c.A * f), 0, 255), c.R, c.G, c.B);
-        }
+        /// <summary>
+        /// Opacidad según Preferencias → Launchpad → Transparencia. 0.4.1: rango más amplio y parejo
+        /// (0 = casi opaco, 100 = casi nada); antes el máximo era el doble del tono del tema y se veía muy claro.
+        /// </summary>
+        public static byte AlphaFor(int transparency) =>
+            (byte)Math.Clamp(Math.Round(245 - Math.Clamp(transparency, 0, 100) * 2.25), 0, 255);
+
+        private static Color Scaled(Color c) => Color.FromArgb(AlphaFor(SettingsStore.Current.LaunchpadTransparency), c.R, c.G, c.B);
 
         private static Brush DimBrush()
         {
             var c = Application.Current.TryFindResource("Mc.LaunchpadBg") is SolidColorBrush b ? b.Color : Color.FromArgb(0x59, 0, 0, 0);
-            // Sin desenfoque el fondo se oscurece un poco más para que los nombres se lean.
-            if (!SettingsStore.Current.LaunchpadBlur) c = Color.FromArgb((byte)Math.Min(255, c.A + 0x30), c.R, c.G, c.B);
             var s = Scaled(c);
+            // Con desenfoque el tinte del desenfoque ya oscurece: el velo va a la mitad.
+            if (SettingsStore.Current.LaunchpadBlur) s = Color.FromArgb((byte)(s.A / 2), s.R, s.G, s.B);
             // Totalmente transparente no recibiría clics: se deja un mínimo invisible.
             if (s.A == 0) s = Color.FromArgb(1, 0, 0, 0);
             return Frozen(s);

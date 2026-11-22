@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace McBar.Core
 {
     public sealed class WeatherHour { public DateTime Time { get; init; } public double Temp { get; init; } public int Code { get; init; } }
+    public sealed class WeatherDay { public DateTime Date { get; init; } public double Max { get; init; } public double Min { get; init; } public int Code { get; init; } public int RainChance { get; init; } }
 
     public sealed class WeatherData
     {
@@ -21,6 +22,13 @@ namespace McBar.Core
         public double Max { get; init; }
         public double Min { get; init; }
         public List<WeatherHour> Hours { get; init; } = new List<WeatherHour>();
+        /// <summary>Las próximas 24 horas (widget del clima propio, 0.4.1).</summary>
+        public List<WeatherHour> Hours24 { get; init; } = new List<WeatherHour>();
+        /// <summary>Próximos días (hasta 7).</summary>
+        public List<WeatherDay> Days { get; init; } = new List<WeatherDay>();
+        public double FeelsLike { get; init; }
+        public int Humidity { get; init; }
+        public double Wind { get; init; }
         public DateTime FetchedAt { get; init; }
     }
 
@@ -87,8 +95,9 @@ namespace McBar.Core
                 var inv = CultureInfo.InvariantCulture;
                 var url = "https://api.open-meteo.com/v1/forecast?latitude=" + s.WeatherLat!.Value.ToString(inv) +
                           "&longitude=" + s.WeatherLon!.Value.ToString(inv) +
-                          "&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code" +
-                          "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2";
+                          "&current=temperature_2m,weather_code,is_day,apparent_temperature,relative_humidity_2m,wind_speed_10m" +
+                          "&hourly=temperature_2m,weather_code" +
+                          "&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7";
                 using var doc = JsonDocument.Parse(await Http.GetStringAsync(url));
                 _cache = Parse(doc.RootElement, s.WeatherPlaceName ?? s.WeatherCity, DateTime.Now);
                 Updated?.Invoke(_cache);
@@ -127,12 +136,33 @@ namespace McBar.Core
             var times = hourly.GetProperty("time");
             var temps = hourly.GetProperty("temperature_2m");
             var codes = hourly.GetProperty("weather_code");
-            for (int i = 0; i < times.GetArrayLength() && hours.Count < 6; i++)
+            var hours24 = new List<WeatherHour>();
+            for (int i = 0; i < times.GetArrayLength() && hours24.Count < 24; i++)
             {
                 var t = DateTime.Parse(times[i].GetString()!, CultureInfo.InvariantCulture);
                 if (t < now.AddMinutes(-30)) continue;
-                hours.Add(new WeatherHour { Time = t, Temp = temps[i].GetDouble(), Code = codes[i].GetInt32() });
+                var h = new WeatherHour { Time = t, Temp = temps[i].GetDouble(), Code = codes[i].GetInt32() };
+                hours24.Add(h);
+                if (hours.Count < 6) hours.Add(h);
             }
+            var days = new List<WeatherDay>();
+            if (daily.TryGetProperty("time", out var dTimes))
+            {
+                daily.TryGetProperty("weather_code", out var dCodes);
+                daily.TryGetProperty("precipitation_probability_max", out var dRain);
+                for (int i = 0; i < dTimes.GetArrayLength(); i++)
+                {
+                    days.Add(new WeatherDay
+                    {
+                        Date = DateTime.Parse(dTimes[i].GetString()!, CultureInfo.InvariantCulture),
+                        Max = daily.GetProperty("temperature_2m_max")[i].GetDouble(),
+                        Min = daily.GetProperty("temperature_2m_min")[i].GetDouble(),
+                        Code = dCodes.ValueKind == JsonValueKind.Array && dCodes[i].ValueKind == JsonValueKind.Number ? dCodes[i].GetInt32() : 0,
+                        RainChance = dRain.ValueKind == JsonValueKind.Array && dRain[i].ValueKind == JsonValueKind.Number ? dRain[i].GetInt32() : 0
+                    });
+                }
+            }
+            double Num(string name) => cur.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
             return new WeatherData
             {
                 Place = place,
@@ -142,6 +172,11 @@ namespace McBar.Core
                 Max = daily.GetProperty("temperature_2m_max")[0].GetDouble(),
                 Min = daily.GetProperty("temperature_2m_min")[0].GetDouble(),
                 Hours = hours,
+                Hours24 = hours24,
+                Days = days,
+                FeelsLike = Num("apparent_temperature"),
+                Humidity = (int)Math.Round(Num("relative_humidity_2m")),
+                Wind = Num("wind_speed_10m"),
                 FetchedAt = now
             };
         }

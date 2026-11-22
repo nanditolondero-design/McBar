@@ -63,7 +63,8 @@ namespace McBar.MenuBar
             WindowButton.Click += (_, _) => OpenMenu(WindowButton, BuildWindowMenu());
             HelpButton.Click += (_, _) => OpenMenu(HelpButton, BuildHelpMenu());
             TrayButton.Click += (_, _) => { if (TrayHost.Current != null) ShowTrayOverflow(); else Taskbar.ShowTemporarily(); };
-            WeatherButton.Click += (_, _) => App.ToggleWidgets(_monitor);
+            // 0.4.1: el clima abre su propio widget (ahora, 24 horas y 7 días)
+            WeatherButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Weather); else App.ToggleWeather(_monitor); };
             WifiButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Wifi); else OpenMenu(WifiButton, BuildNetworkMenu()); };
             BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Battery); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
             VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Sound); else ShowVolumePopup(); };

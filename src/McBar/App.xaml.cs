@@ -460,6 +460,19 @@ namespace McBar
             OpenWidgetsPanel(monitor);
         }
 
+        private static WeatherWindow? _weather;
+
+        /// <summary>Widget del clima propio (barra de menú).</summary>
+        public static void ToggleWeather(MonitorInfo? monitor = null)
+        {
+            if (_weather != null && _weather.IsVisible && !_weather.IsClosing) { _weather.CloseAnimated(); return; }
+            if (_weather != null && RecentlyClosed(_weather.ClosedAt)) return;
+            _controlCenter?.CloseAnimated();
+            _widgets?.CloseAnimated();
+            _weather = new WeatherWindow();
+            _weather.ShowBelowMenuBar(MonitorOrPrimary(monitor));
+        }
+
         /// <summary>Cajón propio de cada ícono de la isla (Wi-Fi, sonido, batería).</summary>
         internal static void ToggleIslandDrawer(MonitorInfo? monitor, IslandWindow.DrawerKind kind)
         {

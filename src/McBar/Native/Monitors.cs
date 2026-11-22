@@ -70,6 +70,8 @@ namespace McBar.Native
         private static readonly Dictionary<string, PxRect> Desired = new Dictionary<string, PxRect>();
         private static readonly Queue<DateTime> Fixes = new Queue<DateTime>();
         private static DateTime _pausedUntil = DateTime.MinValue;
+        private static int _pauses;
+        private static bool _gaveUp;
 
         /// <summary>Calcula el área de trabajo: el monitor menos lo reservado arriba y abajo (pura, se prueba).</summary>
         public static PxRect Compute(PxRect bounds, int topPx, int bottomPx) =>
@@ -78,16 +80,24 @@ namespace McBar.Native
         public static void Set(MonitorInfo m, int topPx, int bottomPx)
         {
             var r = Compute(m.Bounds, topPx, bottomPx);
+            // Un pedido explícito (arranque, Preferencias, monitores) vuelve a habilitar el vigilante.
+            if (!Desired.TryGetValue(m.Device, out var prev) || prev.Left != r.Left || prev.Top != r.Top || prev.Right != r.Right || prev.Bottom != r.Bottom)
+            { _gaveUp = false; _pauses = 0; Fixes.Clear(); }
             Desired[m.Device] = r;
             var w = m.Work;
             if (w.Left == r.Left && w.Top == r.Top && w.Right == r.Right && w.Bottom == r.Bottom) return; // ya está bien: no avisar a todas las apps
             Apply(r);
         }
 
-        private static void Apply(PxRect r)
+        /// <param name="notify">
+        /// true = avisar a todas las ventanas (las maximizadas se reacomodan). Las correcciones del vigilante
+        /// van SIN aviso (0.4.1): así ninguna ventana se sacude y el Explorador no se entera y no vuelve a
+        /// cambiarla; las ventanas que se maximicen después ya usan el área correcta.
+        /// </param>
+        private static void Apply(PxRect r, bool notify = true)
         {
             var rc = new Win32.RECT { left = r.Left, top = r.Top, right = r.Right, bottom = r.Bottom };
-            Win32.SystemParametersInfoRect(Win32.SPI_SETWORKAREA, 0, ref rc, Win32.SPIF_SENDCHANGE);
+            Win32.SystemParametersInfoRect(Win32.SPI_SETWORKAREA, 0, ref rc, notify ? Win32.SPIF_SENDCHANGE : 0);
         }
 
         /// <summary>
@@ -97,7 +107,7 @@ namespace McBar.Native
         /// </summary>
         public static void Verify()
         {
-            if (Desired.Count == 0 || DateTime.Now < _pausedUntil) return;
+            if (Desired.Count == 0 || _gaveUp || DateTime.Now < _pausedUntil) return;
             while (Fixes.Count > 0 && (DateTime.Now - Fixes.Peek()).TotalSeconds > 30) Fixes.Dequeue();
             foreach (var m in Monitors.All())
             {
@@ -106,12 +116,22 @@ namespace McBar.Native
                 if (w.Left == want.Left && w.Top == want.Top && w.Right == want.Right && w.Bottom == want.Bottom) continue;
                 if (Fixes.Count >= 3)
                 {
-                    _pausedUntil = DateTime.Now.AddMinutes(3);
-                    Log.Write("El Explorador sigue cambiando el área de trabajo; McBar deja de corregirla por 3 minutos para no sacudir las ventanas.");
+                    // 0.4.1: después de la segunda vez, McBar deja de pelear hasta que cambie algo (monitores,
+                    // Preferencias, reinicio del Explorador). Pelear es lo que hacía "temblar" las ventanas.
+                    if (++_pauses >= 2)
+                    {
+                        _gaveUp = true;
+                        Log.Write("El Explorador sigue cambiando el área de trabajo; McBar deja de corregirla hasta que cambie algo.");
+                    }
+                    else
+                    {
+                        _pausedUntil = DateTime.Now.AddMinutes(3);
+                        Log.Write("El Explorador sigue cambiando el área de trabajo; McBar deja de corregirla por 3 minutos para no sacudir las ventanas.");
+                    }
                     return;
                 }
                 Fixes.Enqueue(DateTime.Now);
-                Apply(want);
+                Apply(want, notify: false);
             }
         }
 

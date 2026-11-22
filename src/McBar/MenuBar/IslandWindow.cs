@@ -27,6 +27,7 @@ namespace McBar.MenuBar
     internal sealed class IslandWindow : Window
     {
         public const double TopMargin = 6;
+        private const double BaseWindowHeight = 300;
 
         // Tamaño de la píldora en reposo según Preferencias → Isla dinámica → Tamaño.
         public static double CompactHeightFor(AppSettings s) => s.IslandSize == "small" ? 30 : s.IslandSize == "large" ? 42 : 36;
@@ -46,7 +47,7 @@ namespace McBar.MenuBar
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
         private enum State { Compact, Expanded, Activity, Media, Drawer }
-        public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery }
+        public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery, Weather }
         private DrawerKind _drawerKind;
         private readonly Border _badge = new Border { CornerRadius = new CornerRadius(9), MinWidth = 18, Height = 18, Padding = new Thickness(5, 0, 5, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
         private readonly TextBlock _badgeText = new TextBlock { Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -113,7 +114,7 @@ namespace McBar.MenuBar
             ResizeMode = ResizeMode.NoResize;
             Title = "McBar Isla";
             Width = Math.Min(monitor.Bounds.Width / App.Scale, 1120);
-            Height = 680; // alto de sobra para los cajones (fuera de la píldora los clics pasan igual)
+            Height = BaseWindowHeight; // crece solo mientras hay un cajón abierto (ver EnsureWindowHeight)
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             FontSize = 13;
 
@@ -236,7 +237,11 @@ namespace McBar.MenuBar
             switch (s.IslandStyle)
             {
                 case "graphite": bg = new SolidColorBrush(Color.FromRgb(0x2C, 0x2C, 0x30)); break;
-                case "glass": bg = new SolidColorBrush(Color.FromArgb(0x80, 0x18, 0x18, 0x1C)); break;
+                case "glass":
+                    // 0.4.1: vidrio dibujado por McBar (el desenfoque de Windows pintaba toda la ventana:
+                    // se veía un cuadrado oscuro gigante alrededor de la píldora).
+                    bg = new LinearGradientBrush(Color.FromArgb(0xC0, 0x3A, 0x3A, 0x40), Color.FromArgb(0xC8, 0x1C, 0x1C, 0x20), 90);
+                    break;
                 case "accent":
                     var a = Application.Current.TryFindResource("Mc.Accent") is SolidColorBrush ab ? ab.Color : Color.FromRgb(0x0A, 0x84, 0xFF);
                     bg = new SolidColorBrush(Color.FromRgb((byte)(a.R * 0.55), (byte)(a.G * 0.55), (byte)(a.B * 0.55)));
@@ -259,8 +264,9 @@ namespace McBar.MenuBar
                 _backdrop.Hide();
                 if (_hwnd != IntPtr.Zero)
                 {
-                    if (glassBlur) WindowOps.EnableBlur(this, Color.FromArgb(0x40, 0x10, 0x10, 0x14));
-                    else WindowOps.DisableBlur(this);
+                    // Nunca desenfoque de Windows en la ventana rápida: Windows lo aplica a TODA la ventana
+                    // (no respeta la forma) y se veía un cuadrado oscuro enorme.
+                    WindowOps.DisableBlur(this);
                 }
             }
             else if (glassBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
@@ -421,7 +427,9 @@ namespace McBar.MenuBar
             ShowLayer(_expanded);
             _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), (kind == DrawerKind.Notifications ? 410 : 380));
-            double h = Math.Min(Height - TopMargin - 8, _expanded.DesiredSize.Height + 22);
+            double maxH = _monitor.Bounds.Height / App.Scale * 0.8;
+            double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
+            EnsureWindowHeight(h);
             AnimateSize(w, h);
             UpdateEqualizer();
             // Algunas partes (deslizadores, música) se arman al cargarse: se vuelve a medir ya dibujado
@@ -430,8 +438,8 @@ namespace McBar.MenuBar
             {
                 if (_state != State.Drawer || _drawerKind != kind) return;
                 _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                double h2 = Math.Min(Height - TopMargin - 8, _expanded.DesiredSize.Height + 22);
-                if (Math.Abs(h2 - h) > 2) AnimateSize(w, h2);
+                double h2 = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
+                if (Math.Abs(h2 - h) > 2) { EnsureWindowHeight(h2); AnimateSize(w, h2); }
             }), DispatcherPriority.Loaded);
         }
 
@@ -459,6 +467,9 @@ namespace McBar.MenuBar
                     sp.Children.Add(widgets);
                     return sp;
                 }
+
+                case DrawerKind.Weather:
+                    return new McBar.Panels.WeatherView(360) { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 4) };
 
                 case DrawerKind.Wifi:
                 {
@@ -520,8 +531,28 @@ namespace McBar.MenuBar
             return bt;
         }
 
+        /// <summary>
+        /// La ventana de la isla mide 300 de alto; solo se agranda mientras un cajón lo necesita y vuelve a
+        /// achicarse al cerrarlo (0.4.1: una ventana enorme todo el tiempo costaba rendimiento).
+        /// </summary>
+        private void EnsureWindowHeight(double pillHeight)
+        {
+            double need = Math.Max(BaseWindowHeight, Math.Ceiling(pillHeight + TopMargin + 24));
+            if (Math.Abs(need - Height) < 1) return;
+            if (need < Height && _state == State.Drawer) return; // con un cajón abierto solo crece
+            Height = need;
+            ApplyGeometry();
+        }
+
         private void CloseDrawerContent()
         {
+            if (_drawer.Child != null && Height > BaseWindowHeight)
+            {
+                // se achica cuando terminó la animación de cierre
+                var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(480) };
+                t.Tick += (_, _) => { t.Stop(); if (_state != State.Drawer) { Height = BaseWindowHeight; ApplyGeometry(); } };
+                t.Start();
+            }
             _drawer.Child = null;
             _drawer.Visibility = Visibility.Collapsed;
         }

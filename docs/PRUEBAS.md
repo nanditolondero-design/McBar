@@ -137,6 +137,16 @@ Launchpad:
 - [ ] Clic derecho en una app: Agregar a carpeta / Nueva carpeta / Sacar de la carpeta. En una carpeta: Renombrar / Deshacer carpeta.
 - [ ] Buscar una app que está dentro de una carpeta: aparece.
 
+### Versión 0.4.1
+- [ ] Usar la PC un rato con ventanas maximizadas: no se sacuden ni "intentan acomodarse". En `mcbar.log` puede aparecer una vez "deja de corregirla hasta que cambie algo".
+- [ ] Dock: pasar el mouse de punta a punta: el fondo crece suave con los íconos y nada se corta; esquinas redondeadas lisas, sin bordes dentados ni marcos.
+- [ ] Dock: la lupa se siente fluida (comparar con la 0.4.0).
+- [ ] Arrastrar la Papelera hacia arriba y soltarla enseguida: NO se quita. Mantenerla afuera medio segundo y soltar: se quita. Preferencias → Dock → "Volver a poner la Papelera y Descargas": vuelven.
+- [ ] Tocar el clima (barra o isla): widget con ahora, 24 horas (rueda del mouse para moverlas) y 7 días.
+- [ ] Isla con estilo Vidrio: solo la píldora translúcida, sin cuadrado oscuro alrededor.
+- [ ] Launchpad: abrir/cerrar fluido; Transparencia en 0 = casi opaco, en 100 = casi transparente.
+- [ ] Preferencias: pestañas a la izquierda; al cerrar y volver a abrir, queda en la última.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

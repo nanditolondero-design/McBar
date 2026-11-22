@@ -20,6 +20,15 @@
     <SolidColorBrush x:Key="Mc.Separator" Color="#21000000"/>
     <SolidColorBrush x:Key="Mc.DockBg" Color="#85F4F4F6"/>
     <SolidColorBrush x:Key="Mc.DockBorder" Color="#66FFFFFF"/>
+    <!-- Vidrio del Dock dibujado por McBar (0.4.1, sin desenfoque de Windows) -->
+    <LinearGradientBrush x:Key="Mc.DockGlass" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#CCFAFAFC" Offset="0"/>
+        <GradientStop Color="#C8E9E9EE" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Mc.DockGlassBorder" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#B3FFFFFF" Offset="0"/>
+        <GradientStop Color="#26000000" Offset="1"/>
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="Mc.MenuBarBg" Color="#99F5F5F7"/>
     <SolidColorBrush x:Key="Mc.Track" Color="#2E000000"/>
     <SolidColorBrush x:Key="Mc.InputBg" Color="#FFFFFFFF"/>

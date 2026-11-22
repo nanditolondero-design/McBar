@@ -94,6 +94,12 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Clima propio (0.4.1)
+`Core/Weather.cs` pide a Open-Meteo el tiempo actual (con sensación, humedad, viento), 24 horas y 7 días. `Panels/WeatherView` lo dibuja; se usa en el cajón `DrawerKind.Weather` de la isla y en `WeatherWindow` (barra de menú, `App.ToggleWeather`).
+
+## Preferencias (0.4.1)
+`SettingsWindow.Build()` arma las secciones en orden (cada una empieza con `Header`); `Tabbed()` las reparte en pestañas a la izquierda. Los elementos con `Tag = "tail"` (botones de abajo y firma) quedan siempre visibles.
+
 ## Íconos (`Core/IconLoader.cs`)
 - Hilo de fondo STA con su propio Dispatcher (bucle de mensajes), que necesitan los objetos COM del Shell. `IShellItemImageFactory` sirve para .exe, .lnk, carpetas, archivos y `shell:AppsFolder\<id>`.
 - Caché chico para el Dock (tope 120); el Launchpad usa su propio caché que se descarta al cerrar.

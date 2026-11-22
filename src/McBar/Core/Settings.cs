@@ -38,10 +38,10 @@ namespace McBar.Core
         /// <summary>"classic" (pegado abajo), "floating" (separado del borde, con sombra) o "full" (ancho completo).</summary>
         public string DockStyle { get; set; } = "classic";
         /// <summary>false: el fondo del Dock queda quieto y solo se agrandan los íconos. true: el fondo se estira (como macOS).</summary>
-        public bool DockBackgroundStretch { get; set; } = false;
+        public bool DockBackgroundStretch { get; set; } = true;
         public bool DockOnAllMonitors { get; set; } = true;
         /// <summary>Desenfoque real detrás del Dock y de la isla en estilo Vidrio.</summary>
-        public bool BackdropBlur { get; set; } = true;
+        public bool BackdropBlur { get; set; } = false;
         /// <summary>Dock e isla como ventanas aceleradas por la tarjeta de video. Apagar solo si se ven fondos negros.</summary>
         public bool FastWindows { get; set; } = true;
         /// <summary>Con varios monitores: cada Dock muestra solo las apps abiertas en su monitor (las fijadas se ven siempre).</summary>
@@ -49,6 +49,13 @@ namespace McBar.Core
         public bool AnimateWindows { get; set; } = true;
         /// <summary>Valor original de "animar ventanas al minimizar y maximizar" de Windows (para restaurarlo al salir).</summary>
         public int? OriginalMinAnimate { get; set; }
+
+        /// <summary>
+        /// Versión del "aspecto" ya aplicada a estos ajustes (0.4.1): sirve para pasar UNA sola vez a los
+        /// valores nuevos elegidos por Andrés (fondo del Dock que crece, vidrio dibujado por McBar) sin pisar
+        /// lo que el usuario cambie después.
+        /// </summary>
+        public int LookVersion { get; set; }
 
         public static List<PinnedApp> DefaultStacks() => new List<PinnedApp>
         {
@@ -154,12 +161,30 @@ namespace McBar.Core
                 if (File.Exists(FilePath))
                 {
                     var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Options);
-                    if (loaded != null) { Current = Sanitize(loaded); return Current; }
+                    if (loaded != null) { Current = Migrate(Sanitize(loaded)); return Current; }
                 }
             }
             catch (Exception ex) { Log.Write("No se pudieron leer los ajustes: " + ex.Message); }
-            Current = new AppSettings();
+            Current = new AppSettings { LookVersion = CurrentLook };
             return Current;
+        }
+
+        public const int CurrentLook = 1;
+
+        /// <summary>
+        /// Cambios de una sola vez al actualizar (pura, se prueba).
+        /// 0.4.1: Dock con fondo que crece como en macOS y sin el desenfoque de Windows (dejaba esquinas
+        /// dentadas); si la Papelera y Descargas habían desaparecido del Dock, vuelven.
+        /// </summary>
+        public static AppSettings Migrate(AppSettings s, bool save = true)
+        {
+            if (s.LookVersion >= CurrentLook) return s;
+            s.DockBackgroundStretch = true;
+            s.BackdropBlur = false;
+            if (s.Stacks.Count == 0) s.Stacks = AppSettings.DefaultStacks();
+            s.LookVersion = CurrentLook;
+            if (save) { try { File.WriteAllText(FilePath, JsonSerializer.Serialize(s, Options)); } catch { } }
+            return s;
         }
 
         public static void Save()

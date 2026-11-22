@@ -48,6 +48,9 @@ Pedido de Andrés: fondo del Launchpad más transparente, carpetas o grupos de �
 - Dock: arrastrar afuera una app abierta sin fijar la cierra (pedido del 22/11 15:14).
 - Arreglos del video del 22/11 15:06: íconos del Dock cortados, cajón de la isla cortado, panel de widgets con hueco, buscador del Launchpad tapado por la isla, aviso de compilación.
 
+## Versión 0.4.1 (22/11/2026)
+Rendimiento, ventanas que se sacudían (área de trabajo), aspecto nuevo del Dock (fondo que crece + vidrio propio), Papelera que se perdía, widget del clima propio, isla Vidrio sin cuadrado oscuro, Launchpad menos transparente, Preferencias en pestañas. Ver CHANGELOG.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.
