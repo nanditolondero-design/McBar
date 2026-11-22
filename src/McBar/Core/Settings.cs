@@ -59,7 +59,7 @@ namespace McBar.Core
 
         /// <summary>Isla o gota (las dos usan la ventana de la isla).</summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        public bool IsIslandLike => TopBarMode == "island" || TopBarMode == "drop";
+        public bool IsIslandLike => TopBarMode == "island";
 
         public static List<PinnedApp> DefaultStacks() => new List<PinnedApp>
         {
@@ -72,7 +72,7 @@ namespace McBar.Core
         public bool ShowBatteryPercent { get; set; } = true;
         public bool ShowDateInClock { get; set; } = true;
         public bool MenuBarOnAllMonitors { get; set; } = true;
-        /// <summary>"menubar" (barra de menú clásica), "island" (isla dinámica) o "drop" (gota: la isla pegada al borde de arriba, 0.4.2).</summary>
+        /// <summary>"menubar" (barra de menú clásica) o "island" (isla dinámica). La "gota" de la 0.4.2 se quitó en la 0.4.3 (pasa a isla).</summary>
         public string TopBarMode { get; set; } = "menubar";
         /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
         public bool IslandReserveSpace { get; set; } = true;
@@ -101,6 +101,10 @@ namespace McBar.Core
         public List<LaunchpadFolder> LaunchpadFolders { get; set; } = new List<LaunchpadFolder>();
         /// <summary>Apps ocultas del Launchpad (Target). 0.4.2.</summary>
         public List<string> LaunchpadHidden { get; set; } = new List<string>();
+        /// <summary>Orden de la grilla del Launchpad (claves de apps y carpetas) cuando el usuario mueve algo. 0.4.3.</summary>
+        public List<string> LaunchpadOrder { get; set; } = new List<string>();
+        /// <summary>Carpeta del paquete de íconos (vacío = íconos de Windows). 0.4.3.</summary>
+        public string IconPackPath { get; set; } = "";
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -216,17 +220,20 @@ namespace McBar.Core
         {
             s.DockIconSize = Math.Clamp(s.DockIconSize, 32, 96);
             s.MagnifiedSize = Math.Clamp(s.MagnifiedSize, s.DockIconSize, 160);
-            if (s.Theme != "dark" && s.Theme != "light") s.Theme = "auto";
+            if (s.Theme != "dark" && s.Theme != "light" && s.Theme != "glass") s.Theme = "auto";
             s.Pinned ??= new List<PinnedApp>();
             s.Pinned.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Target));
             s.Stacks ??= AppSettings.DefaultStacks();
             s.Stacks.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Target));
             s.TrayHiddenIds ??= new List<string>();
-            if (s.DockStyle != "floating" && s.DockStyle != "full") s.DockStyle = "classic";
-            if (s.TopBarMode != "island" && s.TopBarMode != "drop") s.TopBarMode = "menubar";
+            if (s.DockStyle != "floating" && s.DockStyle != "full" && s.DockStyle != "taskbar" && s.DockStyle != "icons") s.DockStyle = "classic";
+            if (s.TopBarMode == "drop") s.TopBarMode = "island"; // la gota se quitó en la 0.4.3
+            if (s.TopBarMode != "island") s.TopBarMode = "menubar";
             s.LaunchpadTransparency = Math.Clamp(s.LaunchpadTransparency, 0, 100);
             s.LaunchpadFolders ??= new List<LaunchpadFolder>();
             s.LaunchpadHidden ??= new List<string>();
+            s.LaunchpadOrder ??= new List<string>();
+            s.IconPackPath ??= "";
             s.LaunchpadFolders.RemoveAll(f => f == null || f.Targets == null || f.Targets.Count == 0);
             if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
             if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";

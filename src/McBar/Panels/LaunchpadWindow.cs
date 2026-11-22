@@ -49,7 +49,6 @@ namespace McBar.Panels
         private readonly Grid _folderLayer = new Grid { Visibility = Visibility.Collapsed };
         private LaunchpadFolder? _openFolder;
         private Point _dragStart;
-        private CatalogApp? _dragApp;
         private bool _dragged;
         private static List<LaunchpadFolder> Folders => SettingsStore.Current.LaunchpadFolders;
         private static List<string> Hidden => SettingsStore.Current.LaunchpadHidden;
@@ -121,6 +120,9 @@ namespace McBar.Panels
             _hiddenToggle.Foreground = new SolidColorBrush(Color.FromArgb(0xC0, 0xFF, 0xFF, 0xFF));
             _hiddenToggle.MouseLeftButtonUp += (_, e) => { e.Handled = true; _showHidden = !_showHidden; Filter(_page); };
             _content.Children.Add(_hiddenToggle);
+            // 0.4.3: barra de selección (varias apps a la vez)
+            Grid.SetRow(_selectionBar, 2);
+            _content.Children.Add(_selectionBar);
             Content = _root;
 
             SourceInitialized += (_, _) =>
@@ -193,13 +195,18 @@ namespace McBar.Panels
         private void Filter(int keepPage = 0)
         {
             var q = _search.Text.Trim();
-            var apps = LaunchpadLayout.Visible(_all, Hidden, a => a.Target, _showHidden);
-            _shown = q.Length == 0
-                ? LaunchpadLayout.Arrange(apps, Folders, a => a.Target)
-                : LaunchpadLayout.Search(apps, Folders, a => a.Target, a => a.Name, q);
-            int hiddenCount = _all.Count(a => Hidden.Contains(a.Target, StringComparer.OrdinalIgnoreCase));
-            _hiddenToggle.Visibility = hiddenCount > 0 || _showHidden ? Visibility.Visible : Visibility.Collapsed;
-            _hiddenToggle.Text = _showHidden ? "Esconder las apps ocultas" : $"Mostrar apps ocultas ({hiddenCount})";
+            // 0.4.3: al buscar también aparecen las ocultas (atenuadas); sin buscar, solo si se piden.
+            bool all = _showHidden || q.Length > 0;
+            if (q.Length == 0)
+            {
+                var arranged = LaunchpadLayout.ApplyOrder(LaunchpadLayout.Arrange(_all, Folders, a => a.Target), Order, a => a.Target);
+                _shown = LaunchpadLayout.WithoutHidden(arranged, Hidden, a => a.Target, all);
+            }
+            else _shown = LaunchpadLayout.Search(_all, Folders, a => a.Target, a => a.Name, q);
+            var allKeys = new HashSet<string>(_all.Select(a => a.Target).Concat(Folders.Select(LaunchpadLayout.FolderKey)), StringComparer.OrdinalIgnoreCase);
+            int hiddenCount = Hidden.Count(h => allKeys.Contains(h));
+            _hiddenToggle.Visibility = q.Length == 0 && (hiddenCount > 0 || _showHidden) ? Visibility.Visible : Visibility.Collapsed;
+            _hiddenToggle.Text = _showHidden ? "Esconder lo oculto" : $"Mostrar lo oculto ({hiddenCount})";
             _pageCount = Math.Max(1, (int)Math.Ceiling(_shown.Count / (double)PerPage));
             BuildDots();
             ShowPage(Math.Clamp(q.Length == 0 ? keepPage : 0, 0, _pageCount - 1), 0);
@@ -280,6 +287,13 @@ namespace McBar.Panels
 
         // ================== Íconos ==================
 
+        private static List<string> Order => SettingsStore.Current.LaunchpadOrder;
+        private readonly HashSet<string> _selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Border> _cards = new Dictionary<string, Border>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Brush SelectedBrush = Frozen(Color.FromArgb(0x40, 0x0A, 0x84, 0xFF));
+        private static readonly Brush SelectedBorder = Frozen(Color.FromArgb(0xE0, 0x0A, 0x84, 0xFF));
+        private static readonly Brush InsertBrush = Frozen(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
+
         private Image IconImage(CatalogApp app, double size)
         {
             var img = new Image { Width = size, Height = size };
@@ -296,14 +310,18 @@ namespace McBar.Panels
                         if (src == null) return;
                         _icons[app.Target] = src;
                         if (_waiting.TryGetValue(app.Target, out var l)) foreach (var i in l) i.Source = src;
-                    }, useCache: false);
+                    }, useCache: false, displayName: app.Name);
                 }
                 list.Add(img);
             }
             return img;
         }
 
-        private Border Card(UIElement icon, string text)
+        /// <summary>
+        /// Tarjeta de un ícono. 0.4.3: al pasar el mouse el ícono crece suave y aparece un brillo; el nombre
+        /// tiene una sombrita para leerse sobre cualquier fondo.
+        /// </summary>
+        private Border Card(UIElement icon, string text, string key, bool hidden)
         {
             var label = new TextBlock
             {
@@ -313,161 +331,410 @@ namespace McBar.Panels
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxWidth = 120,
-                Margin = new Thickness(0, 6, 0, 0)
+                Margin = new Thickness(0, 7, 0, 0),
+                Effect = LabelShadow
             };
+            var iconHost = new Grid { HorizontalAlignment = HorizontalAlignment.Center, RenderTransformOrigin = new Point(0.5, 0.5) };
+            var zoom = new ScaleTransform(1, 1);
+            iconHost.RenderTransform = zoom;
+            iconHost.Children.Add(icon);
+            var check = new Border
+            {
+                Width = 22, Height = 22, CornerRadius = new CornerRadius(11),
+                Background = SelectedBorder, BorderBrush = Brushes.White, BorderThickness = new Thickness(2),
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, -6, -6, 0),
+                Child = new TextBlock { Text = "✓", Foreground = Brushes.White, FontSize = 12, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+                Visibility = _selected.Contains(key) ? Visibility.Visible : Visibility.Collapsed
+            };
+            iconHost.Children.Add(check);
+
             var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            sp.Children.Add(icon);
+            sp.Children.Add(iconHost);
             sp.Children.Add(label);
             var card = new Border
             {
                 Child = sp,
-                Padding = new Thickness(12, 8, 12, 8),
-                CornerRadius = new CornerRadius(16),
-                Background = Brushes.Transparent,
+                Padding = new Thickness(12, 9, 12, 9),
+                CornerRadius = new CornerRadius(18),
+                Background = _selected.Contains(key) ? SelectedBrush : Brushes.Transparent,
+                BorderThickness = new Thickness(2),
+                BorderBrush = Brushes.Transparent,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = text,
                 Cursor = Cursors.Hand,
-                AllowDrop = true
+                AllowDrop = true,
+                Tag = key,
+                Opacity = hidden ? 0.45 : 1
             };
-            card.MouseEnter += (_, _) => card.Background = HoverBrush;
-            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
-            card.DragEnter += (_, _) => card.Background = HoverBrush;
-            card.DragLeave += (_, _) => card.Background = Brushes.Transparent;
+            _cards[key] = card;
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            void Zoom(double to)
+            {
+                zoom.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(160)) { EasingFunction = ease });
+                zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(160)) { EasingFunction = ease });
+            }
+            card.MouseEnter += (_, _) => { Zoom(1.1); if (!_selected.Contains(key)) card.Background = HoverBrush; };
+            card.MouseLeave += (_, _) => { Zoom(1); if (!_selected.Contains(key)) card.Background = Brushes.Transparent; card.BorderBrush = Brushes.Transparent; };
+            card.DragLeave += (_, _) => { card.BorderBrush = Brushes.Transparent; if (!_selected.Contains(key)) card.Background = Brushes.Transparent; };
+            card.DragOver += (_, e) => ShowDropHint(card, key, e);
+            card.Drop += (_, e) => OnCardDrop(card, key, e);
             return card;
+        }
+
+        private static readonly System.Windows.Media.Effects.DropShadowEffect LabelShadow = MakeLabelShadow();
+        private static System.Windows.Media.Effects.DropShadowEffect MakeLabelShadow()
+        {
+            var e = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 6, ShadowDepth = 1, Opacity = 0.6, Color = Colors.Black };
+            e.Freeze();
+            return e;
+        }
+
+        // ---------- Soltar sobre una tarjeta: dentro = carpeta; en el borde = mover ----------
+
+        /// <summary>Dónde cae lo arrastrado: -1 = antes, 0 = adentro (carpeta), 1 = después.</summary>
+        private static int Zone(FrameworkElement card, DragEventArgs e, bool canInto)
+        {
+            double x = e.GetPosition(card).X, w = Math.Max(1, card.ActualWidth);
+            if (!canInto) return x < w / 2 ? -1 : 1;
+            if (x < w * 0.25) return -1;
+            if (x > w * 0.75) return 1;
+            return 0;
+        }
+
+        private static string? DraggedKey(DragEventArgs e) =>
+            e.Data.GetDataPresent(KeyFormat) ? e.Data.GetData(KeyFormat) as string : null;
+
+        private void ShowDropHint(Border card, string key, DragEventArgs e)
+        {
+            var dragged = DraggedKey(e);
+            if (dragged == null || dragged == key) { e.Effects = DragDropEffects.None; e.Handled = true; return; }
+            bool canInto = !dragged.StartsWith("folder:") && _openFolder == null;
+            int z = Zone(card, e, canInto);
+            card.BorderThickness = z < 0 ? new Thickness(3, 0, 0, 0) : z > 0 ? new Thickness(0, 0, 3, 0) : new Thickness(2);
+            card.BorderBrush = z == 0 ? SelectedBorder : InsertBrush;
+            card.Background = z == 0 ? HoverBrush : Brushes.Transparent;
+            e.Effects = DragDropEffects.Move;
+            e.Handled = true;
+        }
+
+        private void OnCardDrop(Border card, string key, DragEventArgs e)
+        {
+            e.Handled = true;
+            card.BorderBrush = Brushes.Transparent;
+            card.BorderThickness = new Thickness(2);
+            var dragged = DraggedKey(e);
+            if (dragged == null || dragged == key) return;
+            bool draggedIsFolder = dragged.StartsWith("folder:");
+            if (_openFolder != null)
+            {
+                // dentro de una carpeta abierta: soltar sobre otra app de la misma carpeta = ordenar ahí
+                var f = _openFolder;
+                int from = f.Targets.FindIndex(t => string.Equals(t, dragged, StringComparison.OrdinalIgnoreCase));
+                int to = f.Targets.FindIndex(t => string.Equals(t, key, StringComparison.OrdinalIgnoreCase));
+                if (from >= 0 && to >= 0)
+                {
+                    var moved = LaunchpadLayout.Move(f.Targets, dragged, key, Zone(card, e, false) > 0);
+                    f.Targets.Clear(); f.Targets.AddRange(moved);
+                }
+                else if (!draggedIsFolder) LaunchpadLayout.AddToFolder(Folders, f.Id, dragged);
+                SaveFolders();
+                return;
+            }
+            int z = Zone(card, e, !draggedIsFolder);
+            if (z == 0)
+            {
+                if (key.StartsWith("folder:")) LaunchpadLayout.AddToFolder(Folders, key.Substring(7), dragged);
+                else
+                {
+                    var existing = LaunchpadLayout.FolderOf(Folders, key);
+                    if (existing != null) LaunchpadLayout.AddToFolder(Folders, existing.Id, dragged);
+                    else LaunchpadLayout.CreateFolder(Folders, key, dragged);
+                }
+            }
+            else
+            {
+                // mover: si venía de una carpeta, primero sale
+                if (!draggedIsFolder) LaunchpadLayout.RemoveFromFolder(Folders, dragged);
+                var keys = LaunchpadLayout.ApplyOrder(LaunchpadLayout.Arrange(_all, Folders, a => a.Target), Order, a => a.Target)
+                                          .Select(x => x.Key(a => a.Target));
+                var newOrder = LaunchpadLayout.Move(keys, dragged, key, z > 0);
+                Order.Clear();
+                Order.AddRange(newOrder);
+            }
+            SaveFolders();
         }
 
         /// <summary>Ícono de una app. <paramref name="inFolder"/>: la carpeta abierta donde está (o null).</summary>
         private UIElement Tile(CatalogApp app, LaunchpadFolder? inFolder)
         {
-            var card = Card(IconImage(app, 80), app.Name);
             bool isHidden = Hidden.Contains(app.Target, StringComparer.OrdinalIgnoreCase);
-            if (isHidden) card.Opacity = 0.45; // oculta (solo se ve con "Mostrar apps ocultas")
-            card.PreviewMouseLeftButtonDown += (_, e) => { _dragApp = app; _dragStart = e.GetPosition(this); _dragged = false; };
-            card.PreviewMouseMove += (_, e) => TryStartDrag(card, app, e);
+            var card = Card(IconImage(app, 80), app.Name, app.Target, isHidden);
+            card.PreviewMouseLeftButtonDown += (_, e) => { _dragKey = app.Target; _dragStart = e.GetPosition(this); _dragged = false; };
+            card.PreviewMouseMove += (_, e) => TryStartDrag(card, app.Target, app, e);
             card.MouseLeftButtonUp += (_, e) =>
             {
                 e.Handled = true;
                 if (_dragged) return;
+                if (_selected.Count > 0 || Keyboard.Modifiers.HasFlag(ModifierKeys.Control) || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                { ToggleSelect(app.Target); return; }
                 Launcher.Launch(app.Target);
                 CloseAnimated();
             };
-            // soltar otra app encima: carpeta nueva con las dos
-            card.Drop += (_, e) =>
-            {
-                e.Handled = true;
-                card.Background = Brushes.Transparent;
-                if (e.Data.GetData(typeof(string)) is not string dragged || dragged == app.Target) return;
-                if (inFolder != null) LaunchpadLayout.AddToFolder(Folders, inFolder.Id, dragged);
-                else
-                {
-                    var existing = LaunchpadLayout.FolderOf(Folders, app.Target);
-                    if (existing != null) LaunchpadLayout.AddToFolder(Folders, existing.Id, dragged);
-                    else LaunchpadLayout.CreateFolder(Folders, app.Target, dragged);
-                }
-                SaveFolders();
-            };
+            card.ContextMenu = _selected.Count > 1 && _selected.Contains(app.Target) ? SelectionMenu() : AppMenu(app, isHidden);
+            card.ContextMenuOpening += (_, _) => card.ContextMenu = _selected.Count > 1 && _selected.Contains(app.Target) ? SelectionMenu() : AppMenu(app, isHidden);
+            return card;
+        }
 
+        private ContextMenu AppMenu(CatalogApp app, bool isHidden)
+        {
             var cm = new ContextMenu();
-            var add = new MenuItem { Header = "Agregar al Dock" };
-            add.Click += (_, _) => App.Dock?.PinTarget(app.Name, app.Target);
-            cm.Items.Add(add);
+            cm.Items.Add(Mi("Abrir", () => { Launcher.Launch(app.Target); CloseAnimated(); }));
+            cm.Items.Add(Mi("Agregar al Dock", () => App.Dock?.PinTarget(app.Name, app.Target)));
             cm.Items.Add(new Separator());
             var current = LaunchpadLayout.FolderOf(Folders, app.Target);
             if (current != null)
-            {
-                var outItem = new MenuItem { Header = "Sacar de la carpeta" };
-                outItem.Click += (_, _) => { LaunchpadLayout.RemoveFromFolder(Folders, app.Target); SaveFolders(); };
-                cm.Items.Add(outItem);
-            }
+                cm.Items.Add(Mi("Sacar de la carpeta", () => { LaunchpadLayout.RemoveFromFolder(Folders, app.Target); SaveFolders(); }));
             var others = Folders.Where(f => f != current).ToList();
             if (others.Count > 0)
             {
                 var to = new MenuItem { Header = "Agregar a carpeta" };
                 foreach (var f in others)
                 {
-                    var fi = new MenuItem { Header = f.Name };
                     var id = f.Id;
-                    fi.Click += (_, _) => { LaunchpadLayout.AddToFolder(Folders, id, app.Target); SaveFolders(); };
-                    to.Items.Add(fi);
+                    to.Items.Add(Mi(f.Name, () => { LaunchpadLayout.AddToFolder(Folders, id, app.Target); SaveFolders(); }));
                 }
                 cm.Items.Add(to);
             }
-            var hide = new MenuItem { Header = isHidden ? "Dejar de ocultar" : "Ocultar del Launchpad" };
-            hide.Click += (_, _) => { LaunchpadLayout.ToggleHidden(Hidden, app.Target); SettingsStore.Save(); Filter(_page); };
-            var nf = new MenuItem { Header = "Nueva carpeta" };
-            nf.Click += (_, _) =>
+            cm.Items.Add(Mi("Nueva carpeta", () =>
             {
                 var f = LaunchpadLayout.CreateFolder(Folders, app.Target);
                 SaveFolders();
                 OpenFolder(f, focusName: true);
-            };
-            cm.Items.Add(nf);
+            }));
             cm.Items.Add(new Separator());
-            cm.Items.Add(hide);
-            card.ContextMenu = cm;
-            return card;
+            cm.Items.Add(Mi("Seleccionar", () => ToggleSelect(app.Target)));
+            cm.Items.Add(Mi(isHidden ? "Dejar de ocultar" : "Ocultar", () => { LaunchpadLayout.ToggleHidden(Hidden, app.Target); SettingsStore.Save(); Filter(_page); }));
+            cm.Items.Add(new Separator());
+            cm.Items.Add(Mi("Desinstalar…", () =>
+            {
+                if (McDialog.Confirm($"¿Desinstalar {app.Name}?", "Se va a abrir el desinstalador de la app (como en el menú Inicio de Windows).", "Desinstalar"))
+                { CloseAnimated(); Uninstaller.Uninstall(app.Name, app.Target); }
+            }));
+            return cm;
         }
 
-        /// <summary>Carpeta: miniaturas de hasta 9 apps en un cuadrado redondeado.</summary>
+        private static MenuItem Mi(string header, Action click)
+        {
+            var mi = new MenuItem { Header = header };
+            mi.Click += (_, _) => click();
+            return mi;
+        }
+
+        /// <summary>Carpeta: miniaturas de hasta 9 apps en un cuadrado de vidrio redondeado.</summary>
         private UIElement FolderTile(LaunchpadEntry<CatalogApp> entry)
         {
             var folder = entry.Folder!;
-            var minis = new UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(7) };
-            foreach (var a in entry.Apps.Take(9)) minis.Children.Add(IconImage(a, 20));
+            string key = LaunchpadLayout.FolderKey(folder);
+            bool isHidden = Hidden.Contains(key, StringComparer.OrdinalIgnoreCase);
+            var minis = new UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(8) };
+            foreach (var a in entry.Apps.Take(9)) minis.Children.Add(IconImage(a, 19));
             var box = new Border
             {
                 Width = 80, Height = 80,
-                CornerRadius = new CornerRadius(18),
-                Background = Frozen(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)),
-                BorderBrush = Frozen(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)),
+                CornerRadius = new CornerRadius(20),
+                Background = new LinearGradientBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF), 90),
+                BorderBrush = new LinearGradientBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF), Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF), 90),
                 BorderThickness = new Thickness(1),
                 Child = minis
             };
-            var card = Card(box, folder.Name);
-            card.MouseLeftButtonUp += (_, e) => { e.Handled = true; OpenFolder(folder); };
-            card.Drop += (_, e) =>
+            var card = Card(box, folder.Name, key, isHidden);
+            card.PreviewMouseLeftButtonDown += (_, e) => { _dragKey = key; _dragStart = e.GetPosition(this); _dragged = false; };
+            card.PreviewMouseMove += (_, e) => TryStartDrag(card, key, null, e);
+            card.MouseLeftButtonUp += (_, e) =>
             {
                 e.Handled = true;
-                card.Background = Brushes.Transparent;
-                if (e.Data.GetData(typeof(string)) is string dragged) { LaunchpadLayout.AddToFolder(Folders, folder.Id, dragged); SaveFolders(); }
+                if (_dragged) return;
+                if (_selected.Count > 0 || Keyboard.Modifiers.HasFlag(ModifierKeys.Control) || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                { ToggleSelect(key); return; }
+                OpenFolder(folder);
             };
-            var cm = new ContextMenu();
-            var open = new MenuItem { Header = "Abrir" };
-            open.Click += (_, _) => OpenFolder(folder);
-            var rename = new MenuItem { Header = "Renombrar" };
-            rename.Click += (_, _) => OpenFolder(folder, focusName: true);
-            var undo = new MenuItem { Header = "Deshacer carpeta" };
-            undo.Click += (_, _) => { LaunchpadLayout.Dissolve(Folders, folder.Id); SaveFolders(); };
-            cm.Items.Add(open);
-            cm.Items.Add(rename);
-            cm.Items.Add(new Separator());
-            cm.Items.Add(undo);
-            card.ContextMenu = cm;
+            ContextMenu Menu()
+            {
+                if (_selected.Count > 1 && _selected.Contains(key)) return SelectionMenu();
+                var cm = new ContextMenu();
+                cm.Items.Add(Mi("Abrir", () => OpenFolder(folder)));
+                cm.Items.Add(Mi("Renombrar", () => OpenFolder(folder, focusName: true)));
+                cm.Items.Add(new Separator());
+                cm.Items.Add(Mi("Seleccionar", () => ToggleSelect(key)));
+                cm.Items.Add(Mi(isHidden ? "Dejar de ocultar" : "Ocultar carpeta", () => { LaunchpadLayout.ToggleHidden(Hidden, key); SettingsStore.Save(); Filter(_page); }));
+                cm.Items.Add(new Separator());
+                cm.Items.Add(Mi("Deshacer carpeta", () => { LaunchpadLayout.Dissolve(Folders, folder.Id); SaveFolders(); }));
+                return cm;
+            }
+            card.ContextMenu = Menu();
+            card.ContextMenuOpening += (_, _) => card.ContextMenu = Menu();
             return card;
+        }
+
+        // ================== Selección de varias (0.4.3) ==================
+
+        private readonly Border _selectionBar = new Border { Visibility = Visibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, CornerRadius = new CornerRadius(16), Padding = new Thickness(14, 6, 8, 6) };
+
+        private void ToggleSelect(string key)
+        {
+            if (!_selected.Remove(key)) _selected.Add(key);
+            if (_cards.TryGetValue(key, out var card))
+            {
+                card.Background = _selected.Contains(key) ? SelectedBrush : Brushes.Transparent;
+                if (card.Child is StackPanel sp && sp.Children[0] is Grid g && g.Children.Count > 1)
+                    g.Children[1].Visibility = _selected.Contains(key) ? Visibility.Visible : Visibility.Collapsed;
+            }
+            UpdateSelectionBar();
+        }
+
+        private void ClearSelection()
+        {
+            foreach (var k in _selected.ToList()) ToggleSelect(k);
+        }
+
+        private void UpdateSelectionBar()
+        {
+            if (_selected.Count == 0) { _selectionBar.Visibility = Visibility.Collapsed; _dots.Visibility = Visibility.Visible; return; }
+            _dots.Visibility = Visibility.Collapsed;
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            row.Children.Add(new TextBlock { Text = $"{_selected.Count} seleccionada(s)", Foreground = LabelBrush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0), FontWeight = FontWeights.SemiBold });
+            row.Children.Add(BarButton("Ocultar", () => SetHidden(true)));
+            row.Children.Add(BarButton("Mostrar", () => SetHidden(false)));
+            row.Children.Add(BarButton("Nueva carpeta", GroupSelected));
+            row.Children.Add(BarButton("Cancelar", ClearSelection));
+            _selectionBar.Child = row;
+            _selectionBar.Background = Frozen(Color.FromArgb(0x66, 0x20, 0x20, 0x24));
+            _selectionBar.BorderBrush = Frozen(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
+            _selectionBar.BorderThickness = new Thickness(1);
+            _selectionBar.Visibility = Visibility.Visible;
+        }
+
+        private Button BarButton(string text, Action click)
+        {
+            var b = new Button { Content = text, Foreground = LabelBrush, Margin = new Thickness(2, 0, 2, 0) };
+            b.SetResourceReference(StyleProperty, "McFlatButton");
+            b.Click += (_, e) => { click(); };
+            b.MouseLeftButtonUp += (_, e) => e.Handled = true;
+            return b;
+        }
+
+        private ContextMenu SelectionMenu()
+        {
+            var cm = new ContextMenu();
+            cm.Items.Add(Mi($"Ocultar {_selected.Count}", () => SetHidden(true)));
+            cm.Items.Add(Mi($"Dejar de ocultar {_selected.Count}", () => SetHidden(false)));
+            cm.Items.Add(Mi("Nueva carpeta con las seleccionadas", GroupSelected));
+            if (Folders.Count > 0)
+            {
+                var to = new MenuItem { Header = "Agregar a carpeta" };
+                foreach (var f in Folders.ToList())
+                {
+                    var id = f.Id;
+                    to.Items.Add(Mi(f.Name, () =>
+                    {
+                        foreach (var k in _selected.Where(k => !k.StartsWith("folder:")).ToList()) LaunchpadLayout.AddToFolder(Folders, id, k);
+                        _selected.Clear(); UpdateSelectionBar(); SaveFolders();
+                    }));
+                }
+                cm.Items.Add(to);
+            }
+            cm.Items.Add(new Separator());
+            cm.Items.Add(Mi("Cancelar selección", ClearSelection));
+            return cm;
+        }
+
+        private void SetHidden(bool hide)
+        {
+            foreach (var k in _selected)
+            {
+                bool isHidden = Hidden.Contains(k, StringComparer.OrdinalIgnoreCase);
+                if (isHidden != hide) LaunchpadLayout.ToggleHidden(Hidden, k);
+            }
+            _selected.Clear();
+            UpdateSelectionBar();
+            SettingsStore.Save();
+            Filter(_page);
+        }
+
+        private void GroupSelected()
+        {
+            var apps = _selected.Where(k => !k.StartsWith("folder:")).ToList();
+            _selected.Clear();
+            UpdateSelectionBar();
+            if (apps.Count == 0) { Filter(_page); return; }
+            var f = LaunchpadLayout.CreateFolder(Folders, apps[0], apps.Count > 1 ? apps[1] : null);
+            foreach (var k in apps.Skip(2)) LaunchpadLayout.AddToFolder(Folders, f.Id, k);
+            SaveFolders();
+            OpenFolder(f, focusName: true);
         }
 
         // ================== Arrastrar ==================
 
-        private bool _dragging;
+        private const string KeyFormat = "McBar.LaunchpadKey";
+        private string? _dragKey;
+        private bool _dragging, _droppedOutside;
 
-        private void TryStartDrag(FrameworkElement source, CatalogApp app, MouseEventArgs e)
+        /// <summary>
+        /// Arrastrar: dentro del Launchpad mueve o arma carpetas. 0.4.3: como en los cajones de Android, si se
+        /// lleva una app hacia abajo (al Dock) o a los bordes, el Launchpad se esconde y se puede soltar en el
+        /// Dock (se fija) o en el escritorio (Windows crea un acceso directo).
+        /// </summary>
+        private void TryStartDrag(FrameworkElement source, string key, CatalogApp? app, MouseEventArgs e)
         {
-            if (_dragApp != app || e.LeftButton != MouseButtonState.Pressed || _dragging) return;
+            if (_dragKey != key || e.LeftButton != MouseButtonState.Pressed || _dragging) return;
             var p = e.GetPosition(this);
             if (Math.Abs(p.X - _dragStart.X) < 8 && Math.Abs(p.Y - _dragStart.Y) < 8) return;
             _dragged = true;
             _dragging = true;
+            _droppedOutside = false;
             source.Opacity = 0.45;
-            try { DragDrop.DoDragDrop(source, new DataObject(typeof(string), app.Target), DragDropEffects.Move); }
+            var data = new DataObject();
+            data.SetData(KeyFormat, key);
+            if (app != null)
+            {
+                data.SetData(typeof(string), app.Target);
+                data.SetData(DockPinFormat, app.Name + "\n" + app.Target);
+                try
+                {
+                    var shell = ShellCom.ShellDataObject(app.Target);
+                    if (shell?.GetData("Shell IDList Array") is System.IO.MemoryStream ids) data.SetData("Shell IDList Array", ids);
+                }
+                catch { }
+            }
+            QueryContinueDragEventHandler watch = (_, qe) =>
+            {
+                if (app == null || _droppedOutside || !Win32.GetCursorPos(out var pt)) return;
+                double sc = App.Scale;
+                double x = pt.x / sc - Left, y = pt.y / sc - Top;
+                if (y > ActualHeight - 120 || x < 30 || x > ActualWidth - 30)
+                {
+                    // fuera de la grilla: se esconde el Launchpad para soltar en el Dock o el escritorio
+                    _droppedOutside = true;
+                    Hide();
+                }
+            };
+            source.QueryContinueDrag += watch;
+            try { DragDrop.DoDragDrop(source, data, DragDropEffects.Move | DragDropEffects.Copy | DragDropEffects.Link); }
             catch (Exception ex) { Log.Write("Launchpad arrastre: " + ex.Message); }
             finally
             {
+                source.QueryContinueDrag -= watch;
                 _dragging = false;
-                _dragApp = null;
+                _dragKey = null;
                 source.Opacity = 1;
             }
+            if (_droppedOutside) { _closing = true; ClosedAt = DateTime.Now; Close(); App.ScheduleTrim(); }
         }
+
+        /// <summary>Formato que entiende el Dock para fijar una app arrastrada desde el Launchpad ("nombre\ntarget").</summary>
+        public const string DockPinFormat = "McBar.Pin";
 
         private void SaveFolders()
         {
@@ -626,7 +893,8 @@ namespace McBar.Panels
             switch (e.Key)
             {
                 case Key.Escape:
-                    if (_folderLayer.Visibility == Visibility.Visible) CloseFolder();
+                    if (_selected.Count > 0) ClearSelection();
+                    else if (_folderLayer.Visibility == Visibility.Visible) CloseFolder();
                     else if (_search.Text.Length > 0) _search.Text = ""; else CloseAnimated();
                     e.Handled = true;
                     break;

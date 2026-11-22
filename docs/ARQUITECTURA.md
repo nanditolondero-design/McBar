@@ -94,7 +94,18 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
-## Gota (0.4.2)
+## Launchpad 0.4.3
+- Claves: `LaunchpadEntry.Key` = Target de la app o `folder:<id>`. `LaunchpadHidden` guarda claves de apps y de carpetas; `LaunchpadOrder` el orden (`ApplyOrder`, `Move`); `WithoutHidden` filtra. Todo puro y con pruebas.
+- Arrastre: `DataObject` con `McBar.LaunchpadKey` (mover/carpetas), `McBar.Pin` ("nombre\ntarget", lo entiende el Dock) y "Shell IDList Array" (de `ShellCom.ShellDataObject`, el escritorio crea el acceso directo). `QueryContinueDrag` esconde el Launchpad si el puntero va abajo o a los bordes.
+- `Core/Uninstaller`: Tienda → `ms-settings:appsfeatures-app?<familia>`; escritorio → `UninstallString` del registro (`BestMatch`, `SplitCommand`).
+
+## Paquetes de íconos (0.4.3)
+`Core/IconPack`: índice de la carpeta (recursivo, el archivo más grande por nombre), nombres posibles (`Candidates`) y carga (`Load`). `IconLoader.Request(..., displayName)` lo consulta primero.
+
+## Tema Vidrio (0.4.3)
+`Themes/Glass.xaml` se agrega AL FINAL de los diccionarios sobre `Dark.xaml` (`ThemeManager.Apply`). La isla usa estilo vidrio con este tema.
+
+## Gota (0.4.2, quitada en 0.4.3)
 `TopBarMode = "drop"` usa la misma `IslandWindow` que la isla (`AppSettings.IsIslandLike`). Diferencias: separación 0 con el borde (`TopGapFor`), solo esquinas de abajo redondeadas (`Corners`) y dos "hombros" (`MakeShoulder`: cuadradito menos un cuarto de círculo) a los costados de la píldora. La forma de la ventana es un rectángulo que incluye los hombros.
 
 ## Clima propio (0.4.1)

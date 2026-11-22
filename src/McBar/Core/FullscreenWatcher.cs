@@ -53,9 +53,13 @@ namespace McBar.Core
                 if (!IsCandidate(h)) return true;
                 var m = Monitors.FromWindow(h);
                 if (m == null || decided.Contains(m.Device)) return true;
+                if (!Win32.GetWindowRect(h, out var r)) return true;
+                var rect = new PxRect(r.left, r.top, r.right, r.bottom);
+                // 0.4.3: una ventanita "siempre visible" (aviso, superposición de un programa, reproductor
+                // mini) que está por encima de un video NO decide: se sigue mirando la de abajo.
+                if ((Win32.GetExStyle(h) & Win32.WS_EX_TOPMOST) != 0 && !IsLarge(rect, m.Bounds)) return true;
                 decided.Add(m.Device);
-                if (!Win32.IsZoomed(h) && Win32.GetWindowRect(h, out var r) &&
-                    IsCovering(new PxRect(r.left, r.top, r.right, r.bottom), m.Bounds))
+                if (IsCovering(rect, m.Bounds) && IsFullscreenStyle(Win32.IsZoomed(h), Win32.GetStyle(h)))
                     now.Add(m.Device);
                 return true;
             }, IntPtr.Zero);
@@ -79,6 +83,22 @@ namespace McBar.Core
             var cls = WindowOps.GetClass(h);
             if (cls == "Progman" || cls == "WorkerW" || Taskbar.IsShellTrayClass(cls) || cls == "Shell_TrayWnd") return false;
             return true;
+        }
+
+        /// <summary>
+        /// Una ventana maximizada común (con barra de título) no es pantalla completa. Pero Chrome, Edge y
+        /// otros siguen marcados como "maximizados" cuando ponen un video en pantalla completa: ahí ya no tienen
+        /// barra de título ni borde. (pura, se prueba)
+        /// </summary>
+        public static bool IsFullscreenStyle(bool zoomed, long style) =>
+            !zoomed || (style & Win32.WS_CAPTION) != Win32.WS_CAPTION || (style & Win32.WS_THICKFRAME) == 0;
+
+        /// <summary>¿Ocupa más de la mitad del monitor? (pura, se prueba)</summary>
+        public static bool IsLarge(PxRect w, PxRect m)
+        {
+            long ww = Math.Max(0, Math.Min(w.Right, m.Right) - Math.Max(w.Left, m.Left));
+            long hh = Math.Max(0, Math.Min(w.Bottom, m.Bottom) - Math.Max(w.Top, m.Top));
+            return ww * hh * 2 >= (long)m.Width * m.Height;
         }
 
         /// <summary>¿La ventana cubre todo el monitor? (pura, se prueba)</summary>

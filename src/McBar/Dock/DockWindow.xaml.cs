@@ -62,11 +62,18 @@ namespace McBar.Dock
 
         private static AppSettings S => SettingsStore.Current;
         private double BaseSize => S.DockIconSize;
-        private double MaxSize => S.Magnification ? S.MagnifiedSize : BaseSize;
+        private double MaxSize => S.Magnification && !IsTaskbar ? S.MagnifiedSize : BaseSize;
         private double Gap => Math.Round(BaseSize * 0.1);
         private double BarHeight => BaseSize + Pad * 2;
-        private double BottomMargin => S.DockStyle == "floating" ? 14 : 4;
-        private double Radius => S.DockStyle == "floating" ? 22 : S.DockStyle == "full" ? 14 : 18;
+        // Estilos: "classic", "floating", "full", y desde 0.4.3 "taskbar" (barra ancha flotante, parecida a la
+        // de Windows 11, sin lupa) e "icons" (sin fondo: solo íconos con sus indicadores).
+        private bool IsTaskbar => S.DockStyle == "taskbar";
+        private bool NoBackground => S.DockStyle == "icons";
+        private double BottomMargin => S.DockStyle == "floating" || IsTaskbar ? 12 : 4;
+        private double Radius => S.DockStyle == "floating" ? 22 : S.DockStyle == "full" ? 14 : IsTaskbar ? 14 : 18;
+        /// <summary>El desenfoque de Windows va en una ventana aparte que no puede seguir cuadro a cuadro a la
+        /// barra: con desenfoque el fondo queda quieto (0.4.3: antes se veía mal la animación y volvían las esquinas).</summary>
+        private bool Stretch => S.DockBackgroundStretch && !S.BackdropBlur && !NoBackground;
         private double WindowHeightDip => Math.Max(MaxSize, BaseSize * 1.55) + Pad + BottomMargin + LabelSpace;
         private double BarTop => ActualHeight - BottomMargin - BarHeight;
         private double IconBottom => ActualHeight - BottomMargin - Pad;
@@ -125,7 +132,7 @@ namespace McBar.Dock
 
         private int ComputeWidthPx()
         {
-            if (S.DockStyle == "full") return _monitor.Bounds.Width;
+            if (S.DockStyle == "full" || IsTaskbar) return _monitor.Bounds.Width;
             var baseSizes = _items.Select(BaseOf).ToArray();
             double need = Magnifier.TotalWidth(baseSizes, Gap) + BarPadX * 2 + (MaxSize - BaseSize) * 3 + 280;
             return (int)Math.Min(_monitor.Bounds.Width, Math.Ceiling(need * App.Scale));
@@ -143,7 +150,7 @@ namespace McBar.Dock
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, _winWidthPx, _winHeightPx, Win32.SWP_NOACTIVATE);
 
             HotZone.Visibility = S.DockAutoHide ? Visibility.Visible : Visibility.Collapsed;
-            if (!_fullscreen) _backdrop.Visibility = S.BackdropBlur ? Visibility.Visible : Visibility.Hidden;
+            if (!_fullscreen) _backdrop.Visibility = S.BackdropBlur && !NoBackground ? Visibility.Visible : Visibility.Hidden;
             if (!S.DockAutoHide) _hidden = false;
 
             Bar.CornerRadius = new CornerRadius(Radius);
@@ -152,7 +159,10 @@ namespace McBar.Dock
             // 0.4.1: sin DropShadowEffect ni BitmapCache (se recalculaban en cada cuadro de la lupa).
             Bar.Effect = null;
             Bar.CacheMode = null;
-            var shadow = S.DockStyle == "floating" ? Visibility.Visible : Visibility.Collapsed;
+            var shadow = (S.DockStyle == "floating" || IsTaskbar) ? Visibility.Visible : Visibility.Collapsed;
+            Bar.Visibility = NoBackground ? Visibility.Hidden : Visibility.Visible;
+            if (NoBackground) shadow = Visibility.Collapsed;
+            foreach (var it in _items) { it.View.Dot.Width = IsTaskbar ? 14 : 4; it.View.Dot.Height = IsTaskbar ? 3 : 4; }
             BarShadow1.Visibility = shadow;
             BarShadow2.Visibility = shadow;
             // Con el desenfoque de Windows el fondo es el de siempre; sin él, el vidrio dibujado por McBar.
@@ -176,7 +186,7 @@ namespace McBar.Dock
             _fullscreen = fullscreen;
             var v = fullscreen ? Visibility.Hidden : Visibility.Visible;
             Visibility = v;
-            _backdrop.Visibility = fullscreen || !S.BackdropBlur ? Visibility.Hidden : Visibility.Visible;
+            _backdrop.Visibility = fullscreen || !S.BackdropBlur || NoBackground ? Visibility.Hidden : Visibility.Visible;
         }
 
         public void Teardown()
@@ -283,6 +293,8 @@ namespace McBar.Dock
                 else if (e.ChangedButton == MouseButton.Middle && item.Kind == DockItemKind.App) { LaunchNew(item); e.Handled = true; }
             };
             Stage.Children.Add(v);
+            v.Dot.Width = IsTaskbar ? 14 : 4;  // en el estilo Barra el indicador es una rayita, como en Windows
+            v.Dot.Height = IsTaskbar ? 3 : 4;
             Stage.Children.Add(v.Dot);
         }
 
@@ -296,6 +308,9 @@ namespace McBar.Dock
 
         private int SeparatorIndex => _items.FindIndex(i => i.Kind == DockItemKind.Separator);
         private int PinnedEnd => _items.FindLastIndex(i => !i.IsStack && i.IsPinned && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad)) + 1;
+
+        /// <summary>Vuelve a cargar todos los íconos (al cambiar el paquete de íconos).</summary>
+        public void RefreshIcons() => ReloadIcons();
 
         private void ReloadIcons()
         {
@@ -321,7 +336,7 @@ namespace McBar.Dock
                     break;
                 case DockItemKind.Folder:
                 case DockItemKind.File:
-                    if (it.Target != null) IconLoader.Request(it.Target, px, img => it.View.SetIcon(img));
+                    if (it.Target != null) IconLoader.Request(it.Target, px, img => it.View.SetIcon(img), displayName: it.Name);
                     break;
                 case DockItemKind.App:
                     if (!string.IsNullOrEmpty(it.IconSource))
@@ -331,7 +346,7 @@ namespace McBar.Dock
                         {
                             if (img == null && hwnd != IntPtr.Zero) img = IconLoader.FromWindow(hwnd);
                             it.View.SetIcon(img);
-                        });
+                        }, displayName: it.Name);
                     }
                     else if (it.Windows.Count > 0)
                     {
@@ -500,7 +515,7 @@ namespace McBar.Dock
 
             // Con un menú abierto se mantiene la ampliación (antes el ícono se achicaba).
             double? mouse = (_hover || _menuOpen) && !_dragging ? _mouseX : (double?)null;
-            var targets = S.Magnification
+            var targets = S.Magnification && !IsTaskbar
                 ? Magnifier.TargetSizes(baseSizes, scalable, Gap, mouse, MaxSize, BaseSize * 2.7)
                 : baseSizes;
 
@@ -531,7 +546,12 @@ namespace McBar.Dock
                 barLeft = 8;
                 barW = ActualWidth - 16;
             }
-            else if (S.DockBackgroundStretch)
+            else if (IsTaskbar)
+            {
+                barLeft = 12;
+                barW = ActualWidth - 24;
+            }
+            else if (Stretch)
             {
                 barLeft = cx + start - BarPadX;
                 barW = width + BarPadX * 2;
@@ -556,8 +576,10 @@ namespace McBar.Dock
                 Canvas.SetLeft(BarShadow2, barLeft - 3); Canvas.SetTop(BarShadow2, BarTop + 2);
                 BarShadow2.Width = Math.Max(0, barW + 6); BarShadow2.Height = BarHeight + 4;
             }
-            _backdrop.Place(_winLeftPx + (int)Math.Round(barLeft * sc), _winTopPx + (int)Math.Round((BarTop + hy) * sc),
-                            (int)Math.Round(barW * sc), (int)Math.Round(BarHeight * sc), (int)Math.Round(Radius * sc));
+            // El desenfoque va 1 px adentro del borde de la barra: así sus esquinas (que Windows no suaviza)
+            // quedan tapadas por el borde dibujado y no se ven escalones.
+            _backdrop.Place(_winLeftPx + (int)Math.Round((barLeft + 1) * sc), _winTopPx + (int)Math.Round((BarTop + hy + 1) * sc),
+                            (int)Math.Round((barW - 2) * sc), (int)Math.Round((BarHeight - 2) * sc), (int)Math.Round((Radius - 1) * sc));
 
             bool showDots = S.ShowIndicators;
             double dotY = ActualHeight - BottomMargin - Pad / 2 - 2;
@@ -604,6 +626,21 @@ namespace McBar.Dock
                     zt = Math.Min(zt, IconBottom - extraUp - cur[i] * extraScale - bounce);
                 }
             }
+
+            // resaltado bajo el mouse (0.4.3): en el estilo Barra o cuando no hay lupa
+            bool plate = (IsTaskbar || !S.Magnification) && _hover && !_dragging && _hoverItem != null
+                         && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing;
+            if (plate)
+            {
+                Canvas.SetLeft(HoverPlate, _hoverItem!.LayoutLeft - 5);
+                Canvas.SetTop(HoverPlate, BarTop + 3);
+                HoverPlate.Width = _hoverItem.LayoutSize + 10;
+                HoverPlate.Height = Math.Max(0, BarHeight - 6);
+            }
+            double plateTarget = plate ? 1 : 0;
+            double po = Magnifier.Approach(HoverPlate.Opacity, plateTarget, dt, 20);
+            if (po != plateTarget) moving = true;
+            HoverPlate.Opacity = po;
 
             // etiqueta: nombre al pasar el mouse, o "Quitar del Dock" al arrastrar afuera
             DockItem? labelFor = null;
@@ -661,7 +698,7 @@ namespace McBar.Dock
                 // UNA zona fija calculada con la barra en reposo: no cambia mientras la lupa se mueve, así
                 // Windows no recorta los íconos ni hay que cambiar la forma en cada cuadro.
                 double baseW = Magnifier.TotalWidth(_items.Select(BaseOf).ToArray(), Gap) + BarPadX * 2;
-                double restLeft = S.DockStyle == "full" ? barLeft : ActualWidth / 2 - baseW / 2;
+                double restLeft = S.DockStyle == "full" || IsTaskbar ? barLeft : ActualWidth / 2 - baseW / 2;
                 double grow = (MaxSize - BaseSize) * 3 + 60;
                 double l = Math.Max(0, Math.Min(restLeft, barLeft) - grow);
                 double r = Math.Min(ActualWidth, Math.Max(restLeft + baseW, barLeft + barW) + grow);
@@ -1120,7 +1157,7 @@ namespace McBar.Dock
             cm.Items.Add(hide);
 
             var style = new MenuItem { Header = "Estilo" };
-            foreach (var (key, name) in new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo") })
+            foreach (var (key, name) in new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo"), ("taskbar", "Barra"), ("icons", "Solo íconos") })
             {
                 var k = key;
                 var mi = new MenuItem { Header = name, IsCheckable = true, IsChecked = S.DockStyle == key };
@@ -1251,7 +1288,8 @@ namespace McBar.Dock
 
         private void Window_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Link : DragDropEffects.None;
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(McBar.Panels.LaunchpadWindow.DockPinFormat)
+                ? DragDropEffects.Link : DragDropEffects.None;
             var p = e.GetPosition(Stage);
             _hover = true;
             _mouseX = p.X - ActualWidth / 2;
@@ -1262,6 +1300,15 @@ namespace McBar.Dock
 
         private void Window_Drop(object sender, DragEventArgs e)
         {
+            // 0.4.3: app arrastrada desde el Launchpad
+            if (e.Data.GetDataPresent(McBar.Panels.LaunchpadWindow.DockPinFormat) && e.Data.GetData(McBar.Panels.LaunchpadWindow.DockPinFormat) is string pin)
+            {
+                var parts = pin.Split('\n');
+                if (parts.Length == 2) PinTarget(parts[0], parts[1]);
+                _hover = false;
+                EnsureAnimating();
+                return;
+            }
             if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
             var p = e.GetPosition(Stage);
             var target = HitItem(p);

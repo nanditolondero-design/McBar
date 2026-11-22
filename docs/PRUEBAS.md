@@ -153,6 +153,29 @@ Launchpad:
 - [ ] Gota con estilo Vidrio y con Borde brillante: se ve bien, sin cuadrados.
 - [ ] Centro de control: tocar el texto "Bluetooth" (no el círculo) abre la configuración; tocar "Modo oscuro" cambia el tema.
 
+### Versión 0.4.3
+Launchpad:
+- [ ] Ctrl+clic en 3 apps: se marcan con ✓ y abajo aparece la barra; "Ocultar" las esconde a las 3. "Mostrar lo oculto" las muestra atenuadas.
+- [ ] Buscar una app oculta: aparece atenuada.
+- [ ] Clic derecho en una carpeta → "Ocultar carpeta".
+- [ ] Arrastrar una carpeta al borde de una app: rayita blanca y se mueve ahí. Cerrar y abrir el Launchpad: el orden sigue.
+- [ ] Arrastrar una app al centro de otra: carpeta nueva (como antes).
+- [ ] Pasar el mouse: el ícono crece suave.
+- [ ] Clic derecho → Desinstalar… en una app de la Tienda (abre su página en Configuración) y en una de escritorio (abre su desinstalador).
+- [ ] Arrastrar una app hacia abajo: el Launchpad se esconde; soltarla en el Dock la fija; soltar otra en el escritorio crea un acceso directo.
+Barra:
+- [ ] Minimizar todo (o clic en el escritorio): desaparecen los menús de la app; al elegir una ventana vuelven.
+- [ ] Video de YouTube en pantalla completa (Chrome maximizado): la píldora y el Dock se ocultan; al salir vuelven.
+- [ ] Quien tenía "Gota": ahora es isla.
+Dock:
+- [ ] Estilo "Barra": barra ancha flotante, sin lupa, rayita debajo de las apps abiertas, resaltado al pasar el mouse.
+- [ ] Estilo "Solo íconos": sin fondo.
+- [ ] Con desenfoque: el fondo no se estira y no se ven esquinas cuadradas.
+- [ ] Paquete de íconos: elegir una carpeta con chrome.png → el ícono de Chrome cambia en el Dock y el Launchpad; "Usar los de Windows" vuelve atrás.
+Tema:
+- [ ] Apariencia → Vidrio: paneles, menús, Dock, barra e isla transparentes con brillo en el borde.
+- [ ] Preferencias → Launchpad: "Transparencia del fondo" se lee completo.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

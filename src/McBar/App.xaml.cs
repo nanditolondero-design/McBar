@@ -394,6 +394,13 @@ namespace McBar
                 _lastOwnTray = s.UseOwnTray;
             }
             if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
+            if (s.IconPackPath != _lastIconPack)
+            {
+                _lastIconPack = s.IconPackPath;
+                IconPack.Reset();
+                IconLoader.ClearCache();
+                foreach (var d in Docks) d.RefreshIcons();
+            }
             if (s.OwnNotifications) NotificationCenter.Start(); else NotificationCenter.Stop();
             if (s.OwnShortcuts) KeyboardHook.Start(); else KeyboardHook.Stop();
             if (IslandKey(s) != _lastIslandKey)
@@ -461,6 +468,7 @@ namespace McBar
         }
 
         private static WeatherWindow? _weather;
+        private static string? _lastIconPack;
 
         /// <summary>Widget del clima propio (barra de menú).</summary>
         public static void ToggleWeather(MonitorInfo? monitor = null)

@@ -26,12 +26,9 @@ namespace McBar.MenuBar
 {
     internal sealed class IslandWindow : Window
     {
-        /// <summary>Separación con el borde de arriba: 6 en la isla, 0 en la gota (pegada al borde).</summary>
-        public static double TopGapFor(AppSettings s) => s.TopBarMode == "drop" ? 0 : 6;
-        private static double TopMargin => TopGapFor(SettingsStore.Current);
-        private static bool Drop => SettingsStore.Current.TopBarMode == "drop";
-        private const double Shoulder = 12; // "hombros" curvos de la gota, donde se une con el borde
-        private readonly System.Windows.Shapes.Path _shoulderL = MakeShoulder(false), _shoulderR = MakeShoulder(true);
+        /// <summary>Separación con el borde de arriba.</summary>
+        public static double TopGapFor(AppSettings s) => 6;
+        private static double TopMargin => 6;
         private const double BaseWindowHeight = 300;
 
         // Tamaño de la píldora en reposo según Preferencias → Isla dinámica → Tamaño.
@@ -163,16 +160,7 @@ namespace McBar.MenuBar
             _compact.Opacity = 1;
 
             var root = new Grid();
-            if (Drop)
-            {
-                // Gota: la píldora sale del borde de arriba, con curvas que la unen al borde.
-                var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
-                row.Children.Add(_shoulderL);
-                row.Children.Add(_pill);
-                row.Children.Add(_shoulderR);
-                root.Children.Add(row);
-            }
-            else root.Children.Add(_pill);
+            root.Children.Add(_pill);
             Content = root;
 
             _expandTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(170) };
@@ -244,36 +232,15 @@ namespace McBar.MenuBar
         // ================== Apariencia ==================
 
         /// <summary>Colores y tamaño de la píldora según Preferencias → Isla dinámica.</summary>
-        /// <summary>Esquinas: todas redondas en la isla; solo las de abajo en la gota.</summary>
-        private static CornerRadius Corners(double height)
-        {
-            double r = Math.Min(height / 2, 26);
-            return Drop ? new CornerRadius(0, 0, r, r) : new CornerRadius(r);
-        }
-
-        /// <summary>Curva cóncava que une la gota con el borde de la pantalla (cuadradito menos un cuarto de círculo).</summary>
-        private static System.Windows.Shapes.Path MakeShoulder(bool right)
-        {
-            var inv = CultureInfo.InvariantCulture;
-            string s = Shoulder.ToString(inv);
-            var p = new System.Windows.Shapes.Path
-            {
-                Data = Geometry.Parse($"M0,0 L{s},0 L{s},{s} A{s},{s} 0 0 0 0,0 Z"),
-                Width = Shoulder,
-                Height = Shoulder,
-                VerticalAlignment = VerticalAlignment.Top,
-                IsHitTestVisible = false,
-                Visibility = Visibility.Visible
-            };
-            if (right) { p.RenderTransformOrigin = new Point(0.5, 0.5); p.RenderTransform = new ScaleTransform(-1, 1); }
-            return p;
-        }
+        private static CornerRadius Corners(double height) => new CornerRadius(Math.Min(height / 2, 26));
 
         private void ApplyAppearance()
         {
             var s = SettingsStore.Current;
             Brush bg;
-            switch (s.IslandStyle)
+            // 0.4.3: con el tema Vidrio la isla también es de vidrio
+            string style = ThemeManager.IsGlass ? "glass" : s.IslandStyle;
+            switch (style)
             {
                 case "graphite": bg = new SolidColorBrush(Color.FromRgb(0x2C, 0x2C, 0x30)); break;
                 case "glass":
@@ -288,17 +255,15 @@ namespace McBar.MenuBar
                 default: bg = new SolidColorBrush(Color.FromRgb(0, 0, 0)); break;
             }
             _pill.Background = bg;
-            _shoulderL.Fill = bg;
-            _shoulderR.Fill = bg;
-            bool glow = s.IslandGlow || s.IslandStyle == "glass";
-            _pill.BorderThickness = glow ? (Drop ? new Thickness(0, 0, 0, 1) : new Thickness(1)) : new Thickness(0);
+            bool glow = s.IslandGlow || style == "glass";
+            _pill.BorderThickness = new Thickness(glow ? 1 : 0);
             _pill.BorderBrush = new SolidColorBrush(Color.FromArgb(glow ? (byte)0x50 : (byte)0, 0xFF, 0xFF, 0xFF));
             _compactTime.FontSize = ClockFontFor(s);
             _compactArt.Width = _compactArt.Height = CompactHeight - 12;
             _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, CompactHeight - 12, CompactHeight - 12), 6, 6);
             UpdateCompact();
 
-            bool glassBlur = s.IslandStyle == "glass" && s.BackdropBlur;
+            bool glassBlur = style == "glass" && s.BackdropBlur;
             if (_fast)
             {
                 // En la ventana rápida el desenfoque va en la propia isla (la forma lo recorta a la píldora).
@@ -323,12 +288,6 @@ namespace McBar.MenuBar
             double h = _pill.ActualHeight > 0 ? _pill.ActualHeight : _pill.Height;
             int px = (int)Math.Round((ActualWidth - w) / 2 * sc), py = (int)Math.Round(TopMargin * sc);
             int pw = (int)Math.Round(w * sc), ph = (int)Math.Round(h * sc), r = (int)Math.Round(Math.Min(h / 2, 26) * sc);
-            if (Drop)
-            {
-                // Gota: rectángulo que incluye los "hombros"; las esquinas de abajo las suaviza WPF.
-                int sh = (int)Math.Round(Shoulder * sc);
-                px -= sh; pw += sh * 2; r = 0;
-            }
             string key = $"{px},{py},{pw},{ph},{r}";
             if (key == _shapeKey) return;
             _shapeKey = key;

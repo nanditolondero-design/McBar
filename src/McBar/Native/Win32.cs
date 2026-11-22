@@ -105,6 +105,8 @@ namespace McBar.Native
         [DllImport("user32.dll", EntryPoint = "GetClassLongPtrW")] public static extern IntPtr GetClassLongPtr(IntPtr hWnd, int index);
 
         public static long GetExStyle(IntPtr hWnd) => GetWindowLongPtr64(hWnd, GWL_EXSTYLE).ToInt64();
+        public static long GetStyle(IntPtr hWnd) => GetWindowLongPtr64(hWnd, -16 /*GWL_STYLE*/).ToInt64();
+        public const long WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000;
         public static void SetExStyle(IntPtr hWnd, long value) => SetWindowLongPtr64(hWnd, GWL_EXSTYLE, new IntPtr(value));
 
         // ---------- dwmapi ----------

@@ -151,7 +151,7 @@ namespace McBar.Dock
             Opacity = opacity;
 
             Dot.Visibility = showDot ? Visibility.Visible : Visibility.Hidden;
-            _dotMove.X = left + size / 2 - 2;
+            _dotMove.X = left + size / 2 - Dot.Width / 2;
             _dotMove.Y = dotY;
         }
     }

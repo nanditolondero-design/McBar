@@ -1,0 +1,50 @@
+<!-- McBar — Creado por Andrés Londero. Tema "Vidrio" (0.4.3), inspirado en el vidrio del iPhone:
+     se carga ENCIMA del tema oscuro y solo cambia fondos y bordes: superficies muy transparentes, con un
+     brillo blanco en el borde de arriba (como el canto de un vidrio) y desenfoque donde Windows lo permite. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="Mc.BlurTint">#26FFFFFF</Color>
+    <Color x:Key="Mc.LaunchpadTint">#30101018</Color>
+
+    <!-- Paneles (Centro de control, widgets, clima): vidrio claro sobre desenfoque -->
+    <LinearGradientBrush x:Key="Mc.GlassBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#5C6E6E7A" Offset="0"/>
+        <GradientStop Color="#4A2C2C34" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Mc.PanelBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#C04A4A54" Offset="0"/>
+        <GradientStop Color="#C8262630" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Mc.PanelBorder" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#A6FFFFFF" Offset="0"/>
+        <GradientStop Color="#1FFFFFFF" Offset="0.5"/>
+        <GradientStop Color="#40FFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Mc.TileBg" Color="#2EFFFFFF"/>
+    <SolidColorBrush x:Key="Mc.TileBorder" Color="#40FFFFFF"/>
+    <SolidColorBrush x:Key="Mc.Hover" Color="#40FFFFFF"/>
+    <SolidColorBrush x:Key="Mc.Pressed" Color="#5CFFFFFF"/>
+    <SolidColorBrush x:Key="Mc.Separator" Color="#33FFFFFF"/>
+
+    <!-- Dock -->
+    <LinearGradientBrush x:Key="Mc.DockGlass" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#52FFFFFF" Offset="0"/>
+        <GradientStop Color="#26FFFFFF" Offset="0.45"/>
+        <GradientStop Color="#33101014" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Mc.DockGlassBorder" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#CCFFFFFF" Offset="0"/>
+        <GradientStop Color="#26FFFFFF" Offset="0.6"/>
+        <GradientStop Color="#4DFFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Mc.DockBg" Color="#33FFFFFF"/>
+    <SolidColorBrush x:Key="Mc.DockBorder" Color="#8CFFFFFF"/>
+
+    <!-- Barra de menú, etiquetas y Launchpad -->
+    <LinearGradientBrush x:Key="Mc.MenuBarBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40FFFFFF" Offset="0"/>
+        <GradientStop Color="#26101014" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Mc.LabelBg" Color="#B8343440"/>
+    <SolidColorBrush x:Key="Mc.LaunchpadBg" Color="#40000000"/>
+</ResourceDictionary>

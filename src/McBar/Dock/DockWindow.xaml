@@ -21,6 +21,8 @@
             <Border x:Name="BarShadow1" CornerRadius="19" Background="#1F000000" IsHitTestVisible="False"/>
             <Border x:Name="Bar" CornerRadius="18" BorderThickness="1"
                     Background="{DynamicResource Mc.DockGlass}" BorderBrush="{DynamicResource Mc.DockGlassBorder}"/>
+            <!-- 0.4.3: resaltado del ícono bajo el mouse (estilo Barra o sin ampliación) -->
+            <Border x:Name="HoverPlate" CornerRadius="10" Background="{DynamicResource Mc.Hover}" Opacity="0" IsHitTestVisible="False"/>
             <Border x:Name="Label" Panel.ZIndex="1000" IsHitTestVisible="False" Visibility="Collapsed"
                     Padding="10,4" CornerRadius="7" BorderThickness="1"
                     Background="{DynamicResource Mc.LabelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}">

@@ -35,6 +35,7 @@ namespace McBar.MenuBar
         // manejadores guardados para poder desconectarlos al cerrar (si cambian los monitores)
         private readonly Action _onSettings, _onTray, _onNotif;
         private readonly Action<IntPtr> _onForeground;
+        private readonly Action _onWindows;
         private readonly Action<WeatherData> _onWeather;
         private readonly NetworkAddressChangedEventHandler _onNetwork;
         private readonly Microsoft.Win32.PowerModeChangedEventHandler _onPower;
@@ -80,6 +81,8 @@ namespace McBar.MenuBar
             _onPower = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
             SettingsStore.Changed += _onSettings;
             App.Tracker.ForegroundChanged += _onForeground;
+            _onWindows = () => Dispatcher.BeginInvoke(new Action(UpdateAppName));
+            App.Tracker.WindowsChanged += _onWindows; // minimizar / restaurar / cerrar
             WeatherService.Updated += _onWeather;
             NetworkChange.NetworkAddressChanged += _onNetwork;
             Microsoft.Win32.SystemEvents.PowerModeChanged += _onPower;
@@ -135,6 +138,7 @@ namespace McBar.MenuBar
             _clockTimer.Stop();
             SettingsStore.Changed -= _onSettings;
             App.Tracker.ForegroundChanged -= _onForeground;
+            App.Tracker.WindowsChanged -= _onWindows;
             WeatherService.Updated -= _onWeather;
             NetworkChange.NetworkAddressChanged -= _onNetwork;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= _onPower;
@@ -326,9 +330,38 @@ namespace McBar.MenuBar
             VolumeButton.ToolTip = v == null ? null : $"Volumen: {Math.Round(v.Value * 100)} %";
         }
 
+        /// <summary>
+        /// 0.4.3 (como GNOME): el nombre de la app y sus menús (Archivo, Edición, Ver, Ventana, Ayuda) se ven
+        /// solo cuando hay una app abierta y elegida. Con el escritorio, todo minimizado o sin ventanas,
+        /// desaparecen y queda solo el logo.
+        /// </summary>
         private void UpdateAppName()
         {
-            AppNameText.Text = App.Tracker.AppNameFor(Target);
+            var t = Target;
+            bool has = HasActiveApp(t);
+            if (has) AppNameText.Text = App.Tracker.AppNameFor(t);
+            var v = has ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var b in new UIElement[] { AppNameButton, FileButton, EditButton, ViewButton, WindowButton, HelpButton })
+            {
+                if (b.Visibility == v) continue;
+                b.Visibility = v;
+                if (has) b.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+            }
+        }
+
+        private static bool HasActiveApp(IntPtr t)
+        {
+            if (t == IntPtr.Zero || !Win32.IsWindow(t) || !Win32.IsWindowVisible(t) || Win32.IsIconic(t)) return false;
+            var cls = WindowOps.GetClass(t);
+            if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd") return false;
+            // si el foco está ahora en el escritorio (clic en el fondo), tampoco
+            var fg = Win32.GetForegroundWindow();
+            if (fg != IntPtr.Zero && fg != t)
+            {
+                var fc = WindowOps.GetClass(fg);
+                if (fc == "Progman" || fc == "WorkerW") return false;
+            }
+            return true;
         }
 
         // ================== Menús ==================

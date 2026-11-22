@@ -54,6 +54,9 @@ Rendimiento, ventanas que se sacudían (área de trabajo), aspecto nuevo del Doc
 ## Versión 0.4.2 (22/11/2026)
 Ocultar apps del Launchpad, modo "Gota" para la barra superior, Centro de control con filas enteras como botones. Ver CHANGELOG.
 
+## Versión 0.4.3 (22/11/2026)
+Launchpad: selección múltiple, carpetas ocultables y movibles, orden propio, desinstalar, arrastrar al Dock/escritorio, efecto al pasar el mouse. Barra: menús solo con app activa, sin Gota, píldora oculta en pantalla completa. Dock: estilos Barra y Solo íconos, resaltado, desenfoque sin estirar, paquetes de íconos. Tema Vidrio. Ver CHANGELOG.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.
@@ -63,5 +66,5 @@ Ocultar apps del Launchpad, modo "Gota" para la barra superior, Centro de contro
 - **Menús reales de cada app**: Windows no los expone de forma general; se usan atajos estándar. A futuro: menús específicos para apps conocidas (Office, navegadores, Explorador).
 - **Animación "genio" al minimizar**: no se puede aplicar a ventanas de otras apps sin efectos de bajo nivel; se descartó para mantener bajo consumo.
 - **Notificaciones**: McBar las junta en su centro propio, pero no puede responderlas ni usar sus botones (Windows no da acceso); tocar una abre la app. Ocultar el cartelito de Windows es experimental.
-- **Carpetas del Launchpad**: se ubican primero y no se pueden reordenar libremente dentro de la grilla (las apps sueltas van en orden alfabético).
+- **Launchpad**: mover un ícono a otra página todavía no se puede arrastrando (hay que moverlo dentro de la página). Los paquetes de íconos en .icns o .svg no se leen (convertirlos a .png).
 - Spotlight (búsqueda con atajo de teclado), "Mission Control" propio, pilas de otras carpetas, widgets de música (reproducción actual).

@@ -20,11 +20,53 @@ namespace McBar.Core
         public LaunchpadFolder? Folder { get; init; }
         public List<T> Apps { get; init; } = new List<T>();
         public bool IsFolder => Folder != null;
+        /// <summary>Clave única: "folder:&lt;id&gt;" o el Target de la app (orden y ocultas, 0.4.3).</summary>
+        public string Key(Func<T, string> target) => IsFolder ? LaunchpadLayout.FolderKey(Folder!) : target(App!);
     }
 
     public static class LaunchpadLayout
     {
         public const string DefaultName = "Carpeta";
+
+        public static string FolderKey(LaunchpadFolder f) => "folder:" + f.Id;
+
+        /// <summary>
+        /// Ordena según el orden guardado (lo que el usuario movió). Lo que no está en el orden (apps nuevas)
+        /// va al final, en el orden de siempre. (pura, se prueba) — 0.4.3
+        /// </summary>
+        public static List<LaunchpadEntry<T>> ApplyOrder<T>(List<LaunchpadEntry<T>> entries, IList<string> order, Func<T, string> target)
+        {
+            if (order.Count == 0) return entries;
+            var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < order.Count; i++) index.TryAdd(order[i], i);
+            var known = entries.Where(e => index.ContainsKey(e.Key(target))).OrderBy(e => index[e.Key(target)]);
+            var rest = entries.Where(e => !index.ContainsKey(e.Key(target)));
+            return known.Concat(rest).ToList();
+        }
+
+        /// <summary>
+        /// Mueve <paramref name="key"/> antes (o después) de <paramref name="targetKey"/>. Devuelve el orden
+        /// completo nuevo para guardar. (pura, se prueba)
+        /// </summary>
+        public static List<string> Move(IEnumerable<string> currentKeys, string key, string targetKey, bool after)
+        {
+            var list = currentKeys.ToList();
+            int from = list.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+            if (from < 0 || string.Equals(key, targetKey, StringComparison.OrdinalIgnoreCase)) return list;
+            list.RemoveAt(from);
+            int to = list.FindIndex(k => string.Equals(k, targetKey, StringComparison.OrdinalIgnoreCase));
+            if (to < 0) { list.Insert(Math.Min(from, list.Count), key); return list; }
+            list.Insert(after ? to + 1 : to, key);
+            return list;
+        }
+
+        /// <summary>Saca las entradas ocultas (apps y carpetas) salvo que se pidan todas.</summary>
+        public static List<LaunchpadEntry<T>> WithoutHidden<T>(List<LaunchpadEntry<T>> entries, ICollection<string> hidden, Func<T, string> target, bool showHidden)
+        {
+            if (showHidden || hidden.Count == 0) return entries;
+            var set = new HashSet<string>(hidden, StringComparer.OrdinalIgnoreCase);
+            return entries.Where(e => !set.Contains(e.Key(target))).ToList();
+        }
 
         /// <summary>Arma la grilla: carpetas primero (solo las apps que existen) y después las apps sueltas.</summary>
         public static List<LaunchpadEntry<T>> Arrange<T>(IEnumerable<T> apps, IList<LaunchpadFolder> folders, Func<T, string> target)

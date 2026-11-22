@@ -96,6 +96,27 @@ namespace McBar.Native
         [DllImport("ole32.dll")]
         public static extern int PropVariantClear(ref PROPVARIANT pvar);
 
+        private static Guid BHID_DataObject = new Guid("B8C0BD9F-ED24-455c-83E6-D5390C4FE8C4");
+        private static Guid IID_IDataObject = new Guid("0000010e-0000-0000-C000-000000000046");
+
+        /// <summary>
+        /// Datos de arrastre del Shell para un elemento (por ejemplo "shell:AppsFolder\..."): lo mismo que
+        /// arrastra el menú Inicio. Al soltarlo en el escritorio, Windows crea un acceso directo. 0.4.3.
+        /// </summary>
+        public static System.Windows.IDataObject? ShellDataObject(string parsingName)
+        {
+            try
+            {
+                var riid = IID_IShellItem;
+                if (SHCreateItemFromParsingName(parsingName, IntPtr.Zero, ref riid, out var obj) != 0 || obj is not IShellItem item) return null;
+                var bhid = BHID_DataObject;
+                var iid = IID_IDataObject;
+                item.BindToHandler(IntPtr.Zero, ref bhid, ref iid, out var dobj);
+                return dobj == null ? null : new System.Windows.DataObject(dobj);
+            }
+            catch { return null; }
+        }
+
         public static string? GetDisplayName(IShellItem item, uint sigdn)
         {
             try

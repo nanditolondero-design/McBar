@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.4.2)
+## Qué incluye (versión 0.4.3)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -16,7 +16,8 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - Clic derecho: ventanas abiertas, Mantener en el Dock, Mostrar en el Explorador, Nueva ventana, Ocultar, Salir.
 - Clic con la rueda: abre otra ventana de la app.
 - Ocultación automática opcional.
-- **Estilos**: Clásico, Flotante (separado del borde, con sombra) o Ancho completo.
+- **Estilos**: Clásico, Flotante (separado del borde, con sombra), Ancho completo, Barra (ancha y flotante, como la de Windows 11) o Solo íconos (sin fondo).
+- **Paquetes de íconos**: una carpeta con .png/.ico de otras barras o sistemas.
 - Fondo con **desenfoque real**; el fondo puede quedar quieto (por defecto) o estirarse como en macOS.
 - Lado derecho configurable: sacá o agregá Papelera, Descargas, carpetas y archivos (arrastrándolos o con clic derecho → Agregar al Dock).
 - Arrastrar un ícono hacia arriba muestra "Quitar del Dock" y al soltarlo desaparece con una nubecita. Si es una app abierta sin fijar, muestra "Cerrar app" y al soltarla se cierra.
@@ -29,8 +30,6 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - A la derecha: **bandeja propia** (los íconos de WhatsApp, antivirus, etc., con sus menús de clic derecho), **clima** con ícono dinámico, batería, red, volumen, búsqueda, Centro de control y reloj.
 - Los íconos de la bandeja se pueden mostrar en color o en blanco y negro, y ocultar los que no quieras (quedan en el menú ⌃).
 - Fondo desenfocado (acrílico).
-
-**Gota** (opcional, 0.4.2): igual que la isla pero pegada al borde de arriba, como una gota que sale de la pantalla.
 
 **Isla dinámica** (opcional, en Preferencias → Barra superior → Tipo): en lugar de la barra de menú, una píldora negra arriba al centro, como en el iPhone.
 - En reposo muestra la hora (y la tapa del disco con un ecualizador si suena algo).
@@ -46,7 +45,7 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 
 **Widgets** (tocando el reloj): calendario, clima (Open-Meteo, sin clave), batería, procesador y memoria, notas.
 
-**Launchpad** (como el de macOS): todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda, fondo desenfocado (transparencia regulable) y animación. **Carpetas**: arrastrá una app sobre otra. Clic derecho → Agregar al Dock, carpetas.
+**Launchpad** (como el de macOS): todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda, fondo desenfocado (transparencia regulable) y animación. **Carpetas**: arrastrá una app sobre otra; arrastrando al borde se reordena. Ctrl+clic para elegir varias y ocultarlas juntas; las ocultas se ven al buscar. Clic derecho → Agregar al Dock, carpetas, Ocultar, Desinstalar. Arrastrando una app hacia abajo se puede soltar en el Dock o en el escritorio.
 
 **Preferencias**: tamaño y ampliación del Dock, ocultación automática, tema claro/oscuro/automático, ocultar o no la barra de Windows, iniciar con Windows, ciudad del clima y qué widgets mostrar.
 

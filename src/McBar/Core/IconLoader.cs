@@ -58,7 +58,7 @@ namespace McBar.Core
         }
 
         /// <summary>Pide un ícono. El callback se ejecuta en el hilo de la interfaz.</summary>
-        public static void Request(string parsingName, int sizePx, Action<ImageSource?> callback, bool useCache = true)
+        public static void Request(string parsingName, int sizePx, Action<ImageSource?> callback, bool useCache = true, string? displayName = null)
         {
             var key = parsingName + "|" + sizePx;
             if (useCache)
@@ -71,7 +71,11 @@ namespace McBar.Core
             var dispatcher = Dispatcher.CurrentDispatcher;
             RunOnShellThread(() =>
             {
-                var img = LoadNow(parsingName, sizePx);
+                // 0.4.3: primero el paquete de íconos elegido (si hay uno y tiene esta app)
+                BitmapSource? img = null;
+                var packed = IconPack.Find(parsingName, displayName);
+                if (packed != null) img = IconPack.Load(packed, sizePx);
+                img ??= LoadNow(parsingName, sizePx);
                 if (img != null && useCache)
                 {
                     lock (CacheLock)
@@ -82,6 +86,12 @@ namespace McBar.Core
                 }
                 dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => callback(img)));
             });
+        }
+
+        /// <summary>Vacía todo el caché (al cambiar el paquete de íconos).</summary>
+        public static void ClearCache()
+        {
+            lock (CacheLock) Cache.Clear();
         }
 
         public static void Forget(string parsingName)

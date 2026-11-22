@@ -10,6 +10,7 @@ namespace McBar.Core
     public static class ThemeManager
     {
         public static bool IsDark { get; private set; } = true;
+        public static bool IsGlass => SettingsStore.Current.Theme == "glass";
 
         /// <summary>Se dispara después de cambiar de tema (para renovar desenfoques, etc.).</summary>
         public static event Action? ThemeChanged;
@@ -27,11 +28,16 @@ namespace McBar.Core
         public static void Apply()
         {
             var pref = SettingsStore.Current.Theme;
-            bool dark = pref == "dark" || (pref == "auto" && SystemInfo.WindowsIsDark());
+            bool glass = pref == "glass";
+            bool dark = glass || pref == "dark" || (pref == "auto" && SystemInfo.WindowsIsDark());
             IsDark = dark;
             var dict = new ResourceDictionary { Source = new Uri(dark ? "pack://application:,,,/Themes/Dark.xaml" : "pack://application:,,,/Themes/Light.xaml", UriKind.Absolute) };
             var md = Application.Current.Resources.MergedDictionaries;
             if (md.Count > 0) md[0] = dict; else md.Insert(0, dict);
+            // 0.4.3: tema Vidrio = oscuro + capa de vidrio encima (al final, para que gane)
+            for (int i = md.Count - 1; i >= 1; i--)
+                if (md[i].Source != null && md[i].Source.OriginalString.EndsWith("Glass.xaml", StringComparison.OrdinalIgnoreCase)) md.RemoveAt(i);
+            if (glass) md.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Themes/Glass.xaml", UriKind.Absolute) });
             ThemeChanged?.Invoke();
         }
 

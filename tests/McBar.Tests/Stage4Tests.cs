@@ -185,13 +185,84 @@ namespace McBar.Tests
         }
 
         [Fact]
-        public void Ajustes_ModoGotaEsValido()
+        public void Ajustes_LaGotaSeQuitoYPasaAIsla()
         {
-            var s = SettingsStore.Sanitize(new AppSettings { TopBarMode = "drop", LaunchpadHidden = null! });
-            Assert.Equal("drop", s.TopBarMode);
+            var s = SettingsStore.Sanitize(new AppSettings { TopBarMode = "drop", LaunchpadHidden = null!, LaunchpadOrder = null! });
+            Assert.Equal("island", s.TopBarMode);
             Assert.True(s.IsIslandLike);
             Assert.NotNull(s.LaunchpadHidden);
+            Assert.NotNull(s.LaunchpadOrder);
             Assert.Equal("menubar", SettingsStore.Sanitize(new AppSettings { TopBarMode = "raro" }).TopBarMode);
+        }
+
+        // ---------- 0.4.3 ----------
+
+        [Fact]
+        public void Launchpad_MoverYOrdenGuardado()
+        {
+            var apps = Apps("A", "B", "C", "D");
+            var folders = new List<LaunchpadFolder>();
+            var grid = LaunchpadLayout.Arrange(apps, folders, a => a.Target);
+            var keys = grid.Select(e => e.Key(a => a.Target)).ToList();
+            var order = LaunchpadLayout.Move(keys, "t:D", "t:A", after: false);
+            Assert.Equal(new[] { "t:D", "t:A", "t:B", "t:C" }, order);
+            order = LaunchpadLayout.Move(order, "t:D", "t:C", after: true);
+            Assert.Equal(new[] { "t:A", "t:B", "t:C", "t:D" }, order);
+            var ordered = LaunchpadLayout.ApplyOrder(grid, new List<string> { "t:C", "t:A" }, a => a.Target);
+            Assert.Equal(new[] { "C", "A", "B", "D" }, ordered.Select(e => e.App!.Name)); // lo no guardado va al final
+        }
+
+        [Fact]
+        public void Launchpad_CarpetasOcultasYMovibles()
+        {
+            var apps = Apps("A", "B", "C");
+            var folders = new List<LaunchpadFolder>();
+            var f = LaunchpadLayout.CreateFolder(folders, "t:A", "t:B", "Juegos");
+            var grid = LaunchpadLayout.Arrange(apps, folders, a => a.Target);
+            string fk = LaunchpadLayout.FolderKey(f);
+            Assert.Equal(fk, grid[0].Key(a => a.Target));
+            var hidden = new List<string> { fk };
+            Assert.Single(LaunchpadLayout.WithoutHidden(grid, hidden, a => a.Target, false));
+            Assert.Equal(2, LaunchpadLayout.WithoutHidden(grid, hidden, a => a.Target, true).Count);
+            var order = LaunchpadLayout.Move(grid.Select(e => e.Key(a => a.Target)), fk, "t:C", after: true);
+            Assert.Equal(new[] { "t:C", fk }, order);
+        }
+
+        [Fact]
+        public void Desinstalar_DatosDeLaApp()
+        {
+            Assert.Equal("Microsoft.WindowsCalculator_8wekyb3d8bbwe", Uninstaller.StorePackageFamily(@"shell:AppsFolder\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"));
+            Assert.Null(Uninstaller.StorePackageFamily(@"shell:AppsFolder\Chrome"));
+            Assert.Equal((@"C:\Program Files\App\unins000.exe", "/SILENT"), Uninstaller.SplitCommand("\"C:\\Program Files\\App\\unins000.exe\" /SILENT"));
+            Assert.Equal((@"C:\Program Files\App\uninstall.exe", ""), Uninstaller.SplitCommand(@"C:\Program Files\App\uninstall.exe"));
+            Assert.Equal(("MsiExec.exe", "/X{1234}"), Uninstaller.SplitCommand("MsiExec.exe /X{1234}"));
+            Assert.Equal("Google Chrome", Uninstaller.BestMatch("Google Chrome", new[] { "Mozilla Firefox", "Google Chrome" }));
+            Assert.Equal("Zoom Workplace", Uninstaller.BestMatch("Zoom", new[] { "Zoom Workplace", "Steam" }));
+        }
+
+        [Fact]
+        public void PaqueteDeIconos_NombresPosibles()
+        {
+            Assert.Equal("googlechrome", IconPack.Normalize("Google-Chrome"));
+            var c = IconPack.Candidates(@"shell:AppsFolder\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", "Calculadora");
+            Assert.Contains("calculadora", c);
+            Assert.Contains("windowscalculator", c);
+            Assert.Contains("microsoftwindowscalculator", c);
+            var d = IconPack.Candidates(@"C:\Program Files\Google\Chrome\chrome.exe", "Google Chrome");
+            Assert.Equal("googlechrome", d[0]);
+            Assert.Contains("chrome", d);
+        }
+
+        [Fact]
+        public void PantallaCompleta_VideoEnNavegadorMaximizado()
+        {
+            const long caption = 0x00C00000, frame = 0x00040000;
+            Assert.False(FullscreenWatcher.IsFullscreenStyle(true, caption | frame)); // ventana maximizada común
+            Assert.True(FullscreenWatcher.IsFullscreenStyle(true, 0));               // Chrome con video a pantalla completa
+            Assert.True(FullscreenWatcher.IsFullscreenStyle(false, caption | frame));
+            var m = new McBar.Native.PxRect(0, 0, 1920, 1080);
+            Assert.False(FullscreenWatcher.IsLarge(new McBar.Native.PxRect(1500, 900, 1900, 1060), m));
+            Assert.True(FullscreenWatcher.IsLarge(new McBar.Native.PxRect(0, 0, 1920, 1080), m));
         }
     }
 }

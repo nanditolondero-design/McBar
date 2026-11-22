@@ -63,14 +63,15 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Animar al abrir aplicaciones", s.BounceOnLaunch, v => s.BounceOnLaunch = v));
             dock.Children.Add(Switch("Mostrar indicadores de apps abiertas", s.ShowIndicators, v => s.ShowIndicators = v));
             dock.Children.Add(Switch("Clic en la app activa la minimiza (como Windows)", s.ClickMinimizes, v => s.ClickMinimizes = v));
-            dock.Children.Add(Segment("Estilo", new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo") },
+            dock.Children.Add(Segment("Estilo", new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo"), ("taskbar", "Barra"), ("icons", "Solo íconos") },
                 s.DockStyle, v => { s.DockStyle = v; Changed(); }));
             dock.Children.Add(Switch("El fondo se estira al ampliar (como macOS)", s.DockBackgroundStretch, v => s.DockBackgroundStretch = v));
-            dock.Children.Add(Switch("Desenfoque detrás del Dock", s.BackdropBlur, v => s.BackdropBlur = v));
+            dock.Children.Add(Switch("Desenfoque detrás del Dock (con desenfoque el fondo no se estira)", s.BackdropBlur, v => s.BackdropBlur = v));
             dock.Children.Add(Switch("Animaciones rápidas (apagar solo si el Dock o la isla se ven con fondo negro)", s.FastWindows, v => s.FastWindows = v));
             dock.Children.Add(Switch("Cada Dock muestra solo las apps abiertas en su monitor", s.DockAppsPerMonitor, v => s.DockAppsPerMonitor = v));
             dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
             dock.Children.Add(Switch("Animar ventanas al minimizar y restaurar (hacia el Dock)", s.AnimateWindows, v => s.AnimateWindows = v));
+            dock.Children.Add(IconPackRow(s));
             var restore = new Button { Content = "Volver a poner la Papelera y Descargas", Margin = new Thickness(0, 10, 0, 4), HorizontalAlignment = HorizontalAlignment.Left };
             restore.SetResourceReference(StyleProperty, "McButton");
             restore.Click += (_, _) => App.Dock?.RestoreDefaultStacks();
@@ -81,7 +82,7 @@ namespace McBar.Panels
             root.Children.Add(Header("Barra superior"));
             var bar = new StackPanel();
             bar.Children.Add(Switch("Mostrar la barra superior", s.ShowMenuBar, v => s.ShowMenuBar = v));
-            bar.Children.Add(Segment("Tipo", new[] { ("menubar", "Barra de menú"), ("island", "Isla dinámica"), ("drop", "Gota") },
+            bar.Children.Add(Segment("Tipo", new[] { ("menubar", "Barra de menú"), ("island", "Isla dinámica") },
                 s.TopBarMode, v => { s.TopBarMode = v; Changed(); }));
             bar.Children.Add(Switch("Mostrar el porcentaje de batería", s.ShowBatteryPercent, v => s.ShowBatteryPercent = v));
             bar.Children.Add(Switch("Mostrar la fecha en el reloj", s.ShowDateInClock, v => s.ShowDateInClock = v));
@@ -284,13 +285,45 @@ namespace McBar.Panels
             return c;
         }
 
+        /// <summary>Paquete de íconos (0.4.3): carpeta con imágenes de otras barras o sistemas.</summary>
+        private UIElement IconPackRow(AppSettings s)
+        {
+            var sp = new StackPanel { Margin = new Thickness(0, 8, 0, 4) };
+            var title = new TextBlock { Text = "Paquete de íconos", VerticalAlignment = VerticalAlignment.Center };
+            title.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            var path = new TextBlock { FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 6) };
+            path.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            void Show() => path.Text = string.IsNullOrWhiteSpace(s.IconPackPath)
+                ? "Íconos de Windows. Podés elegir una carpeta con imágenes (.png, .ico) de otra barra, de un tema de Linux o de macOS convertido."
+                : s.IconPackPath;
+            Show();
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            var pick = new Button { Content = "Elegir carpeta…", Margin = new Thickness(0, 0, 8, 0) };
+            pick.SetResourceReference(StyleProperty, "McButton");
+            pick.Click += (_, _) =>
+            {
+                var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "Carpeta del paquete de íconos" };
+                if (dlg.ShowDialog(this) == true) { s.IconPackPath = dlg.FolderName; Show(); Changed(); }
+            };
+            var clear = new Button { Content = "Usar los de Windows" };
+            clear.SetResourceReference(StyleProperty, "McButton");
+            clear.Click += (_, _) => { s.IconPackPath = ""; Show(); Changed(); };
+            row.Children.Add(pick);
+            row.Children.Add(clear);
+            sp.Children.Add(title);
+            sp.Children.Add(path);
+            sp.Children.Add(row);
+            return sp;
+        }
+
         private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set)
         {
             var g = new Grid { Margin = new Thickness(0, 6, 0, 6) };
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            // 0.4.3: la columna del nombre se adapta al texto (antes era fija y cortaba "Transparencia del fondo")
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
-            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, MinWidth = 150, MaxWidth = 260, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) };
             label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             var val = new TextBlock { Text = ((int)value).ToString(), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
             val.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
@@ -375,7 +408,7 @@ namespace McBar.Panels
             var seg = new StackPanel { Orientation = Orientation.Horizontal };
             var segBorder = new Border { Child = seg, CornerRadius = new CornerRadius(8), Padding = new Thickness(1) };
             segBorder.SetResourceReference(Border.BackgroundProperty, "Mc.Hover");
-            foreach (var (key, name) in new[] { ("auto", "Automática"), ("light", "Clara"), ("dark", "Oscura") })
+            foreach (var (key, name) in new[] { ("auto", "Automática"), ("light", "Clara"), ("dark", "Oscura"), ("glass", "Vidrio") })
             {
                 var rb = new RadioButton { Content = name, GroupName = "McTheme", IsChecked = s.Theme == key };
                 rb.SetResourceReference(StyleProperty, "McSegment");

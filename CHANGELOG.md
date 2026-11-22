@@ -1,5 +1,33 @@
 # Cambios
 
+## 0.4.3 — 22/11/2026
+Pedidos de Andrés:
+
+**Launchpad**
+- **Seleccionar varias**: Ctrl o Mayús + clic (o clic derecho → Seleccionar). Abajo aparece una barra con Ocultar, Mostrar, Nueva carpeta y Cancelar; el clic derecho sobre una seleccionada ofrece lo mismo y "Agregar a carpeta". Esc cancela.
+- **Carpetas ocultables y movibles**: clic derecho → "Ocultar carpeta". Arrastrar una carpeta o una app al BORDE izquierdo/derecho de otra la mueve ahí (aparece una rayita blanca); al CENTRO de otra app arma o amplía una carpeta. El orden se guarda (`LaunchpadOrder`). Dentro de una carpeta abierta también se pueden reordenar.
+- **El buscador muestra también lo oculto** (atenuado).
+- **Efecto al pasar el mouse**: el ícono crece suave y aparece un brillo; los nombres tienen una sombrita para leerse sobre cualquier fondo. Carpetas con aspecto de vidrio.
+- **Desinstalar…** (clic derecho), como en el menú Inicio: apps de la Tienda → su página en Configuración; apps de escritorio → su desinstalador registrado; si no se encuentra → Configuración → Aplicaciones instaladas.
+- **Arrastrar al Dock o al escritorio, como los cajones de Android**: al llevar una app hacia abajo o a los bordes, el Launchpad se esconde; soltándola en el Dock queda fijada y en el escritorio Windows crea un acceso directo.
+
+**Barra superior**
+- **Menús solo con una app activa** (como GNOME): con el escritorio, todo minimizado o sin ventanas, desaparecen el nombre de la app y Archivo/Edición/Ver/Ventana/Ayuda; vuelven al elegir una app abierta.
+- **Se quitó el modo Gota** (quien lo tenía pasa a la isla).
+- **La píldora se oculta con videos y apps en pantalla completa**: la detección ahora reconoce los videos de Chrome/Edge (que siguen marcados como "maximizados") y no se confunde con ventanitas "siempre visibles" encima del video.
+
+**Dock**
+- **Estilo "Barra"**: ancha y flotante, parecida a la de Windows 11 (sin lupa, indicador en forma de rayita, resaltado al pasar el mouse).
+- **Estilo "Solo íconos"**: sin fondo, solo los íconos con sus indicadores.
+- **Resaltado al pasar el mouse** cuando no hay lupa.
+- **Desenfoque**: con el desenfoque de Windows el fondo ya no se estira (la ventana del desenfoque no puede seguir cuadro a cuadro: se veía mal y volvían las esquinas) y el desenfoque va 1 px adentro del borde, tapando los escalones.
+- **Paquetes de íconos**: Preferencias → Dock → "Paquete de íconos": una carpeta con .png/.ico (de RocketDock/ObjectDock, temas de Linux como Papirus, packs de macOS convertidos o hechos a mano). Se busca por nombre ("google-chrome.png", "Chrome.ico"…); lo que no esté usa el ícono de Windows.
+
+**Tema Vidrio** (Preferencias → General → Apariencia → Vidrio): estilo vidrio del iPhone en todo — paneles, menús, Dock, barra, Launchpad y la isla — con superficies muy transparentes y un brillo blanco en el borde.
+
+**Arreglos**
+- "Transparencia del fondo" (y otros nombres largos) ya no se cortan en Preferencias: la columna del nombre se adapta al texto.
+
 ## 0.4.2 — 22/11/2026
 Pedidos de Andrés:
 - **Ocultar apps del Launchpad**: clic derecho → "Ocultar del Launchpad". Abajo a la derecha aparece "Mostrar apps ocultas (N)": las muestra atenuadas y desde ahí se pueden "Dejar de ocultar". Se guardan en settings.json (`LaunchpadHidden`).
