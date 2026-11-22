@@ -17,14 +17,33 @@ namespace McBar.Core
         public string Place { get; init; } = "";
         public double Temp { get; init; }
         public int Code { get; init; }
+        public bool IsDay { get; init; } = true;
         public double Max { get; init; }
         public double Min { get; init; }
         public List<WeatherHour> Hours { get; init; } = new List<WeatherHour>();
         public DateTime FetchedAt { get; init; }
     }
 
+    public enum WeatherKind { Clear, PartlyCloudy, Cloudy, Fog, Drizzle, Rain, Snow, Storm }
+
     public static class WeatherCodes
     {
+        /// <summary>Tipo de ícono a dibujar para el código WMO.</summary>
+        public static WeatherKind Kind(int code) => code switch
+        {
+            0 or 1 => WeatherKind.Clear,
+            2 => WeatherKind.PartlyCloudy,
+            3 => WeatherKind.Cloudy,
+            45 or 48 => WeatherKind.Fog,
+            >= 51 and <= 57 => WeatherKind.Drizzle,
+            >= 61 and <= 67 => WeatherKind.Rain,
+            >= 80 and <= 82 => WeatherKind.Rain,
+            >= 71 and <= 77 => WeatherKind.Snow,
+            85 or 86 => WeatherKind.Snow,
+            >= 95 and <= 99 => WeatherKind.Storm,
+            _ => WeatherKind.Cloudy
+        };
+
         /// <summary>Texto en castellano y símbolo para el código WMO que devuelve Open-Meteo.</summary>
         public static (string text, string symbol) Describe(int code) => code switch
         {
@@ -49,6 +68,9 @@ namespace McBar.Core
         private static HttpClient? _http;
         private static WeatherData? _cache;
 
+        /// <summary>Se dispara cuando llega un dato nuevo (la barra de menú actualiza su ícono).</summary>
+        public static event Action<WeatherData>? Updated;
+
         private static HttpClient Http => _http ??= new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 
         public static async Task<WeatherData?> GetAsync()
@@ -65,10 +87,11 @@ namespace McBar.Core
                 var inv = CultureInfo.InvariantCulture;
                 var url = "https://api.open-meteo.com/v1/forecast?latitude=" + s.WeatherLat!.Value.ToString(inv) +
                           "&longitude=" + s.WeatherLon!.Value.ToString(inv) +
-                          "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code" +
+                          "&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code" +
                           "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2";
                 using var doc = JsonDocument.Parse(await Http.GetStringAsync(url));
                 _cache = Parse(doc.RootElement, s.WeatherPlaceName ?? s.WeatherCity, DateTime.Now);
+                Updated?.Invoke(_cache);
                 return _cache;
             }
             catch (Exception ex)
@@ -115,6 +138,7 @@ namespace McBar.Core
                 Place = place,
                 Temp = cur.GetProperty("temperature_2m").GetDouble(),
                 Code = cur.GetProperty("weather_code").GetInt32(),
+                IsDay = !cur.TryGetProperty("is_day", out var day) || day.GetInt32() != 0,
                 Max = daily.GetProperty("temperature_2m_max")[0].GetDouble(),
                 Min = daily.GetProperty("temperature_2m_min")[0].GetDouble(),
                 Hours = hours,

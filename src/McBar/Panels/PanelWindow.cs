@@ -20,6 +20,8 @@ namespace McBar.Panels
         private bool _closing;
         private readonly bool _slideFromRight;
 
+        private const double CornerRadiusDip = 16;
+
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
         public bool IsClosing => _closing;
 
@@ -32,34 +34,48 @@ namespace McBar.Panels
             Topmost = true;
             ShowInTaskbar = false;
             ResizeMode = ResizeMode.NoResize;
-            Width = width + 20;
+            Width = width;
             Opacity = 0;
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             FontSize = 13;
 
+            // Tarjeta con desenfoque real detrás (acrílico) y esquinas redondeadas recortadas en la ventana.
             Card = new Border
             {
-                Margin = new Thickness(10),
-                CornerRadius = new CornerRadius(16),
+                CornerRadius = new CornerRadius(CornerRadiusDip),
                 BorderThickness = new Thickness(1),
                 Padding = new Thickness(8),
-                RenderTransform = _slide,
-                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 22, ShadowDepth = 5, Opacity = 0.38 }
+                RenderTransform = _slide
             };
-            Card.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
+            Card.SetResourceReference(Border.BackgroundProperty, "Mc.GlassBg");
             Card.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
             Content = Card;
 
-            SourceInitialized += (_, _) => WindowOps.MakeTool(this);
+            SourceInitialized += (_, _) =>
+            {
+                WindowOps.MakeTool(this);
+                WindowOps.EnableBlur(this, ThemeManager.GetColor("Mc.BlurTint"));
+            };
+            SizeChanged += (_, _) => ClipCorners();
             Deactivated += (_, _) => CloseAnimated();
             KeyDown += (_, e) => { if (e.Key == Key.Escape) CloseAnimated(); };
         }
 
-        /// <summary>Muestra el panel debajo de la barra de menú, pegado a la derecha.</summary>
-        public void ShowBelowMenuBar(double? height = null)
+        private void ClipCorners()
         {
-            double top = SettingsStore.Current.ShowMenuBar ? MenuBar.MenuBarWindow.BarHeightDip - 4 : 0;
-            Left = SystemParameters.PrimaryScreenWidth - Width - 2;
+            var h = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            if (h == IntPtr.Zero) return;
+            double sc = App.Scale;
+            int w = (int)Math.Ceiling(ActualWidth * sc), hh = (int)Math.Ceiling(ActualHeight * sc), r = (int)(CornerRadiusDip * 2 * sc);
+            Win32.SetWindowRgn(h, Win32.CreateRoundRectRgn(0, 0, w + 1, hh + 1, r, r), true);
+        }
+
+        /// <summary>Muestra el panel debajo de la barra de menú del monitor indicado, pegado a la derecha.</summary>
+        public void ShowBelowMenuBar(MonitorInfo monitor, double? height = null)
+        {
+            double sc = App.Scale;
+            double top = monitor.Bounds.Top / sc + (SettingsStore.Current.ShowMenuBar ? MenuBar.MenuBarWindow.BarHeightDip + 6 : 8);
+            Left = monitor.Bounds.Right / sc - Width - 8;
             Top = top;
             if (height != null) Height = height.Value; else SizeToContent = SizeToContent.Height;
             Show();

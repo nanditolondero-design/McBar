@@ -1,7 +1,8 @@
 // McBar — Creado por Andrés Londero
-// Punto de entrada. Arranca el seguimiento de ventanas, oculta la barra de Windows (si está activado),
-// crea la barra de menú y el Dock, y coordina los paneles. Garantiza que la barra de tareas de Windows
-// se restaure al salir, al cerrar sesión o si McBar se cierra por un error.
+// Punto de entrada y coordinación.
+// Arranca el seguimiento de ventanas, oculta la barra de Windows (si está activado), crea una barra de
+// menú y un Dock por monitor, fija el área de trabajo de cada monitor, la bandeja propia, la animación
+// de minimizar y el clima. Garantiza que todo vuelva a como estaba al salir, al cerrar sesión o ante un error.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,27 +22,43 @@ namespace McBar
     {
         private static Mutex? _mutex;
         private static DispatcherTimer? _trimTimer;
+        private static DispatcherTimer? _weatherTimer;
         private static bool _cleanedUp;
 
+        /// <summary>Escala de pantalla del sistema (1 = 100 %, 1.25 = 125 %...).</summary>
+        public static double Scale { get; private set; } = 1.0;
+
         public static WindowTracker Tracker { get; private set; } = null!;
-        public static DockWindow? Dock { get; private set; }
-        public static MenuBarWindow? MenuBarWin { get; private set; }
+        internal static FullscreenWatcher? Fullscreen { get; private set; }
+        internal static ShellHook? Hook { get; private set; }
+
+        public static List<DockWindow> Docks { get; } = new List<DockWindow>();
+        public static List<MenuBarWindow> MenuBars { get; } = new List<MenuBarWindow>();
+        /// <summary>El Dock del monitor principal (para "Agregar al Dock" desde el Launchpad).</summary>
+        public static DockWindow? Dock => Docks.FirstOrDefault(d => d.Monitor.Primary) ?? Docks.FirstOrDefault();
+
+        public static WeatherData? LastWeather { get; private set; }
+        /// <summary>Cambió la bandeja propia (íconos agregados, quitados o cambiados).</summary>
+        public static event Action? TrayChanged;
 
         private static LaunchpadWindow? _launchpad;
         private static ControlCenterWindow? _controlCenter;
         private static WidgetsWindow? _widgets;
         private static SettingsWindow? _settings;
-        private static bool _lastHideTaskbar, _lastShowMenuBar, _lastStartWithWindows;
+        private static string _lastLayoutKey = "";
+        private static bool _lastHideTaskbar, _lastStartWithWindows, _lastAnimate, _lastOwnTray;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
             SettingsStore.Load();
 
-            // "McBar.exe --restaurar": devuelve la barra de Windows a como estaba y sale.
+            // "McBar.exe --restaurar": devuelve la barra de Windows (y el área de trabajo) a como estaba y sale.
             if (e.Args.Any(a => a.Equals("--restaurar", StringComparison.OrdinalIgnoreCase)))
             {
+                WorkArea.Reset();
                 Taskbar.Restore();
+                ShellHook.RestoreAnimation();
                 Shutdown();
                 return;
             }
@@ -61,6 +78,7 @@ namespace McBar
             };
             Microsoft.Win32.SystemEvents.SessionEnding += (_, _) => SafeCleanup();
 
+            Scale = Win32.SystemScale();
             var s = SettingsStore.Current;
             if (!s.FirstRunDone)
             {
@@ -71,27 +89,39 @@ namespace McBar
 
             ThemeManager.Start();
             Tracker = new WindowTracker();
-            Tracker.ShellWindowShown += _ => Taskbar.Enforce();
+            Fullscreen = new FullscreenWatcher();
+            Fullscreen.Changed += ApplyFullscreen;
+            Tracker.ShellWindowShown += _ => { Taskbar.Enforce(); TrayHost.Current?.Raise(); };
             Tracker.ForegroundChanged += hwnd =>
             {
                 if (Taskbar.TemporarilyShown && !Taskbar.IsShellTrayClass(WindowOps.GetClass(hwnd))) Taskbar.EndTemporary();
+                PopupGuard.OnForeground(hwnd);
+                Fullscreen?.OnForeground(hwnd);
             };
             Tracker.Start();
 
             if (s.HideWindowsTaskbar) Taskbar.Hide();
             else if (s.TaskbarModified) Taskbar.Restore(); // quedó modificada de una sesión anterior
             if (s.StartWithWindows) SystemInfo.SetStartWithWindows(true);
+            if (s.UseOwnTray) StartTray();
 
-            MenuBarWin = new MenuBarWindow();
-            MenuBarWin.SetVisible(s.ShowMenuBar);
-            Dock = new DockWindow();
-            Dock.Show();
+            BuildMonitors();
+
+            Hook = new ShellHook { MinRectProvider = MinRectFor };
+            if (s.AnimateWindows) ShellHook.EnsureAnimationOn();
 
             _lastHideTaskbar = s.HideWindowsTaskbar;
-            _lastShowMenuBar = s.ShowMenuBar;
             _lastStartWithWindows = s.StartWithWindows;
+            _lastAnimate = s.AnimateWindows;
+            _lastOwnTray = s.UseOwnTray;
             SettingsStore.Changed += OnSettingsChanged;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Scale = Win32.SystemScale();
+                BuildMonitors();
+            }));
 
+            StartWeather();
             ScheduleTrim(6);
         }
 
@@ -123,6 +153,119 @@ namespace McBar
             return list;
         }
 
+        // ================== Monitores ==================
+
+        /// <summary>Crea (o vuelve a crear) una barra de menú y un Dock por monitor, según los ajustes.</summary>
+        private static void BuildMonitors()
+        {
+            var s = SettingsStore.Current;
+            var monitors = Monitors.All();
+            if (monitors.Count == 0) return;
+            string key = string.Join(";", monitors.Select(m => m.Device + "@" + m.Bounds)) +
+                         $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{Scale}";
+            if (key == _lastLayoutKey && Docks.Count > 0) { UpdateWorkAreas(); return; }
+            _lastLayoutKey = key;
+
+            foreach (var d in Docks) { try { d.Teardown(); d.Close(); } catch { } }
+            foreach (var mb in MenuBars) { try { mb.Teardown(); mb.Close(); } catch { } }
+            Docks.Clear();
+            MenuBars.Clear();
+            WorkArea.Reset();
+
+            foreach (var m in monitors)
+            {
+                bool primary = m.Primary || m == monitors[0];
+                if (primary || s.MenuBarOnAllMonitors)
+                {
+                    var mb = new MenuBarWindow(m);
+                    MenuBars.Add(mb);
+                    mb.SetVisible(s.ShowMenuBar);
+                }
+                if (primary || s.DockOnAllMonitors)
+                {
+                    var d = new DockWindow(m);
+                    Docks.Add(d);
+                    d.Show();
+                }
+            }
+            UpdateWorkAreas();
+            ApplyFullscreen();
+        }
+
+        /// <summary>Reserva en cada monitor solo lo que ocupan nuestra barra y nuestro Dock.</summary>
+        public static void UpdateWorkAreas()
+        {
+            foreach (var m in Monitors.All())
+            {
+                var mb = MenuBars.FirstOrDefault(x => x.Monitor.Device == m.Device);
+                var d = Docks.FirstOrDefault(x => x.Monitor.Device == m.Device);
+                WorkArea.Set(m, mb?.ReservePx ?? 0, d?.ReservePx ?? 0);
+            }
+        }
+
+        private static void ApplyFullscreen()
+        {
+            var fs = Fullscreen?.FullscreenMonitors ?? new HashSet<string>();
+            foreach (var d in Docks) d.SetFullscreen(fs.Contains(d.Monitor.Device));
+            foreach (var mb in MenuBars) mb.SetFullscreen(fs.Contains(mb.Monitor.Device));
+        }
+
+        private static MonitorInfo MonitorOrPrimary(MonitorInfo? m) =>
+            m ?? Monitors.All().FirstOrDefault(x => x.Primary) ?? Monitors.All().First();
+
+        /// <summary>Hacia dónde se achica una ventana al minimizarla: su ícono en el Dock de su monitor.</summary>
+        private static PxRect? MinRectFor(IntPtr hwnd)
+        {
+            var m = Monitors.FromWindow(hwnd);
+            var first = Docks.FirstOrDefault(d => m != null && d.Monitor.Device == m.Device);
+            var r = first?.IconRectFor(hwnd);
+            if (r != null) return r;
+            foreach (var d in Docks)
+            {
+                r = d.IconRectFor(hwnd);
+                if (r != null) return r;
+            }
+            return null;
+        }
+
+        // ================== Bandeja propia ==================
+
+        private static void StartTray()
+        {
+            var host = TrayHost.Start();
+            if (host == null) return;
+            host.Changed += () => TrayChanged?.Invoke();
+            host.IconRectProvider = ic =>
+            {
+                foreach (var mb in MenuBars)
+                {
+                    var r = mb.TrayIconRect(ic);
+                    if (r != null) return r;
+                }
+                return null;
+            };
+            TrayChanged?.Invoke();
+        }
+
+        private static void StopTray()
+        {
+            TrayHost.Current?.Dispose();
+            TrayChanged?.Invoke();
+        }
+
+        // ================== Clima ==================
+
+        private static void StartWeather()
+        {
+            WeatherService.Updated += w => LastWeather = w;
+            _weatherTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(30) };
+            _weatherTimer.Tick += async (_, _) => { if (SettingsStore.Current.ShowWeatherInMenuBar) await WeatherService.GetAsync(); };
+            _weatherTimer.Start();
+            if (SettingsStore.Current.ShowWeatherInMenuBar) _ = WeatherService.GetAsync();
+        }
+
+        // ================== Ajustes ==================
+
         private static void OnSettingsChanged()
         {
             var s = SettingsStore.Current;
@@ -130,72 +273,77 @@ namespace McBar
             {
                 if (s.HideWindowsTaskbar) Taskbar.Hide(); else Taskbar.Restore();
                 _lastHideTaskbar = s.HideWindowsTaskbar;
-                Dock?.ApplyGeometry();
-            }
-            if (s.ShowMenuBar != _lastShowMenuBar)
-            {
-                MenuBarWin?.SetVisible(s.ShowMenuBar);
-                _lastShowMenuBar = s.ShowMenuBar;
             }
             if (s.StartWithWindows != _lastStartWithWindows)
             {
                 SystemInfo.SetStartWithWindows(s.StartWithWindows);
                 _lastStartWithWindows = s.StartWithWindows;
             }
+            if (s.AnimateWindows != _lastAnimate)
+            {
+                if (s.AnimateWindows) ShellHook.EnsureAnimationOn(); else ShellHook.RestoreAnimation();
+                _lastAnimate = s.AnimateWindows;
+            }
+            if (s.UseOwnTray != _lastOwnTray)
+            {
+                if (s.UseOwnTray) StartTray(); else StopTray();
+                _lastOwnTray = s.UseOwnTray;
+            }
+            if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
+            BuildMonitors(); // si cambiaron monitores/visibilidad se rehace; si no, solo recalcula áreas
+            foreach (var mb in MenuBars) mb.SetVisible(s.ShowMenuBar);
+            UpdateWorkAreas();
         }
 
         // ================== Coordinación ==================
 
-        /// <summary>Una app entró o salió de pantalla completa (video, juego, presentación).</summary>
-        public static void OnFullscreenChanged(bool fullscreen)
-        {
-            if (fullscreen)
-            {
-                // Windows a veces avisa "pantalla completa" cuando se hace clic en el escritorio: se ignora.
-                var fg = Win32.GetForegroundWindow();
-                var cls = WindowOps.GetClass(fg);
-                if (fg == IntPtr.Zero || cls == "Progman" || cls == "WorkerW" || Taskbar.IsShellTrayClass(cls)) return;
-            }
-            Dock?.SetFullscreen(fullscreen);
-            MenuBarWin?.SetFullscreen(fullscreen);
-        }
-
-        /// <summary>El Explorador de Windows se reinició: volver a esconder su barra y re-registrar las nuestras.</summary>
+        /// <summary>El Explorador de Windows se reinició: volver a esconder su barra y recuperar la bandeja.</summary>
         public static void OnExplorerRestarted()
         {
+            var tray = TrayHost.Current;
+            if (tray != null && tray.IsOwnBroadcastRecent) return; // fue nuestro propio aviso
             if (SettingsStore.Current.HideWindowsTaskbar) Taskbar.Hide();
-            MenuBarWin?.ReRegisterAppBar();
-            Dock?.ReRegisterAppBar();
+            UpdateWorkAreas();
+            if (tray != null)
+            {
+                tray.Raise();
+                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                t.Tick += (_, _) => { t.Stop(); tray.Raise(); tray.Broadcast(); };
+                t.Start();
+            }
         }
 
         private static bool RecentlyClosed(DateTime closedAt) => (DateTime.Now - closedAt).TotalMilliseconds < 350;
 
-        public static void ToggleLaunchpad()
+        public static void ToggleLaunchpad() => ToggleLaunchpad(null);
+
+        public static void ToggleLaunchpad(MonitorInfo? monitor)
         {
             if (_launchpad != null && _launchpad.IsVisible) { _launchpad.CloseAnimated(); return; }
             if (_launchpad != null && RecentlyClosed(_launchpad.ClosedAt)) return;
-            _launchpad = new LaunchpadWindow();
+            _launchpad = new LaunchpadWindow(MonitorOrPrimary(monitor));
             _launchpad.ShowAnimated();
         }
 
-        public static void ToggleControlCenter()
+        public static void ToggleControlCenter(MonitorInfo? monitor = null)
         {
             if (_controlCenter != null && _controlCenter.IsVisible && !_controlCenter.IsClosing) { _controlCenter.CloseAnimated(); return; }
             if (_controlCenter != null && RecentlyClosed(_controlCenter.ClosedAt)) return;
             _widgets?.CloseAnimated();
             _controlCenter = new ControlCenterWindow();
-            _controlCenter.ShowBelowMenuBar();
+            _controlCenter.ShowBelowMenuBar(MonitorOrPrimary(monitor));
         }
 
-        public static void ToggleWidgets()
+        public static void ToggleWidgets(MonitorInfo? monitor = null)
         {
             if (_widgets != null && _widgets.IsVisible && !_widgets.IsClosing) { _widgets.CloseAnimated(); return; }
             if (_widgets != null && RecentlyClosed(_widgets.ClosedAt)) return;
             _controlCenter?.CloseAnimated();
+            var m = MonitorOrPrimary(monitor);
             _widgets = new WidgetsWindow();
-            double top = SettingsStore.Current.ShowMenuBar ? MenuBarWindow.BarHeightDip - 4 : 0;
-            double height = Math.Max(300, SystemParameters.WorkArea.Bottom - top + 6);
-            _widgets.ShowBelowMenuBar(height);
+            double top = m.Bounds.Top / Scale + (SettingsStore.Current.ShowMenuBar ? MenuBarWindow.BarHeightDip + 6 : 8);
+            double bottom = m.Work.Bottom / Scale - 8;
+            _widgets.ShowBelowMenuBar(m, Math.Max(300, bottom - top));
         }
 
         public static void OpenSettings()
@@ -236,10 +384,15 @@ namespace McBar
         {
             if (_cleanedUp) return;
             _cleanedUp = true;
-            try { Dock?.Teardown(); } catch { }
-            try { MenuBarWin?.Teardown(); } catch { }
+            foreach (var d in Docks) { try { d.Teardown(); } catch { } }
+            foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }
+            try { TrayHost.Current?.Dispose(); } catch { }
+            try { Hook?.Dispose(); } catch { }
+            try { Fullscreen?.Dispose(); } catch { }
             try { Tracker?.Dispose(); } catch { }
+            try { WorkArea.Reset(); } catch { }
             try { if (Taskbar.IsHiddenByUs || SettingsStore.Current.TaskbarModified) Taskbar.Restore(); } catch { }
+            try { ShellHook.RestoreAnimation(); } catch { }
         }
     }
 }

@@ -30,8 +30,15 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <Button x:Name="TrayButton" Style="{StaticResource McFlatButton}" ToolTip="Íconos de la bandeja de Windows">
+                <!-- Bandeja propia: íconos de las apps (WhatsApp, antivirus, etc.) -->
+                <StackPanel x:Name="TrayPanel" Orientation="Horizontal"/>
+                <Button x:Name="TrayButton" Style="{StaticResource McFlatButton}" ToolTip="Más íconos de la bandeja">
                     <TextBlock FontFamily="{StaticResource Mc.Icons}" Text="&#xE70E;" FontSize="11"/>
+                </Button>
+                <Button x:Name="WeatherButton" Style="{StaticResource McFlatButton}" Visibility="Collapsed">
+                    <StackPanel x:Name="WeatherContent" Orientation="Horizontal">
+                        <TextBlock x:Name="WeatherText" Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12.5"/>
+                    </StackPanel>
                 </Button>
                 <Button x:Name="BatteryButton" Style="{StaticResource McFlatButton}">
                     <StackPanel Orientation="Horizontal">

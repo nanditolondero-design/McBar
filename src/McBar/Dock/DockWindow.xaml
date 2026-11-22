@@ -1,6 +1,7 @@
 <!-- McBar — Creado por Andrés Londero.
-     El Dock: ventana transparente a lo ancho de la pantalla, abajo. Las zonas transparentes dejan pasar
-     los clics a las ventanas de atrás; solo la barra y los íconos reciben el mouse. -->
+     El Dock: ventana transparente abajo de cada monitor. Las zonas transparentes dejan pasar los clics
+     a las ventanas de atrás; solo la barra y los íconos reciben el mouse. Detrás de la barra hay una
+     ventanita aparte con desenfoque real (DockBackdrop). -->
 <Window x:Class="McBar.Dock.DockWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

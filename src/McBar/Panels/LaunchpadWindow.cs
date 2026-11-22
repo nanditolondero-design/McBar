@@ -39,7 +39,9 @@ namespace McBar.Panels
 
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
 
-        public LaunchpadWindow()
+        private bool _loaded;
+
+        public LaunchpadWindow(MonitorInfo monitor)
         {
             Title = "Launchpad";
             WindowStyle = WindowStyle.None;
@@ -48,10 +50,11 @@ namespace McBar.Panels
             Topmost = true;
             ShowInTaskbar = false;
             ResizeMode = ResizeMode.NoResize;
-            Left = 0;
-            Top = 0;
-            Width = SystemParameters.PrimaryScreenWidth;
-            Height = SystemParameters.PrimaryScreenHeight;
+            double sc = App.Scale;
+            Left = monitor.Bounds.Left / sc;
+            Top = monitor.Bounds.Top / sc;
+            Width = monitor.Bounds.Width / sc;
+            Height = monitor.Bounds.Height / sc;
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             Opacity = 0;
 
@@ -66,7 +69,8 @@ namespace McBar.Panels
             // Búsqueda
             var searchHost = new Grid { Width = 260, Height = 32, VerticalAlignment = VerticalAlignment.Center };
             _search.SetResourceReference(StyleProperty, "McTextBox");
-            _search.Background = new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
+            _search.Background = new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF));
+            _search.BorderBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
             _search.Foreground = Brushes.White;
             _search.CaretBrush = Brushes.White;
             _search.VerticalContentAlignment = VerticalAlignment.Center;
@@ -83,6 +87,7 @@ namespace McBar.Panels
             // Páginas
             var viewport = new Grid { ClipToBounds = true, Margin = new Thickness(60, 0, 60, 0) };
             _strip.RenderTransform = _stripShift;
+
             _strip.HorizontalAlignment = HorizontalAlignment.Left;
             viewport.Children.Add(_strip);
             viewport.SizeChanged += (_, _) => { _pageWidth = viewport.ActualWidth; Rebuild(); };
@@ -112,9 +117,12 @@ namespace McBar.Panels
             {
                 _search.Focus();
                 if (AppCatalog.Cached != null) { _all = AppCatalog.Cached.ToList(); Filter(); }
+                else Rebuild();
                 var fresh = await AppCatalog.LoadAsync();
+                _loaded = true;
                 if (_closing) return;
-                if (fresh.Count != _all.Count || AppCatalog.Cached == null) { _all = fresh; Filter(); }
+                _all = fresh;
+                Filter();
             };
         }
 
@@ -168,12 +176,15 @@ namespace McBar.Panels
             for (int p = 0; p < _pageCount; p++)
             {
                 var grid = new UniformGrid { Columns = Cols, Rows = Rows, Width = _pageWidth, VerticalAlignment = VerticalAlignment.Top };
+                // Sombra suave en los nombres (como en macOS) y caché en la tarjeta de video: el paso de página queda fluido.
+                grid.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 6, ShadowDepth = 1, Opacity = 0.5, Color = Colors.Black };
+                grid.CacheMode = new BitmapCache();
                 foreach (var app in _shown.Skip(p * perPage).Take(perPage)) grid.Children.Add(Tile(app));
                 _strip.Children.Add(grid);
             }
             if (_shown.Count == 0)
             {
-                var none = new TextBlock { Text = "No se encontraron apps", Foreground = Brushes.White, FontSize = 18, Width = _pageWidth, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 80, 0, 0) };
+                var none = new TextBlock { Text = _loaded || _search.Text.Length > 0 ? "No se encontraron apps" : "Cargando apps…", Foreground = Brushes.White, FontSize = 18, Width = _pageWidth, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 80, 0, 0) };
                 _strip.Children.Clear();
                 _strip.Children.Add(none);
             }
@@ -183,7 +194,7 @@ namespace McBar.Panels
 
         private UIElement Tile(CatalogApp app)
         {
-            var img = new Image { Width = 72, Height = 72 };
+            var img = new Image { Width = 80, Height = 80 };
             RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
             var label = new TextBlock
             {

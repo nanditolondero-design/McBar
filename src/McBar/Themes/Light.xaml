@@ -6,7 +6,9 @@
     <Color x:Key="Mc.ShadowColor">#000000</Color>
     <SolidColorBrush x:Key="Mc.Text" Color="#E6000000"/>
     <SolidColorBrush x:Key="Mc.TextDim" Color="#8F000000"/>
-    <SolidColorBrush x:Key="Mc.PanelBg" Color="#F5F4F4F6"/>
+    <SolidColorBrush x:Key="Mc.PanelBg" Color="#F0F4F4F6"/>
+    <!-- Paneles con desenfoque real detrás (Centro de control, Widgets) -->
+    <SolidColorBrush x:Key="Mc.GlassBg" Color="#C4F6F6F8"/>
     <SolidColorBrush x:Key="Mc.PanelBorder" Color="#24000000"/>
     <SolidColorBrush x:Key="Mc.WindowBg" Color="#FFF2F2F4"/>
     <SolidColorBrush x:Key="Mc.TileBg" Color="#FFFFFFFF"/>
@@ -16,7 +18,7 @@
     <SolidColorBrush x:Key="Mc.Accent" Color="#FF007AFF"/>
     <SolidColorBrush x:Key="Mc.AccentText" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="Mc.Separator" Color="#21000000"/>
-    <SolidColorBrush x:Key="Mc.DockBg" Color="#C7F2F2F4"/>
+    <SolidColorBrush x:Key="Mc.DockBg" Color="#85F4F4F6"/>
     <SolidColorBrush x:Key="Mc.DockBorder" Color="#66FFFFFF"/>
     <SolidColorBrush x:Key="Mc.MenuBarBg" Color="#99F5F5F7"/>
     <SolidColorBrush x:Key="Mc.Track" Color="#2E000000"/>

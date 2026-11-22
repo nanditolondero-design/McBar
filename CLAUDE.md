@@ -23,7 +23,7 @@ src/McBar/
   Themes/                Dark.xaml, Light.xaml (colores) y Controls.xaml (estilos)
   Native/                Win32 (P/Invoke), AppBar, COM del Shell, audio, barra de Windows, operaciones de ventanas
   Core/                  ajustes, seguimiento de ventanas, identidad de apps, catálogo, íconos, clima, ampliación (matemática), sistema
-  Dock/                  DockWindow + DockItem (vista y modelo)
+  Dock/                  DockWindow + DockItem (vista y modelo) + DockBackdrop (desenfoque)
   MenuBar/               MenuBarWindow
   Panels/                PanelWindow (base), Centro de control, Widgets, Launchpad, Preferencias, diálogos
 tests/McBar.Tests/       pruebas xUnit
@@ -39,6 +39,10 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Ajustes nuevos: propiedad en `AppSettings`, corregir rango en `SettingsStore.Sanitize`, control en `SettingsWindow`, reaccionar a `SettingsStore.Changed`.
 
 ## Puntos delicados
+- `WorkArea` (no AppBar): el área de trabajo de cada monitor la fija McBar. Siempre llamar `App.UpdateWorkAreas()` si cambia algo que ocupa espacio, y `WorkArea.Reset()` al salir.
+- `TrayHost`: nuestra ventana se llama `Shell_TrayWnd`. Todo lo que no sea bandeja (mensajes de AppBar) se reenvía al Explorador; `Taskbar.ExplorerTray()` saltea la nuestra. Ignorar `TaskbarCreated` propio (`IsOwnBroadcastRecent`).
+- Menús y popups del Dock/barra: siempre `PopupGuard.Attach(...)`.
+- Cosas de pantalla por monitor: recibir `MonitorInfo`; las medidas en píxeles se convierten con `App.Scale` (escala del sistema).
 - `Taskbar`: guarda el estado original en settings (`TaskbarModified`, `OriginalTaskbarState`) antes de tocar nada. `--restaurar` lo devuelve.
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).
 - `WindowTracker`: el delegado del hook debe quedar referenciado en un campo (si no, el GC lo borra y la app se cae).

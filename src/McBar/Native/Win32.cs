@@ -150,6 +150,87 @@ namespace McBar.Native
 
         public static readonly Guid FOLDERID_Downloads = new Guid("374DE290-123F-4565-9164-39C4925E467B");
 
+
+        // ---------- Etapa 2: monitores, área de trabajo, regiones, bandeja, shell hook ----------
+        public delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdc, ref RECT rc, IntPtr data);
+        public delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        public const uint MONITORINFOF_PRIMARY = 1;
+        public const uint MONITOR_DEFAULTTONEAREST = 2;
+        public const uint SPI_SETWORKAREA = 0x002F;
+        public const uint SPI_GETANIMATION = 0x0048;
+        public const uint SPI_SETANIMATION = 0x0049;
+        public const uint SPIF_UPDATEINIFILE = 0x01;
+        public const uint SPIF_SENDCHANGE = 0x02;
+        public const uint WM_COPYDATA = 0x004A;
+        public const int VK_LBUTTON = 0x01, VK_RBUTTON = 0x02, VK_MBUTTON = 0x04;
+        public static readonly IntPtr HWND_MESSAGE = new IntPtr(-3);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct MONITORINFOEX
+        {
+            public int cbSize;
+            public RECT rcMonitor;
+            public RECT rcWork;
+            public uint dwFlags;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szDevice;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int x, y; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ANIMATIONINFO { public uint cbSize; public int iMinAnimate; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct COPYDATASTRUCT { public IntPtr dwData; public int cbData; public IntPtr lpData; }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WNDCLASSEX
+        {
+            public uint cbSize, style;
+            public IntPtr lpfnWndProc;
+            public int cbClsExtra, cbWndExtra;
+            public IntPtr hInstance, hIcon, hCursor, hbrBackground;
+            public string? lpszMenuName;
+            public string lpszClassName;
+            public IntPtr hIconSm;
+        }
+
+        [DllImport("user32.dll")] public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc proc, IntPtr data);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX info);
+        [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+        [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
+        [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
+        [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+        [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vk);
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoRect(uint action, uint param, ref RECT rect, uint winIni);
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoAnim(uint action, uint param, ref ANIMATIONINFO info, uint winIni);
+        [DllImport("user32.dll")] public static extern int SetWindowRgn(IntPtr hwnd, IntPtr hRgn, bool redraw);
+        [DllImport("gdi32.dll")] public static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int w, int h);
+        [DllImport("user32.dll")] public static extern bool RegisterShellHookWindow(IntPtr hwnd);
+        [DllImport("user32.dll")] public static extern bool DeregisterShellHookWindow(IntPtr hwnd);
+        [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(uint pid);
+        [DllImport("user32.dll")] public static extern IntPtr CopyIcon(IntPtr hIcon);
+        [DllImport("user32.dll")] public static extern bool DestroyIcon(IntPtr hIcon);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern ushort RegisterClassEx(ref WNDCLASSEX wc);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr CreateWindowEx(uint exStyle, string className, string windowName, uint style, int x, int y, int w, int h, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr param);
+        [DllImport("user32.dll")] public static extern bool DestroyWindow(IntPtr hwnd);
+        [DllImport("user32.dll")] public static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] public static extern uint GetDpiForSystem();
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr GetModuleHandle(string? name);
+        [DllImport("shell32.dll")] public static extern int SHGetKnownFolderItem([MarshalAs(UnmanagedType.LPStruct)] Guid id, uint flags, IntPtr token, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.Interface)] out object? ppv);
+
+        public static double SystemScale()
+        {
+            try { return GetDpiForSystem() / 96.0; } catch { return 1.0; }
+        }
+
+        public static bool IsMouseButtonDown() =>
+            (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0 || (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 || (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+
+        public static uint ProcessOf(IntPtr hwnd) { GetWindowThreadProcessId(hwnd, out var pid); return pid; }
+
         // ---------- Estructuras ----------
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT { public int left, top, right, bottom; }

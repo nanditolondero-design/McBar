@@ -1,6 +1,7 @@
 // McBar — Creado por Andrés Londero
 // Preferencias de McBar. Cada cambio se aplica al instante y se guarda en settings.json.
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -57,6 +58,11 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Animar al abrir aplicaciones", s.BounceOnLaunch, v => s.BounceOnLaunch = v));
             dock.Children.Add(Switch("Mostrar indicadores de apps abiertas", s.ShowIndicators, v => s.ShowIndicators = v));
             dock.Children.Add(Switch("Clic en la app activa la minimiza (como Windows)", s.ClickMinimizes, v => s.ClickMinimizes = v));
+            dock.Children.Add(Segment("Estilo", new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo") },
+                s.DockStyle, v => { s.DockStyle = v; Changed(); }));
+            dock.Children.Add(Switch("El fondo se estira al ampliar (como macOS)", s.DockBackgroundStretch, v => s.DockBackgroundStretch = v));
+            dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
+            dock.Children.Add(Switch("Animar ventanas al minimizar y restaurar (hacia el Dock)", s.AnimateWindows, v => s.AnimateWindows = v));
             root.Children.Add(Group(dock));
 
             // ---------- Barra de menú ----------
@@ -65,7 +71,17 @@ namespace McBar.Panels
             bar.Children.Add(Switch("Mostrar la barra de menú arriba", s.ShowMenuBar, v => s.ShowMenuBar = v));
             bar.Children.Add(Switch("Mostrar el porcentaje de batería", s.ShowBatteryPercent, v => s.ShowBatteryPercent = v));
             bar.Children.Add(Switch("Mostrar la fecha en el reloj", s.ShowDateInClock, v => s.ShowDateInClock = v));
+            bar.Children.Add(Switch("Mostrar el clima", s.ShowWeatherInMenuBar, v => s.ShowWeatherInMenuBar = v));
+            bar.Children.Add(Switch("Mostrar la barra en todos los monitores", s.MenuBarOnAllMonitors, v => s.MenuBarOnAllMonitors = v));
             root.Children.Add(Group(bar));
+
+            // ---------- Bandeja ----------
+            root.Children.Add(Header("Bandeja del sistema"));
+            var tray = new StackPanel();
+            tray.Children.Add(Switch("Mostrar los íconos de las apps en la barra de McBar", s.UseOwnTray, v => s.UseOwnTray = v));
+            tray.Children.Add(Switch("Íconos en blanco y negro (estilo Mac)", s.TrayMonochrome, v => s.TrayMonochrome = v));
+            tray.Children.Add(TrayList(s));
+            root.Children.Add(Group(tray));
 
             // ---------- General ----------
             root.Children.Add(Header("General"));
@@ -149,6 +165,64 @@ namespace McBar.Panels
             g.Children.Add(label);
             g.Children.Add(s);
             g.Children.Add(val);
+            return g;
+        }
+
+        /// <summary>Lista de los íconos de bandeja actuales: los apagados van al menú ⌃ de la barra.</summary>
+        private UIElement TrayList(AppSettings s)
+        {
+            var sp = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+            var host = McBar.Native.TrayHost.Current;
+            if (host == null || host.Icons.Count == 0)
+            {
+                var t = new TextBlock { Text = "Los íconos aparecen acá cuando las apps los agregan.", TextWrapping = TextWrapping.Wrap, FontSize = 12 };
+                t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+                sp.Children.Add(t);
+                return sp;
+            }
+            var hint = new TextBlock { Text = "Visibles en la barra (los apagados quedan en el menú ⌃):", FontSize = 12, Margin = new Thickness(0, 0, 0, 4) };
+            hint.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            sp.Children.Add(hint);
+            foreach (var ic in host.Icons.Where(i => i.Icon != null).GroupBy(i => i.StableId).Select(g => g.First()))
+            {
+                string name = !string.IsNullOrWhiteSpace(ic.Tooltip) ? ic.Tooltip.Split('\n')[0] : System.IO.Path.GetFileNameWithoutExtension(ic.ExePath);
+                if (name.Length > 48) name = name.Substring(0, 47) + "…";
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(new Image { Source = ic.Icon, Width = 16, Height = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
+                var label = new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center };
+                row.Children.Add(label);
+                var id = ic.StableId;
+                var c = new CheckBox { Content = row, IsChecked = !s.TrayHiddenIds.Contains(id) };
+                c.SetResourceReference(StyleProperty, "McSwitch");
+                c.Checked += (_, _) => { s.TrayHiddenIds.Remove(id); Changed(); };
+                c.Unchecked += (_, _) => { if (!s.TrayHiddenIds.Contains(id)) s.TrayHiddenIds.Add(id); Changed(); };
+                sp.Children.Add(c);
+            }
+            return sp;
+        }
+
+        private UIElement Segment(string text, (string key, string name)[] options, string current, Action<string> set)
+        {
+            var g = new Grid { Margin = new Thickness(0, 6, 0, 4) };
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            g.Children.Add(label);
+            var seg = new StackPanel { Orientation = Orientation.Horizontal };
+            var segBorder = new Border { Child = seg, CornerRadius = new CornerRadius(8), Padding = new Thickness(1) };
+            segBorder.SetResourceReference(Border.BackgroundProperty, "Mc.Hover");
+            string group = "Seg" + text;
+            foreach (var (key, name) in options)
+            {
+                var rb = new RadioButton { Content = name, GroupName = group, IsChecked = current == key };
+                rb.SetResourceReference(StyleProperty, "McSegment");
+                var k = key;
+                rb.Checked += (_, _) => set(k);
+                seg.Children.Add(rb);
+            }
+            Grid.SetColumn(segBorder, 1);
+            g.Children.Add(segBorder);
             return g;
         }
 

@@ -18,28 +18,45 @@ namespace McBar.Native
         public static bool IsHiddenByUs { get; private set; }
         public static bool TemporarilyShown { get; private set; }
 
+        private static readonly uint OwnPid = (uint)System.Environment.ProcessId;
+
+        /// <summary>
+        /// La barra real del Explorador. McBar también crea una ventana "Shell_TrayWnd" (su bandeja propia),
+        /// así que hay que saltear las de nuestro propio proceso.
+        /// </summary>
+        public static IntPtr ExplorerTray()
+        {
+            IntPtr after = IntPtr.Zero;
+            while (true)
+            {
+                after = Win32.FindWindowEx(IntPtr.Zero, after, "Shell_TrayWnd", null);
+                if (after == IntPtr.Zero) return IntPtr.Zero;
+                if (Win32.ProcessOf(after) != OwnPid) return after;
+            }
+        }
+
         private static IEnumerable<IntPtr> TrayWindows()
         {
-            var main = Win32.FindWindow("Shell_TrayWnd", null);
+            var main = ExplorerTray();
             if (main != IntPtr.Zero) yield return main;
             IntPtr after = IntPtr.Zero;
             while (true)
             {
                 after = Win32.FindWindowEx(IntPtr.Zero, after, "Shell_SecondaryTrayWnd", null);
                 if (after == IntPtr.Zero) break;
-                yield return after;
+                if (Win32.ProcessOf(after) != OwnPid) yield return after;
             }
         }
 
         private static int GetState()
         {
-            var abd = new Win32.APPBARDATA { cbSize = Marshal.SizeOf<Win32.APPBARDATA>(), hWnd = Win32.FindWindow("Shell_TrayWnd", null) };
+            var abd = new Win32.APPBARDATA { cbSize = Marshal.SizeOf<Win32.APPBARDATA>(), hWnd = ExplorerTray() };
             return (int)Win32.SHAppBarMessage(ABM_GETSTATE, ref abd).ToUInt32();
         }
 
         private static void SetState(int state)
         {
-            var abd = new Win32.APPBARDATA { cbSize = Marshal.SizeOf<Win32.APPBARDATA>(), hWnd = Win32.FindWindow("Shell_TrayWnd", null), lParam = new IntPtr(state) };
+            var abd = new Win32.APPBARDATA { cbSize = Marshal.SizeOf<Win32.APPBARDATA>(), hWnd = ExplorerTray(), lParam = new IntPtr(state) };
             Win32.SHAppBarMessage(ABM_SETSTATE, ref abd);
         }
 

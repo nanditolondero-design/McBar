@@ -1,9 +1,10 @@
 // McBar — Creado por Andrés Londero
-// Lógica del Dock: ampliación con el mouse, rebote al abrir apps, indicadores de apps abiertas,
-// arrastrar para reordenar o quitar, soltar archivos/apps, menús contextuales, Descargas y Papelera.
+// Lógica del Dock (uno por monitor): ampliación, rebote al abrir apps, indicadores, arrastrar para
+// reordenar o sacar (con "nubecita"), soltar archivos/apps/carpetas, menús, pilas de carpetas,
+// Papelera, estilos (clásico, flotante, ancho completo) y ocultación automática.
 //
 // Consumo: no hay temporizadores corriendo en reposo. El bucle de animación (CompositionTarget.Rendering)
-// se engancha solo mientras algo se mueve y se suelta solo cuando todo quedó quieto.
+// se engancha solo mientras algo se mueve, y todo se mueve con transformaciones (sin recalcular diseño).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +14,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using McBar.Core;
@@ -23,18 +25,20 @@ namespace McBar.Dock
 {
     public partial class DockWindow : Window
     {
-        // Medidas (en unidades de WPF, 1 = 1 píxel a 100 % de escala)
         private const double Pad = 7;            // espacio vertical entre íconos y borde de la barra
         private const double BarPadX = 9;        // espacio a los costados de la barra
-        private const double BottomMargin = 5;   // separación entre la barra y el borde de la pantalla
         private const double LabelSpace = 46;    // lugar arriba para la etiqueta con el nombre
         private const double SeparatorWidth = 14;
+        private const double PullOutDistance = 50; // cuánto hay que arrastrar hacia arriba para quitar
         private const string TrashParsingName = "::{645FF040-5081-101B-9F08-00AA002F954E}";
 
+        private readonly MonitorInfo _monitor;
         private readonly List<DockItem> _items = new List<DockItem>();
         private readonly Stopwatch _clock = Stopwatch.StartNew();
         private readonly DispatcherTimer _hideTimer;
-        private AppBar? _appBar;
+        private readonly DockBackdrop _backdrop;
+        private IntPtr _hwnd;
+        private int _winLeftPx, _winTopPx, _winWidthPx, _winHeightPx;
 
         private bool _animating;
         private double _lastTick;
@@ -45,6 +49,8 @@ namespace McBar.Dock
         private bool _menuOpen;
         private bool _hidden;
         private bool _fullscreen;
+        private double _barWidthCur = -1;
+        private int _lastIconSize;
 
         // arrastre
         private DockItem? _pressItem;
@@ -52,17 +58,31 @@ namespace McBar.Dock
         private bool _dragging;
         private Point _dragPos;
 
-        private double BaseSize => SettingsStore.Current.DockIconSize;
-        private double MaxSize => SettingsStore.Current.Magnification ? SettingsStore.Current.MagnifiedSize : BaseSize;
+        public MonitorInfo Monitor => _monitor;
+
+        private static AppSettings S => SettingsStore.Current;
+        private double BaseSize => S.DockIconSize;
+        private double MaxSize => S.Magnification ? S.MagnifiedSize : BaseSize;
         private double Gap => Math.Round(BaseSize * 0.1);
         private double BarHeight => BaseSize + Pad * 2;
-        private double WindowHeightDip => Math.Max(MaxSize, BaseSize + BaseSize * 0.55) + Pad + BottomMargin + LabelSpace;
+        private double BottomMargin => S.DockStyle == "floating" ? 14 : 4;
+        private double Radius => S.DockStyle == "floating" ? 22 : S.DockStyle == "full" ? 14 : 18;
+        private double WindowHeightDip => Math.Max(MaxSize, BaseSize * 1.55) + Pad + BottomMargin + LabelSpace;
         private double BarTop => ActualHeight - BottomMargin - BarHeight;
         private double IconBottom => ActualHeight - BottomMargin - Pad;
 
-        public DockWindow()
+        /// <summary>Píxeles a reservar abajo para que las ventanas maximizadas no queden tapadas.</summary>
+        public int ReservePx => S.DockAutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * App.Scale);
+
+        internal DockWindow(MonitorInfo monitor)
         {
             InitializeComponent();
+            _monitor = monitor;
+
+            _backdrop = new DockBackdrop();
+            _backdrop.Show();
+            Owner = _backdrop; // así el Dock siempre queda por encima de su fondo desenfocado
+
             _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(650) };
             _hideTimer.Tick += (_, _) => { _hideTimer.Stop(); TryAutoHide(); };
 
@@ -73,114 +93,167 @@ namespace McBar.Dock
             HotZone.MouseEnter += (_, _) => { if (_hidden) { _hidden = false; EnsureAnimating(); } };
             SizeChanged += (_, _) => EnsureAnimating();
             DragOver += Window_DragOver;
-            Drop += Window_Drop;
             DragLeave += (_, _) => { _hover = false; EnsureAnimating(); };
+            Drop += Window_Drop;
 
             SourceInitialized += (_, _) =>
             {
+                _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
-                _appBar = new AppBar(this, AppBarEdge.Bottom);
-                _appBar.FullscreenChanged += fs => App.OnFullscreenChanged(fs);
                 ApplyGeometry();
             };
             Loaded += (_, _) =>
             {
-                ApplyGeometry();
                 BuildItems();
                 App.Tracker.WindowsChanged += SyncWindows;
                 SyncWindows();
                 SettingsStore.Changed += OnSettingsChanged;
-                Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(new Action(ApplyGeometry));
+                SettingsStore.PinsChanged += OnPinsChanged;
             };
+            Closed += (_, _) => Teardown();
         }
 
         // ================== Geometría ==================
 
+        private int ComputeWidthPx()
+        {
+            if (S.DockStyle == "full") return _monitor.Bounds.Width;
+            var baseSizes = _items.Select(BaseOf).ToArray();
+            double need = Magnifier.TotalWidth(baseSizes, Gap) + BarPadX * 2 + (MaxSize - BaseSize) * 3 + 280;
+            return (int)Math.Min(_monitor.Bounds.Width, Math.Ceiling(need * App.Scale));
+        }
+
         public void ApplyGeometry()
         {
-            if (_appBar == null) return;
-            double scale = WindowOps.DpiScale(this);
-            int heightPx = (int)Math.Ceiling(WindowHeightDip * scale);
-            int reservePx = (int)Math.Ceiling((BarHeight + BottomMargin) * scale);
-            if (SettingsStore.Current.DockAutoHide)
+            if (_hwnd == IntPtr.Zero) return;
+            double sc = App.Scale;
+            _winHeightPx = (int)Math.Ceiling(WindowHeightDip * sc);
+            _winWidthPx = ComputeWidthPx();
+            var b = _monitor.Bounds;
+            _winLeftPx = b.Left + (b.Width - _winWidthPx) / 2;
+            _winTopPx = b.Bottom - _winHeightPx;
+            Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, _winWidthPx, _winHeightPx, Win32.SWP_NOACTIVATE);
+
+            HotZone.Visibility = S.DockAutoHide ? Visibility.Visible : Visibility.Collapsed;
+            if (!S.DockAutoHide) _hidden = false;
+
+            Bar.CornerRadius = new CornerRadius(Radius);
+            if (S.DockStyle == "floating")
             {
-                _appBar.PlaceWithoutReserving(heightPx);
-                HotZone.Visibility = Visibility.Visible;
+                Bar.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 6, Opacity = 0.35 };
+                Bar.CacheMode = new BitmapCache();
             }
             else
             {
-                _appBar.Register();
-                _appBar.Apply(reservePx, heightPx);
-                HotZone.Visibility = Visibility.Collapsed;
-                _hidden = false;
+                Bar.Effect = null;
+                Bar.CacheMode = null;
             }
+            foreach (var it in _items) it.View.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
+            App.UpdateWorkAreas();
             EnsureAnimating();
         }
 
-        public void ReRegisterAppBar()
+        private void CheckWindowWidth()
         {
-            if (_appBar == null) return;
-            if (SettingsStore.Current.DockAutoHide) ApplyGeometry();
-            else { _appBar.ReRegister(); ApplyGeometry(); }
+            int need = ComputeWidthPx();
+            if (need > _winWidthPx || need < _winWidthPx - BaseSize * 3 * App.Scale) ApplyGeometry();
         }
 
         public void SetFullscreen(bool fullscreen)
         {
             if (_fullscreen == fullscreen) return;
             _fullscreen = fullscreen;
-            Visibility = fullscreen ? Visibility.Hidden : Visibility.Visible;
+            var v = fullscreen ? Visibility.Hidden : Visibility.Visible;
+            Visibility = v;
+            _backdrop.Visibility = v;
         }
 
         public void Teardown()
         {
-            _appBar?.Remove();
             SettingsStore.Changed -= OnSettingsChanged;
+            SettingsStore.PinsChanged -= OnPinsChanged;
+            App.Tracker.WindowsChanged -= SyncWindows;
+            if (_animating) { CompositionTarget.Rendering -= OnRendering; _animating = false; }
+            try { _backdrop.Close(); } catch { }
         }
-
-        private int _lastIconSize;
 
         private void OnSettingsChanged()
         {
             ApplyGeometry();
             if (_lastIconSize != IconPixelSize()) ReloadIcons();
-            foreach (var it in _items) it.View.Visibility = Visibility.Visible;
             EnsureAnimating();
         }
 
-        private int IconPixelSize()
+        private void OnPinsChanged(object? source)
         {
-            double scale = Math.Max(1.0, WindowOps.DpiScale(this));
-            return (int)Math.Min(256, Math.Ceiling(MaxSize * scale / 16.0) * 16);
+            if (source == this) return;
+            RebuildItems();
+        }
+
+        private static int IconPixelSize()
+        {
+            double max = S.Magnification ? S.MagnifiedSize : S.DockIconSize;
+            return (int)Math.Min(256, Math.Ceiling(max * Math.Max(1.0, App.Scale) / 16.0) * 16);
         }
 
         // ================== Elementos ==================
 
+        private double BaseOf(DockItem i) => i.Removing ? 0 : i.Kind == DockItemKind.Separator ? SeparatorWidth : BaseSize;
+
         private void BuildItems()
         {
-            foreach (var p in SettingsStore.Current.Pinned)
+            foreach (var p in S.Pinned)
             {
-                var item = CreatePinned(p);
+                var item = CreatePinned(p, false);
                 if (item != null) AddItem(item, _items.Count);
             }
-            AddItem(new DockItem(DockItemKind.Separator) { Name = "" }, _items.Count);
-            AddItem(new DockItem(DockItemKind.Downloads) { Name = "Descargas", IsPinned = true }, _items.Count);
-            AddItem(new DockItem(DockItemKind.Trash) { Name = "Papelera", IsPinned = true }, _items.Count);
-            foreach (var it in _items) it.CurrentSize = it.Kind == DockItemKind.Separator ? SeparatorWidth : BaseSize;
+            AddItem(new DockItem(DockItemKind.Separator), _items.Count);
+            foreach (var p in S.Stacks)
+            {
+                var item = CreatePinned(p, true);
+                if (item != null) AddItem(item, _items.Count);
+            }
+            foreach (var it in _items) it.CurrentSize = BaseOf(it);
             ReloadIcons();
+            CheckWindowWidth();
         }
 
-        private static DockItem? CreatePinned(PinnedApp p)
+        private void RebuildItems()
         {
-            if (p.Target == AppIdentity.Launchpad)
-                return new DockItem(DockItemKind.Launchpad) { Name = "Launchpad", Target = p.Target, IsPinned = true };
-            if (AppIdentity.IsSpecial(p.Target)) return null;
+            foreach (var it in _items.ToList()) RemoveNow(it);
+            _barWidthCur = -1;
+            BuildItems();
+            SyncWindows();
+        }
+
+        private static DockItem? CreatePinned(PinnedApp p, bool isStack)
+        {
+            var t = p.Target;
+            if (t == AppIdentity.Launchpad)
+                return new DockItem(DockItemKind.Launchpad, isStack) { Name = "Launchpad", Target = t, IsPinned = true };
+            if (t == AppIdentity.Downloads)
+                return new DockItem(DockItemKind.Downloads, isStack) { Name = "Descargas", Target = t, IsPinned = true };
+            if (t == AppIdentity.Trash)
+                return new DockItem(DockItemKind.Trash, isStack) { Name = "Papelera", Target = t, IsPinned = true };
+            if (AppIdentity.IsSpecial(t)) return null;
+            if (isStack)
+            {
+                bool folder = Directory.Exists(t);
+                return new DockItem(folder ? DockItemKind.Folder : DockItemKind.File, true)
+                {
+                    Name = string.IsNullOrWhiteSpace(p.Name) ? Path.GetFileName(t.TrimEnd('\\')) : p.Name,
+                    Target = t,
+                    IsPinned = true,
+                    IconSource = t
+                };
+            }
             return new DockItem(DockItemKind.App)
             {
-                Name = string.IsNullOrWhiteSpace(p.Name) ? AppIdentity.FriendlyName(p.Target) : p.Name,
-                Target = p.Target,
+                Name = string.IsNullOrWhiteSpace(p.Name) ? AppIdentity.FriendlyName(t) : p.Name,
+                Target = t,
                 IsPinned = true,
-                Keys = AppIdentity.KeysForTarget(p.Target),
-                IconSource = p.Target
+                Keys = AppIdentity.KeysForTarget(t),
+                IconSource = t
             };
         }
 
@@ -188,6 +261,7 @@ namespace McBar.Dock
         {
             _items.Insert(Math.Clamp(index, 0, _items.Count), item);
             var v = item.View;
+            v.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
             v.MouseEnter += (_, _) => { _hoverItem = item; EnsureAnimating(); };
             v.MouseLeave += (_, _) => { if (_hoverItem == item) { _hoverItem = null; EnsureAnimating(); } };
             v.MouseLeftButtonDown += (_, e) => { OnItemDown(item, e); e.Handled = true; };
@@ -197,10 +271,19 @@ namespace McBar.Dock
                 else if (e.ChangedButton == MouseButton.Middle && item.Kind == DockItemKind.App) { LaunchNew(item); e.Handled = true; }
             };
             Stage.Children.Add(v);
+            Stage.Children.Add(v.Dot);
+        }
+
+        private void RemoveNow(DockItem it)
+        {
+            Stage.Children.Remove(it.View);
+            Stage.Children.Remove(it.View.Dot);
+            _items.Remove(it);
+            if (_hoverItem == it) _hoverItem = null;
         }
 
         private int SeparatorIndex => _items.FindIndex(i => i.Kind == DockItemKind.Separator);
-        private int PinnedEnd => _items.FindLastIndex(i => i.IsPinned && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad)) + 1;
+        private int PinnedEnd => _items.FindLastIndex(i => !i.IsStack && i.IsPinned && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad)) + 1;
 
         private void ReloadIcons()
         {
@@ -223,6 +306,10 @@ namespace McBar.Dock
                 case DockItemKind.Trash:
                     IconLoader.Forget(TrashParsingName);
                     IconLoader.Request(TrashParsingName, px, img => it.View.SetIcon(img));
+                    break;
+                case DockItemKind.Folder:
+                case DockItemKind.File:
+                    if (it.Target != null) IconLoader.Request(it.Target, px, img => it.View.SetIcon(img));
                     break;
                 case DockItemKind.App:
                     if (!string.IsNullOrEmpty(it.IconSource))
@@ -248,7 +335,7 @@ namespace McBar.Dock
             var windows = App.Tracker.Windows;
             var claimed = new HashSet<IntPtr>();
 
-            foreach (var it in _items.Where(i => i.Kind == DockItemKind.App && i.IsPinned))
+            foreach (var it in _items.Where(i => i.Kind == DockItemKind.App && i.IsPinned && !i.IsStack))
             {
                 bool wasRunning = it.IsRunning;
                 it.Windows = windows.Where(w => w.Keys.Overlaps(it.Keys)).ToList();
@@ -259,7 +346,6 @@ namespace McBar.Dock
             var groups = windows.Where(w => !claimed.Contains(w.Hwnd)).GroupBy(w => w.PrimaryKey).ToList();
             var groupKeys = new HashSet<string>(groups.Select(g => g.Key));
 
-            // quitar apps sin fijar que ya se cerraron
             foreach (var it in _items.Where(i => i.Kind == DockItemKind.App && !i.IsPinned && !i.Removing).ToList())
             {
                 if (it.GroupKey == null || !groupKeys.Contains(it.GroupKey)) { it.Windows.Clear(); it.Removing = true; }
@@ -287,17 +373,30 @@ namespace McBar.Dock
                 AddItem(item, SeparatorIndex);
                 LoadIcon(item);
             }
+            CheckWindowWidth();
             EnsureAnimating();
         }
 
         private void StopBounceSoon(DockItem it)
         {
-            // deja terminar el salto actual y no empieza otro
             if (it.BounceStart < 0) return;
             double elapsed = _clock.Elapsed.TotalSeconds - it.BounceStart;
             const double period = 0.62;
             double endOfCurrent = Math.Ceiling(elapsed / period) * period;
             it.BounceStart = _clock.Elapsed.TotalSeconds - (3 * period - (endOfCurrent - elapsed));
+        }
+
+        /// <summary>Rectángulo (en píxeles) del ícono de la app dueña de esa ventana, para la animación de minimizar.</summary>
+        public PxRect? IconRectFor(IntPtr hwnd)
+        {
+            var it = _items.FirstOrDefault(i => i.Windows.Any(w => w.Hwnd == hwnd));
+            if (it == null || !IsVisible) return null;
+            double sc = App.Scale;
+            double size = BaseSize;
+            double left = it.LayoutLeft + (it.LayoutSize - size) / 2;
+            int x = _winLeftPx + (int)(left * sc);
+            int y = _winTopPx + (int)((IconBottom - size + HideShift.Y) * sc);
+            return new PxRect(x, y, x + (int)(size * sc), y + (int)(size * sc));
         }
 
         // ================== Animación ==================
@@ -322,6 +421,9 @@ namespace McBar.Dock
             }
         }
 
+        private bool IsPulledOut(DockItem it) =>
+            _dragging && it == _pressItem && it.Removable && _pressPoint.Y - _dragPos.Y > PullOutDistance;
+
         /// <summary>Un cuadro de animación. Devuelve true si algo se sigue moviendo.</summary>
         private bool Step(double dt, double now)
         {
@@ -329,17 +431,26 @@ namespace McBar.Dock
             int n = _items.Count;
             if (n == 0 || ActualWidth <= 0) return false;
 
+            // quitar los que terminaron (achicarse o "nubecita")
+            foreach (var it in _items.ToList())
+            {
+                if (it.PoofStart >= 0 && now - it.PoofStart >= 0.28) RemoveNow(it);
+                else if (it.Removing && it.PoofStart < 0 && it.CurrentSize <= 0.5) RemoveNow(it);
+            }
+            n = _items.Count;
+            if (n == 0) return false;
+
             var baseSizes = new double[n];
             var scalable = new bool[n];
             for (int i = 0; i < n; i++)
             {
-                var it = _items[i];
-                baseSizes[i] = it.Removing ? 0 : it.Kind == DockItemKind.Separator ? SeparatorWidth : BaseSize;
-                scalable[i] = it.Kind != DockItemKind.Separator;
+                baseSizes[i] = BaseOf(_items[i]);
+                scalable[i] = _items[i].Kind != DockItemKind.Separator;
             }
 
-            double? mouse = _hover && !_dragging && !_menuOpen ? _mouseX : (double?)null;
-            var targets = SettingsStore.Current.Magnification
+            // Con un menú abierto se mantiene la ampliación (antes el ícono se achicaba).
+            double? mouse = (_hover || _menuOpen) && !_dragging ? _mouseX : (double?)null;
+            var targets = S.Magnification
                 ? Magnifier.TargetSizes(baseSizes, scalable, Gap, mouse, MaxSize, BaseSize * 2.7)
                 : baseSizes;
 
@@ -347,35 +458,52 @@ namespace McBar.Dock
             for (int i = 0; i < n; i++)
             {
                 var it = _items[i];
-                double v = Magnifier.Approach(it.CurrentSize, targets[i], dt, mouse != null ? 22 : 14);
+                double v = Magnifier.Approach(it.CurrentSize, targets[i], dt, mouse != null ? 18 : 12);
                 if (v != targets[i]) moving = true;
                 it.CurrentSize = v;
                 cur[i] = v;
             }
 
-            // quitar los que terminaron de achicarse
-            for (int i = n - 1; i >= 0; i--)
-            {
-                var it = _items[i];
-                if (it.Removing && it.CurrentSize <= 0.5)
-                {
-                    Stage.Children.Remove(it.View);
-                    _items.RemoveAt(i);
-                    if (_hoverItem == it) _hoverItem = null;
-                    moving = true;
-                }
-            }
-            if (_items.Count != n) return true; // recalcular en el próximo cuadro
-
             var lefts = Magnifier.Layout(cur, baseSizes, Gap, _anchorX, out double start, out double width);
             double cx = ActualWidth / 2;
+            double sc = App.Scale;
 
-            Canvas.SetLeft(Bar, cx + start - BarPadX);
+            // ocultación automática
+            double hideTarget = _hidden ? BarHeight + BottomMargin + 8 : 0;
+            double hy = Magnifier.Approach(HideShift.Y, hideTarget, dt, 12);
+            if (hy != hideTarget) moving = true;
+            HideShift.Y = hy;
+
+            // fondo de la barra
+            double barLeft, barW;
+            if (S.DockStyle == "full")
+            {
+                barLeft = 8;
+                barW = ActualWidth - 16;
+            }
+            else if (S.DockBackgroundStretch)
+            {
+                barLeft = cx + start - BarPadX;
+                barW = width + BarPadX * 2;
+            }
+            else
+            {
+                double baseW = Magnifier.TotalWidth(baseSizes, Gap);
+                if (_barWidthCur < 0) _barWidthCur = baseW;
+                _barWidthCur = Magnifier.Approach(_barWidthCur, baseW, dt, 12);
+                if (_barWidthCur != baseW) moving = true;
+                barLeft = cx - _barWidthCur / 2 - BarPadX;
+                barW = _barWidthCur + BarPadX * 2;
+            }
+            Canvas.SetLeft(Bar, barLeft);
             Canvas.SetTop(Bar, BarTop);
-            Bar.Width = Math.Max(0, width + BarPadX * 2);
-            Bar.Height = BarHeight;
+            if (Math.Abs(Bar.Width - barW) > 0.01 || double.IsNaN(Bar.Width)) Bar.Width = Math.Max(0, barW);
+            if (Math.Abs(Bar.Height - BarHeight) > 0.01 || double.IsNaN(Bar.Height)) Bar.Height = BarHeight;
+            _backdrop.Place(_winLeftPx + (int)Math.Round(barLeft * sc), _winTopPx + (int)Math.Round((BarTop + hy) * sc),
+                            (int)Math.Round(barW * sc), (int)Math.Round(BarHeight * sc), (int)Math.Round(Radius * sc));
 
-            bool showDots = SettingsStore.Current.ShowIndicators;
+            bool showDots = S.ShowIndicators;
+            double dotY = ActualHeight - BottomMargin - Pad / 2 - 2;
             for (int i = 0; i < n; i++)
             {
                 var it = _items[i];
@@ -387,38 +515,49 @@ namespace McBar.Dock
                     if (el >= 3 * 0.62) it.BounceStart = -1; else moving = true;
                 }
                 double left = cx + lefts[i];
-                double extraUp = 0;
+                double extraUp = 0, extraScale = 1, opacity = it.Removing ? Math.Clamp(cur[i] / 40.0, 0, 1) : 1;
                 if (_dragging && it == _pressItem)
                 {
                     left = _dragPos.X - cur[i] / 2;
                     extraUp = Math.Max(0, _pressPoint.Y - _dragPos.Y);
+                    if (IsPulledOut(it)) opacity = 0.55;
                 }
-                it.View.Place(left, cur[i], IconBottom - extraUp, Pad, bounce,
-                              showDots && it.IsRunning && it.Kind == DockItemKind.App, BarHeight, BarTop);
+                if (it.PoofStart >= 0)
+                {
+                    double e = now - it.PoofStart;
+                    extraScale = 1 + e * 2.2;
+                    opacity = Math.Clamp(1 - e / 0.28, 0, 1);
+                    left = it.LayoutLeft;
+                    extraUp = it.PoofUp;
+                    moving = true;
+                }
+                else
+                {
+                    it.LayoutLeft = left;
+                    it.LayoutSize = cur[i];
+                }
+                it.View.Place(left, cur[i], IconBottom - extraUp, bounce, extraScale, opacity,
+                              showDots && it.IsRunning && it.Kind == DockItemKind.App, dotY, BarTop);
             }
 
-            // etiqueta con el nombre
-            var hi = _hoverItem;
-            if (hi != null && !_dragging && !_menuOpen && hi.Kind != DockItemKind.Separator && !hi.Removing && _hover)
+            // etiqueta: nombre al pasar el mouse, o "Quitar del Dock" al arrastrar afuera
+            DockItem? labelFor = null;
+            string? labelText = null;
+            if (_pressItem != null && IsPulledOut(_pressItem)) { labelFor = _pressItem; labelText = "Quitar del Dock"; }
+            else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
+            { labelFor = _hoverItem; labelText = _hoverItem.Name; }
+
+            if (labelFor != null && labelText != null)
             {
-                LabelText.Text = hi.Name;
+                LabelText.Text = labelText;
                 Label.Visibility = Visibility.Visible;
                 Label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 var ls = Label.DesiredSize;
-                int k = _items.IndexOf(hi);
-                if (k >= 0)
-                {
-                    Canvas.SetLeft(Label, cx + lefts[k] + cur[k] / 2 - ls.Width / 2);
-                    Canvas.SetTop(Label, IconBottom - cur[k] - 12 - ls.Height);
-                }
+                double up = labelFor == _pressItem && _dragging ? Math.Max(0, _pressPoint.Y - _dragPos.Y) : 0;
+                Canvas.SetLeft(Label, labelFor.LayoutLeft + labelFor.LayoutSize / 2 - ls.Width / 2);
+                Canvas.SetTop(Label, IconBottom - up - labelFor.LayoutSize - 12 - ls.Height);
             }
             else Label.Visibility = Visibility.Collapsed;
-
-            // ocultación automática
-            double hideTarget = _hidden ? BarHeight + BottomMargin + 8 : 0;
-            double hy = Magnifier.Approach(HideShift.Y, hideTarget, dt, 12);
-            if (hy != hideTarget) moving = true;
-            HideShift.Y = hy;
 
             return moving;
         }
@@ -436,9 +575,7 @@ namespace McBar.Dock
             if (_pressItem != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (!_dragging && (Math.Abs(p.X - _pressPoint.X) > 6 || Math.Abs(p.Y - _pressPoint.Y) > 6) && CanDrag(_pressItem))
-                {
                     _dragging = true;
-                }
                 if (_dragging)
                 {
                     _dragPos = p;
@@ -450,17 +587,18 @@ namespace McBar.Dock
 
         private void Stage_MouseLeave(object sender, MouseEventArgs e)
         {
-            if (_dragging) return;
+            if (_dragging || _menuOpen) return;
             _hover = false;
             _hoverItem = null;
             EnsureAnimating();
-            if (SettingsStore.Current.DockAutoHide) _hideTimer.Start();
+            if (S.DockAutoHide) _hideTimer.Start();
         }
 
         private void OnItemDown(DockItem item, MouseButtonEventArgs e)
         {
             _pressItem = item;
             _pressPoint = e.GetPosition(Stage);
+            _dragPos = _pressPoint;
             _dragging = false;
             Stage.CaptureMouse();
         }
@@ -469,6 +607,7 @@ namespace McBar.Dock
         {
             var item = _pressItem;
             bool wasDragging = _dragging;
+            bool pulledOut = item != null && IsPulledOut(item);
             _pressItem = null;
             _dragging = false;
             if (Stage.IsMouseCaptured) Stage.ReleaseMouseCapture();
@@ -476,37 +615,36 @@ namespace McBar.Dock
 
             if (wasDragging)
             {
-                var p = e.GetPosition(Stage);
-                if (p.Y < BarTop - 70 && item.Kind != DockItemKind.Trash && item.Kind != DockItemKind.Downloads)
-                    Unpin(item);
-                SavePins();
+                if (pulledOut) RemoveFromDock(item, poof: true);
+                else SavePins();
             }
-            else
+            else if (HitItem(e.GetPosition(Stage)) == item)
             {
-                if (HitItem(e.GetPosition(Stage)) == item) OnItemClick(item);
+                OnItemClick(item);
             }
-            // si el mouse ya no está sobre el Dock
-            if (!Stage.IsMouseOver) { _hover = false; _hoverItem = null; if (SettingsStore.Current.DockAutoHide) _hideTimer.Start(); }
+            if (!Stage.IsMouseOver && !_menuOpen) { _hover = false; _hoverItem = null; if (S.DockAutoHide) _hideTimer.Start(); }
             EnsureAnimating();
         }
 
         private static bool CanDrag(DockItem item) =>
-            item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad);
+            item.Kind != DockItemKind.Separator && (item.IsStack || (item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad)));
 
         private void ReorderWhileDragging(Point p)
         {
             var item = _pressItem;
             if (item == null) return;
             int from = _items.IndexOf(item);
-            int pinnedEnd = PinnedEnd; // los fijados están en [0, pinnedEnd)
-            if (from < 0 || from >= pinnedEnd) return;
+            if (from < 0) return;
+            int sep = SeparatorIndex;
+            int lo, hi; // sección donde se puede mover: [lo, hi)
+            if (item.IsStack) { lo = sep + 1; hi = _items.Count; }
+            else { lo = 0; hi = PinnedEnd; }
+            if (from < lo || from >= hi) return;
 
-            int n = _items.Count;
-            var baseSizes = _items.Select(i => i.Removing ? 0 : i.Kind == DockItemKind.Separator ? SeparatorWidth : BaseSize).ToArray();
-            var centers = Magnifier.BaseCenters(baseSizes, Gap);
+            var centers = Magnifier.BaseCenters(_items.Select(BaseOf).ToArray(), Gap);
             double mx = p.X - ActualWidth / 2;
             int to = from;
-            for (int i = 0; i < pinnedEnd; i++)
+            for (int i = lo; i < hi; i++)
             {
                 if (i == from) continue;
                 if (i < from && mx < centers[i]) { to = i; break; }
@@ -523,15 +661,16 @@ namespace McBar.Dock
         {
             foreach (var it in _items)
             {
-                double l = Canvas.GetLeft(it.View), t = Canvas.GetTop(it.View);
-                if (p.X >= l && p.X <= l + it.View.Width && p.Y >= t && p.Y <= t + it.View.Height) return it;
+                if (it.Kind == DockItemKind.Separator) continue;
+                double l = it.LayoutLeft, s = it.LayoutSize;
+                if (p.X >= l && p.X <= l + s && p.Y >= IconBottom - s && p.Y <= IconBottom + Pad) return it;
             }
             return null;
         }
 
         private void TryAutoHide()
         {
-            if (!SettingsStore.Current.DockAutoHide || _hover || _menuOpen || _dragging) return;
+            if (!S.DockAutoHide || _hover || _menuOpen || _dragging) return;
             _hidden = true;
             EnsureAnimating();
         }
@@ -543,10 +682,17 @@ namespace McBar.Dock
             switch (item.Kind)
             {
                 case DockItemKind.Launchpad:
-                    App.ToggleLaunchpad();
+                    App.ToggleLaunchpad(_monitor);
                     break;
                 case DockItemKind.Downloads:
-                    ShowDownloadsStack(item);
+                    var dl = Win32.KnownFolder(Win32.FOLDERID_Downloads);
+                    if (dl != null) ShowStack(item, dl, "Descargas");
+                    break;
+                case DockItemKind.Folder:
+                    if (item.Target != null) ShowStack(item, item.Target, item.Name);
+                    break;
+                case DockItemKind.File:
+                    if (item.Target != null) Launcher.Launch(item.Target);
                     break;
                 case DockItemKind.Trash:
                     Launcher.Open("shell:RecycleBinFolder");
@@ -556,7 +702,7 @@ namespace McBar.Dock
                     {
                         var fg = Win32.GetForegroundWindow();
                         bool isFront = item.Windows.Any(w => w.Hwnd == fg);
-                        if (isFront && SettingsStore.Current.ClickMinimizes)
+                        if (isFront && S.ClickMinimizes)
                         {
                             foreach (var w in item.Windows) WindowOps.Minimize(w.Hwnd);
                         }
@@ -575,7 +721,7 @@ namespace McBar.Dock
         {
             var target = item.Target ?? item.Windows.FirstOrDefault()?.ExePath;
             if (string.IsNullOrEmpty(target)) return;
-            if (Launcher.Launch(target) && SettingsStore.Current.BounceOnLaunch && !item.IsRunning)
+            if (Launcher.Launch(target) && S.BounceOnLaunch && !item.IsRunning)
             {
                 item.BounceStart = _clock.Elapsed.TotalSeconds;
                 EnsureAnimating();
@@ -601,25 +747,35 @@ namespace McBar.Dock
             EnsureAnimating();
         }
 
-        private void Unpin(DockItem item)
+        /// <summary>Quita un elemento del Dock. Si es una app abierta, sigue visible como app abierta sin fijar.</summary>
+        private void RemoveFromDock(DockItem item, bool poof)
         {
-            if (!item.IsPinned || item.Kind == DockItemKind.Trash || item.Kind == DockItemKind.Downloads) return;
-            item.IsPinned = false;
-            if (item.IsRunning && item.Kind == DockItemKind.App)
+            if (!item.Removable) { SavePins(); return; }
+            if (item.Kind == DockItemKind.App && item.IsRunning && !item.IsStack)
             {
+                item.IsPinned = false;
                 item.GroupKey = item.Windows[0].PrimaryKey;
                 _items.Remove(item);
                 _items.Insert(SeparatorIndex, item);
+                SavePins();
+                SyncWindows();
+                return;
             }
-            else item.Removing = true;
+            item.IsPinned = false;
+            item.Removing = true;
+            if (poof)
+            {
+                item.PoofStart = _clock.Elapsed.TotalSeconds;
+                item.PoofUp = Math.Max(0, _pressPoint.Y - _dragPos.Y);
+            }
             SavePins();
-            SyncWindows();
+            EnsureAnimating();
         }
 
         public void PinTarget(string name, string target)
         {
-            if (_items.Any(i => i.IsPinned && string.Equals(i.Target, target, StringComparison.OrdinalIgnoreCase))) return;
-            var item = CreatePinned(new PinnedApp { Name = name, Target = target });
+            if (_items.Any(i => i.IsPinned && !i.Removing && string.Equals(i.Target, target, StringComparison.OrdinalIgnoreCase))) return;
+            var item = CreatePinned(new PinnedApp { Name = name, Target = target }, false);
             if (item == null) return;
             item.CurrentSize = 0;
             AddItem(item, PinnedEnd);
@@ -628,13 +784,32 @@ namespace McBar.Dock
             SyncWindows();
         }
 
+        public void AddStack(string name, string target)
+        {
+            if (_items.Any(i => i.IsStack && !i.Removing && string.Equals(i.Target, target, StringComparison.OrdinalIgnoreCase))) return;
+            var item = CreatePinned(new PinnedApp { Name = name, Target = target }, true);
+            if (item == null) return;
+            item.CurrentSize = 0;
+            // Papelera siempre al final, como en macOS
+            int trash = _items.FindIndex(i => i.Kind == DockItemKind.Trash && !i.Removing);
+            AddItem(item, item.Kind == DockItemKind.Trash || trash < 0 ? _items.Count : trash);
+            LoadIcon(item);
+            SavePins();
+            CheckWindowWidth();
+            EnsureAnimating();
+        }
+
         private void SavePins()
         {
-            SettingsStore.Current.Pinned = _items
-                .Where(i => i.IsPinned && !i.Removing && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad) && i.Target != null)
+            S.Pinned = _items
+                .Where(i => !i.IsStack && i.IsPinned && !i.Removing && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad) && i.Target != null)
                 .Select(i => new PinnedApp { Name = i.Name, Target = i.Target! })
                 .ToList();
-            SettingsStore.Save();
+            S.Stacks = _items
+                .Where(i => i.IsStack && !i.Removing && i.Target != null)
+                .Select(i => new PinnedApp { Name = i.Name, Target = i.Target! })
+                .ToList();
+            SettingsStore.NotifyPinsChanged(this);
         }
 
         // ================== Menús ==================
@@ -642,11 +817,12 @@ namespace McBar.Dock
         private ContextMenu NewMenu(UIElement target)
         {
             var cm = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Top };
+            PopupGuard.Attach(cm);
             cm.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
             cm.Closed += (_, _) =>
             {
                 _menuOpen = false;
-                if (!Stage.IsMouseOver) { _hover = false; _hoverItem = null; if (SettingsStore.Current.DockAutoHide) _hideTimer.Start(); }
+                if (!Stage.IsMouseOver) { _hover = false; _hoverItem = null; if (S.DockAutoHide) _hideTimer.Start(); }
                 EnsureAnimating();
             };
             return cm;
@@ -661,12 +837,10 @@ namespace McBar.Dock
 
         private void ShowItemMenu(DockItem item)
         {
+            if (item.Kind == DockItemKind.Separator) { ShowDockMenu(); return; }
             var cm = NewMenu(item.View);
             switch (item.Kind)
             {
-                case DockItemKind.Separator:
-                    ShowDockMenu();
-                    return;
                 case DockItemKind.Trash:
                     cm.Items.Add(Mi("Abrir", () => Launcher.Open("shell:RecycleBinFolder")));
                     cm.Items.Add(new Separator());
@@ -678,14 +852,25 @@ namespace McBar.Dock
                             LoadIcon(item);
                         }
                     }, SystemInfo.RecycleBinHasItems()));
+                    cm.Items.Add(new Separator());
+                    cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
                 case DockItemKind.Downloads:
                     cm.Items.Add(Mi("Abrir carpeta Descargas", () => { var d = Win32.KnownFolder(Win32.FOLDERID_Downloads); if (d != null) Launcher.ShowInExplorer(d); }));
+                    cm.Items.Add(new Separator());
+                    cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
+                    break;
+                case DockItemKind.Folder:
+                case DockItemKind.File:
+                    cm.Items.Add(Mi("Abrir", () => { if (item.Target != null) Launcher.Launch(item.Target); }));
+                    cm.Items.Add(Mi("Mostrar en el Explorador", () => { if (item.Target != null) Launcher.ShowInExplorer(item.Target); }));
+                    cm.Items.Add(new Separator());
+                    cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
                 case DockItemKind.Launchpad:
-                    cm.Items.Add(Mi("Abrir", App.ToggleLaunchpad));
+                    cm.Items.Add(Mi("Abrir", () => App.ToggleLaunchpad(_monitor)));
                     cm.Items.Add(new Separator());
-                    cm.Items.Add(Mi("Quitar del Dock", () => Unpin(item)));
+                    cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
                 case DockItemKind.App:
                     if (item.IsRunning)
@@ -701,7 +886,7 @@ namespace McBar.Dock
                     }
                     var options = new MenuItem { Header = "Opciones" };
                     var keep = new MenuItem { Header = "Mantener en el Dock", IsCheckable = true, IsChecked = item.IsPinned };
-                    keep.Click += (_, _) => { if (item.IsPinned) Unpin(item); else Pin(item); };
+                    keep.Click += (_, _) => { if (item.IsPinned) RemoveFromDock(item, false); else Pin(item); };
                     options.Items.Add(keep);
                     var path = item.Windows.FirstOrDefault()?.ExePath;
                     if (string.IsNullOrEmpty(path) && item.Target != null && File.Exists(item.Target)) path = item.Target;
@@ -723,24 +908,66 @@ namespace McBar.Dock
         {
             var cm = NewMenu(Bar);
             cm.Placement = PlacementMode.MousePoint;
-            var s = SettingsStore.Current;
-            var mag = new MenuItem { Header = "Activar ampliación", IsCheckable = true, IsChecked = s.Magnification };
-            mag.Click += (_, _) => { s.Magnification = !s.Magnification; SettingsStore.NotifyChanged(); };
-            var hide = new MenuItem { Header = "Activar ocultación automática", IsCheckable = true, IsChecked = s.DockAutoHide };
-            hide.Click += (_, _) => { s.DockAutoHide = !s.DockAutoHide; SettingsStore.NotifyChanged(); };
+            var mag = new MenuItem { Header = "Activar ampliación", IsCheckable = true, IsChecked = S.Magnification };
+            mag.Click += (_, _) => { S.Magnification = !S.Magnification; SettingsStore.NotifyChanged(); };
+            var hide = new MenuItem { Header = "Activar ocultación automática", IsCheckable = true, IsChecked = S.DockAutoHide };
+            hide.Click += (_, _) => { S.DockAutoHide = !S.DockAutoHide; SettingsStore.NotifyChanged(); };
             cm.Items.Add(mag);
             cm.Items.Add(hide);
+
+            var style = new MenuItem { Header = "Estilo" };
+            foreach (var (key, name) in new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo") })
+            {
+                var k = key;
+                var mi = new MenuItem { Header = name, IsCheckable = true, IsChecked = S.DockStyle == key };
+                mi.Click += (_, _) => { S.DockStyle = k; SettingsStore.NotifyChanged(); };
+                style.Items.Add(mi);
+            }
+            cm.Items.Add(style);
+
+            var add = new MenuItem { Header = "Agregar al Dock" };
+            add.Items.Add(Mi("Aplicación…", AddAppFromDialog));
+            add.Items.Add(Mi("Carpeta…", AddFolderFromDialog));
+            if (!_items.Any(i => i.Kind == DockItemKind.Downloads && !i.Removing))
+                add.Items.Add(Mi("Descargas", () => AddStack("Descargas", AppIdentity.Downloads)));
+            if (!_items.Any(i => i.Kind == DockItemKind.Trash && !i.Removing))
+                add.Items.Add(Mi("Papelera", () => AddStack("Papelera", AppIdentity.Trash)));
+            if (!_items.Any(i => i.Kind == DockItemKind.Launchpad && !i.Removing))
+                add.Items.Add(Mi("Launchpad", () => PinTarget("Launchpad", AppIdentity.Launchpad)));
+            cm.Items.Add(add);
+
             cm.Items.Add(new Separator());
             cm.Items.Add(Mi("Preferencias del Dock…", App.OpenSettings));
             cm.IsOpen = true;
         }
 
-        // ================== Descargas (pila) ==================
-
-        private void ShowDownloadsStack(DockItem item)
+        private void AddAppFromDialog()
         {
-            var dir = Win32.KnownFolder(Win32.FOLDERID_Downloads);
-            if (dir == null || !Directory.Exists(dir)) return;
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Agregar una aplicación al Dock",
+                Filter = "Aplicaciones (*.exe;*.lnk)|*.exe;*.lnk|Todos los archivos (*.*)|*.*"
+            };
+            if (dlg.ShowDialog() != true) return;
+            var f = dlg.FileName;
+            var ext = Path.GetExtension(f).ToLowerInvariant();
+            if (ext == ".exe" || ext == ".lnk")
+                PinTarget(ext == ".lnk" ? Path.GetFileNameWithoutExtension(f) : AppIdentity.FriendlyName(f), f);
+            else AddStack(Path.GetFileName(f), f);
+        }
+
+        private void AddFolderFromDialog()
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "Agregar una carpeta al Dock" };
+            if (dlg.ShowDialog() != true) return;
+            AddStack(Path.GetFileName(dlg.FolderName.TrimEnd('\\')), dlg.FolderName);
+        }
+
+        // ================== Pilas (Descargas y carpetas) ==================
+
+        private void ShowStack(DockItem item, string dir, string titleText)
+        {
+            if (!Directory.Exists(dir)) return;
             List<FileSystemInfo> files;
             try
             {
@@ -758,19 +985,20 @@ namespace McBar.Dock
                 AllowsTransparency = true,
                 StaysOpen = false,
                 PopupAnimation = PopupAnimation.Fade,
-                HorizontalOffset = (item.View.ActualWidth - width) / 2,
+                HorizontalOffset = (MaxSize - width) / 2,
                 VerticalOffset = -6
             };
+            PopupGuard.Attach(popup);
 
             var panel = new StackPanel();
-            var title = new TextBlock { Text = "Descargas", FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(6, 0, 0, 8) };
+            var title = new TextBlock { Text = titleText, FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(6, 0, 0, 8) };
             title.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             panel.Children.Add(title);
 
             var wrap = new WrapPanel();
             if (files.Count == 0)
             {
-                var empty = new TextBlock { Text = "No hay descargas", Margin = new Thickness(6, 6, 6, 12) };
+                var empty = new TextBlock { Text = "La carpeta está vacía", Margin = new Thickness(6, 6, 6, 12) };
                 empty.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
                 wrap.Children.Add(empty);
             }
@@ -831,7 +1059,8 @@ namespace McBar.Dock
         private void Window_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
-            var target = HitItem(e.GetPosition(Stage));
+            var p = e.GetPosition(Stage);
+            var target = HitItem(p);
             if (target?.Kind == DockItemKind.Trash)
             {
                 SystemInfo.SendToRecycleBin(files);
@@ -841,8 +1070,10 @@ namespace McBar.Dock
             foreach (var f in files)
             {
                 var ext = Path.GetExtension(f).ToLowerInvariant();
-                if (ext == ".exe" || ext == ".lnk" || Directory.Exists(f))
+                if (ext == ".exe" || ext == ".lnk")
                     PinTarget(ext == ".lnk" ? Path.GetFileNameWithoutExtension(f) : AppIdentity.FriendlyName(f), f);
+                else
+                    AddStack(Path.GetFileName(f.TrimEnd('\\')), f); // carpetas y archivos van al lado derecho
             }
             _hover = false;
             EnsureAnimating();

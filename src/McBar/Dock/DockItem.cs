@@ -1,5 +1,8 @@
 // McBar — Creado por Andrés Londero
-// Un elemento del Dock (app, Launchpad, separador, Descargas o Papelera) y su vista.
+// Un elemento del Dock y su vista.
+// La vista tiene un tamaño FIJO (el tamaño ampliado máximo) y se agranda/achica/mueve solo con
+// transformaciones (escala + traslación). Así la tarjeta de video hace todo el trabajo y WPF no tiene
+// que recalcular el diseño en cada cuadro: las animaciones quedan mucho más fluidas.
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -9,45 +12,58 @@ using McBar.Core;
 
 namespace McBar.Dock
 {
-    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash }
+    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash, Folder, File }
 
     internal sealed class DockItem
     {
         public DockItemKind Kind { get; init; }
         public string Name { get; set; } = "";
-        /// <summary>Qué se abre al hacer clic (si está fijada). Para apps abiertas sin fijar puede ser null.</summary>
+        /// <summary>Qué se abre al hacer clic (si está fijado). Para apps abiertas sin fijar puede ser null.</summary>
         public string? Target { get; set; }
         public bool IsPinned { get; set; }
+        /// <summary>true si está del lado derecho (Descargas, Papelera, carpetas, archivos).</summary>
+        public bool IsStack { get; init; }
         public HashSet<string> Keys { get; set; } = new HashSet<string>(StringComparer.Ordinal);
-        /// <summary>Para apps abiertas sin fijar: la clave que agrupa sus ventanas.</summary>
         public string? GroupKey { get; set; }
         public List<TrackedWindow> Windows { get; set; } = new List<TrackedWindow>();
         public string? IconSource { get; set; }
 
         public bool IsRunning => Windows.Count > 0;
         public bool Removing { get; set; }
+        /// <summary>Momento en que empezó la "nubecita" al quitarlo arrastrando, o -1.</summary>
+        public double PoofStart { get; set; } = -1;
+        /// <summary>Cuánto más arriba de la barra se soltó (para que la "nubecita" salga ahí).</summary>
+        public double PoofUp { get; set; }
         public double CurrentSize { get; set; }
-        /// <summary>Momento (segundos del reloj del Dock) en que empezó a rebotar, o -1.</summary>
         public double BounceStart { get; set; } = -1;
+
+        // Última posición dibujada (en el lienzo del Dock), para saber qué hay bajo el mouse.
+        public double LayoutLeft { get; set; }
+        public double LayoutSize { get; set; }
 
         public DockItemView View { get; }
 
-        public DockItem(DockItemKind kind)
+        public DockItem(DockItemKind kind, bool isStack = false)
         {
             Kind = kind;
+            IsStack = isStack;
             View = new DockItemView(this);
         }
+
+        public bool Removable => Kind != DockItemKind.Separator && (IsPinned || IsStack);
     }
 
-    /// <summary>Vista de un elemento: ícono + puntito de "app abierta" (o una línea si es separador).</summary>
     internal sealed class DockItemView : Grid
     {
         private static readonly Brush HitBrush = CreateHitBrush();
         public DockItem Item { get; }
         public Image Icon { get; } = new Image();
-        private readonly System.Windows.Shapes.Ellipse _dot = new System.Windows.Shapes.Ellipse();
+        public System.Windows.Shapes.Ellipse Dot { get; } = new System.Windows.Shapes.Ellipse();
         private readonly System.Windows.Shapes.Rectangle? _line;
-        private readonly TranslateTransform _bounce = new TranslateTransform();
+        private readonly ScaleTransform _scale = new ScaleTransform(1, 1);
+        private readonly TranslateTransform _move = new TranslateTransform();
+        private readonly TranslateTransform _dotMove = new TranslateTransform();
+        private double _max = 96;
 
         private static Brush CreateHitBrush()
         {
@@ -60,30 +76,33 @@ namespace McBar.Dock
         public DockItemView(DockItem item)
         {
             Item = item;
-            Background = HitBrush;
-            SnapsToDevicePixels = false;
+            HorizontalAlignment = HorizontalAlignment.Left;
+            VerticalAlignment = VerticalAlignment.Top;
+            var group = new TransformGroup();
+            group.Children.Add(_scale);
+            group.Children.Add(_move);
+            RenderTransform = group;
+
+            Dot.Width = 4;
+            Dot.Height = 4;
+            Dot.Visibility = Visibility.Hidden;
+            Dot.IsHitTestVisible = false;
+            Dot.RenderTransform = _dotMove;
+            Dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Mc.Dot");
 
             if (item.Kind == DockItemKind.Separator)
             {
-                _line = new System.Windows.Shapes.Rectangle { Width = 1, HorizontalAlignment = HorizontalAlignment.Center };
+                Background = HitBrush;
+                _line = new System.Windows.Shapes.Rectangle { Width = 1, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 _line.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Mc.Separator");
                 Children.Add(_line);
                 return;
             }
 
+            Background = HitBrush;
             RenderOptions.SetBitmapScalingMode(Icon, BitmapScalingMode.HighQuality);
             Icon.Stretch = Stretch.Uniform;
-            Icon.VerticalAlignment = VerticalAlignment.Top;
-            Icon.RenderTransform = _bounce;
             Children.Add(Icon);
-
-            _dot.Width = 4;
-            _dot.Height = 4;
-            _dot.VerticalAlignment = VerticalAlignment.Bottom;
-            _dot.HorizontalAlignment = HorizontalAlignment.Center;
-            _dot.Visibility = Visibility.Hidden;
-            _dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Mc.Dot");
-            Children.Add(_dot);
         }
 
         public void SetIcon(ImageSource? src)
@@ -91,28 +110,49 @@ namespace McBar.Dock
             if (src != null) Icon.Source = src;
         }
 
-        /// <summary>Ubica el elemento. <paramref name="iconBottom"/> = borde inferior de los íconos dentro del lienzo.</summary>
-        public void Place(double left, double size, double iconBottom, double pad, double bounce, bool showDot, double barHeight, double barTop)
+        /// <summary>Tamaño fijo de la vista = tamaño ampliado máximo.</summary>
+        public void SetMaxSize(double max, double sepWidth, double barHeight)
+        {
+            _max = Math.Max(8, max);
+            if (_line != null)
+            {
+                Width = sepWidth;
+                Height = barHeight;
+                _line.Height = barHeight * 0.62;
+                return;
+            }
+            Width = _max;
+            Height = _max;
+            Icon.Width = _max;
+            Icon.Height = _max;
+            _scale.CenterX = _max / 2;
+            _scale.CenterY = _max;
+        }
+
+        /// <summary>
+        /// Ubica el elemento: <paramref name="left"/> y <paramref name="size"/> son el lugar que ocupa,
+        /// <paramref name="iconBottom"/> el borde inferior de los íconos.
+        /// </summary>
+        public void Place(double left, double size, double iconBottom, double bounce, double extraScale, double opacity,
+                          bool showDot, double dotY, double barTop)
         {
             if (_line != null)
             {
-                Width = Math.Max(0, size);
-                Height = barHeight;
-                _line.Height = barHeight * 0.62;
-                _line.VerticalAlignment = VerticalAlignment.Center;
-                Canvas.SetLeft(this, left);
-                Canvas.SetTop(this, barTop);
+                _move.X = left + (size - Width) / 2;
+                _move.Y = barTop;
+                Opacity = opacity;
                 return;
             }
-            Width = Math.Max(0, size);
-            Height = Math.Max(0, size) + pad;
-            Icon.Height = Math.Max(0, size);
-            Canvas.SetLeft(this, left);
-            Canvas.SetTop(this, iconBottom - size);
-            _bounce.Y = -bounce;
-            _dot.Margin = new Thickness(0, 0, 0, Math.Max(0, (pad - 4) / 2));
-            _dot.Visibility = showDot ? Visibility.Visible : Visibility.Hidden;
-            Opacity = Item.Removing ? Math.Clamp(size / 40.0, 0, 1) : 1;
+            double s = Math.Max(0, size / _max) * extraScale;
+            _scale.ScaleX = s;
+            _scale.ScaleY = s;
+            _move.X = left + size / 2 - _max / 2;
+            _move.Y = iconBottom - _max - bounce;
+            Opacity = opacity;
+
+            Dot.Visibility = showDot ? Visibility.Visible : Visibility.Hidden;
+            _dotMove.X = left + size / 2 - 2;
+            _dotMove.Y = dotY;
         }
     }
 }

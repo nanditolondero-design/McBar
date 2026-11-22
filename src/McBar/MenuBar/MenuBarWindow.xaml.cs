@@ -1,14 +1,18 @@
 // McBar — Creado por Andrés Londero
-// Barra de menú superior estilo macOS.
+// Barra de menú superior estilo macOS (una por monitor).
 // Los menús de la app activa (Archivo, Edición, Ver, Ventana, Ayuda) mandan los atajos de teclado
 // estándar de Windows a esa app (Ctrl+C, Ctrl+S, etc.), porque las apps de Windows no exponen sus menús.
+// A la derecha: íconos de la bandeja propia, clima, batería, red, volumen, búsqueda, Centro de control y reloj.
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -23,28 +27,43 @@ namespace McBar.MenuBar
         public const double BarHeightDip = 28;
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
-        private AppBar? _appBar;
+        private readonly MonitorInfo _monitor;
         private readonly DispatcherTimer _clockTimer;
+        private readonly Dictionary<string, Button> _trayButtons = new Dictionary<string, Button>();
+        private readonly WeatherIcon _weatherIcon = new WeatherIcon { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
+        private IntPtr _hwnd;
         private uint _taskbarCreatedMsg;
         private bool _fullscreen;
         private bool _wantVisible;
 
-        private IntPtr Target => App.Tracker.LastExternalForeground;
+        // manejadores guardados para poder desconectarlos al cerrar (si cambian los monitores)
+        private readonly Action _onTheme, _onSettings, _onTray;
+        private readonly Action<IntPtr> _onForeground;
+        private readonly Action<WeatherData> _onWeather;
+        private readonly NetworkAddressChangedEventHandler _onNetwork;
+        private readonly Microsoft.Win32.PowerModeChangedEventHandler _onPower;
 
-        public MenuBarWindow()
+        public MonitorInfo Monitor => _monitor;
+        public int ReservePx => _wantVisible ? (int)Math.Ceiling(BarHeightDip * App.Scale) : 0;
+
+        private IntPtr Target => App.Tracker.LastExternalForeground;
+        private static AppSettings S => SettingsStore.Current;
+
+        internal MenuBarWindow(MonitorInfo monitor)
         {
             InitializeComponent();
+            _monitor = monitor;
             _clockTimer = new DispatcherTimer(DispatcherPriority.Background);
             _clockTimer.Tick += (_, _) => { UpdateClock(); RefreshStatus(); ScheduleClock(); };
+            WeatherContent.Children.Insert(0, _weatherIcon);
 
             SourceInitialized += (_, _) =>
             {
+                _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
                 ApplyBlur();
-                _appBar = new AppBar(this, AppBarEdge.Top);
-                _appBar.FullscreenChanged += fs => App.OnFullscreenChanged(fs);
                 _taskbarCreatedMsg = Win32.RegisterWindowMessage("TaskbarCreated");
-                HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(WndProc);
+                HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
             };
 
             LogoButton.Click += (_, _) => OpenMenu(LogoButton, BuildSystemMenu());
@@ -54,23 +73,34 @@ namespace McBar.MenuBar
             ViewButton.Click += (_, _) => OpenMenu(ViewButton, BuildViewMenu());
             WindowButton.Click += (_, _) => OpenMenu(WindowButton, BuildWindowMenu());
             HelpButton.Click += (_, _) => OpenMenu(HelpButton, BuildHelpMenu());
-            TrayButton.Click += (_, _) => Taskbar.ShowTemporarily();
+            TrayButton.Click += (_, _) => { if (TrayHost.Current != null) ShowTrayOverflow(); else Taskbar.ShowTemporarily(); };
+            WeatherButton.Click += (_, _) => App.ToggleWidgets(_monitor);
             WifiButton.Click += (_, _) => OpenMenu(WifiButton, BuildNetworkMenu());
             BatteryButton.Click += (_, _) => OpenMenu(BatteryButton, BuildBatteryMenu());
             VolumeButton.Click += (_, _) => ShowVolumePopup();
-            SearchButton.Click += (_, _) => App.ToggleLaunchpad();
-            ControlCenterButton.Click += (_, _) => App.ToggleControlCenter();
-            ClockButton.Click += (_, _) => App.ToggleWidgets();
+            SearchButton.Click += (_, _) => App.ToggleLaunchpad(_monitor);
+            ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
+            ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
 
-            ThemeManager.ThemeChanged += ApplyBlur;
-            SettingsStore.Changed += RefreshStatus;
-            NetworkChange.NetworkAddressChanged += (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
-            Microsoft.Win32.SystemEvents.PowerModeChanged += (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
-            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(new Action(ApplyGeometry));
-            App.Tracker.ForegroundChanged += _ => UpdateAppName();
+            _onTheme = ApplyBlur;
+            _onSettings = () => { RefreshStatus(); BuildTray(); UpdateWeather(null); };
+            _onTray = BuildTray;
+            _onForeground = _ => UpdateAppName();
+            _onWeather = w => UpdateWeather(w);
+            _onNetwork = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
+            _onPower = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
+            ThemeManager.ThemeChanged += _onTheme;
+            SettingsStore.Changed += _onSettings;
+            App.Tracker.ForegroundChanged += _onForeground;
+            WeatherService.Updated += _onWeather;
+            NetworkChange.NetworkAddressChanged += _onNetwork;
+            Microsoft.Win32.SystemEvents.PowerModeChanged += _onPower;
+            App.TrayChanged += _onTray;
 
             UpdateClock();
             RefreshStatus();
+            BuildTray();
+            UpdateWeather(null);
             ScheduleClock();
         }
 
@@ -87,46 +117,176 @@ namespace McBar.MenuBar
             else
             {
                 new WindowInteropHelper(this).EnsureHandle(); // seguimos escuchando avisos del Explorador
-                _appBar?.Remove();
                 Hide();
             }
         }
 
         public void ApplyGeometry()
         {
-            if (_appBar == null || !_wantVisible) return;
-            int px = (int)Math.Ceiling(BarHeightDip * WindowOps.DpiScale(this));
-            _appBar.Register();
-            _appBar.Apply(px, px);
-        }
-
-        public void ReRegisterAppBar()
-        {
-            if (_appBar == null || !_wantVisible) return;
-            _appBar.ReRegister();
-            ApplyGeometry();
+            if (_hwnd == IntPtr.Zero || !_wantVisible) return;
+            var b = _monitor.Bounds;
+            int h = (int)Math.Ceiling(BarHeightDip * App.Scale);
+            Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, b.Left, b.Top, b.Width, h, Win32.SWP_NOACTIVATE);
         }
 
         public void SetFullscreen(bool fullscreen)
         {
             _fullscreen = fullscreen;
             if (!_wantVisible) return;
-            if (fullscreen) Hide(); else Show();
+            if (fullscreen) Hide(); else { Show(); ApplyGeometry(); }
         }
 
-        public void Teardown() => _appBar?.Remove();
+        public void Teardown()
+        {
+            _clockTimer.Stop();
+            ThemeManager.ThemeChanged -= _onTheme;
+            SettingsStore.Changed -= _onSettings;
+            App.Tracker.ForegroundChanged -= _onForeground;
+            WeatherService.Updated -= _onWeather;
+            NetworkChange.NetworkAddressChanged -= _onNetwork;
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= _onPower;
+            App.TrayChanged -= _onTray;
+        }
 
         private void ApplyBlur()
         {
-            if (new WindowInteropHelper(this).Handle == IntPtr.Zero) return;
+            if (_hwnd == IntPtr.Zero) return;
             WindowOps.EnableBlur(this, ThemeManager.GetColor("Mc.BlurTint"));
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (_taskbarCreatedMsg != 0 && msg == (int)_taskbarCreatedMsg)
+            if (_taskbarCreatedMsg != 0 && msg == (int)_taskbarCreatedMsg && _monitor.Primary)
                 Dispatcher.BeginInvoke(new Action(App.OnExplorerRestarted));
+            else if (msg == (int)Win32.WM_SETTINGCHANGE && wParam.ToInt64() == Win32.SPI_SETWORKAREA && _monitor.Primary)
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(WorkArea.Verify));
             return IntPtr.Zero;
+        }
+
+        // ================== Bandeja propia ==================
+
+        private void BuildTray()
+        {
+            TrayPanel.Children.Clear();
+            _trayButtons.Clear();
+            var host = TrayHost.Current;
+            if (host == null)
+            {
+                TrayButton.ToolTip = "Íconos de la bandeja de Windows";
+                TrayButton.Visibility = Taskbar.IsHiddenByUs ? Visibility.Visible : Visibility.Collapsed;
+                return;
+            }
+            var hidden = new HashSet<string>(S.TrayHiddenIds);
+            var visible = host.Icons.Where(i => !i.Hidden && i.Icon != null).ToList();
+            foreach (var ic in visible.Where(i => !hidden.Contains(i.StableId)))
+            {
+                var b = TrayButtonFor(ic, host);
+                _trayButtons[ic.Id] = b;
+                TrayPanel.Children.Add(b);
+            }
+            TrayButton.ToolTip = "Más íconos de la bandeja";
+            TrayButton.Visibility = visible.Any(i => hidden.Contains(i.StableId)) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private Button TrayButtonFor(TrayIcon ic, TrayHost host)
+        {
+            FrameworkElement content;
+            if (S.TrayMonochrome)
+            {
+                // Estilo Mac: el ícono toma el color del texto de la barra (se adapta a claro/oscuro).
+                var r = new System.Windows.Shapes.Rectangle { Width = 16, Height = 16, OpacityMask = new ImageBrush(ic.Icon) { Stretch = Stretch.Uniform } };
+                r.SetBinding(System.Windows.Shapes.Shape.FillProperty, new Binding("Foreground") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Button), 1) });
+                content = r;
+            }
+            else
+            {
+                var img = new Image { Source = ic.Icon, Width = 16, Height = 16 };
+                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+                content = img;
+            }
+            var b = new Button { Content = content, Padding = new Thickness(6, 0, 6, 0), ToolTip = string.IsNullOrWhiteSpace(ic.Tooltip) ? null : ic.Tooltip };
+            b.SetResourceReference(StyleProperty, "McFlatButton");
+            b.PreviewMouseDown += (_, e) =>
+            {
+                if (e.ChangedButton == MouseButton.Left) host.Send(ic, e.ClickCount >= 2 ? TrayHost.Click.LeftDouble : TrayHost.Click.LeftDown, RectOf(b));
+                else if (e.ChangedButton == MouseButton.Right) host.Send(ic, TrayHost.Click.RightDown, RectOf(b));
+                e.Handled = true;
+            };
+            b.PreviewMouseUp += (_, e) =>
+            {
+                if (e.ChangedButton == MouseButton.Left) host.Send(ic, TrayHost.Click.LeftUp, RectOf(b));
+                else if (e.ChangedButton == MouseButton.Right) host.Send(ic, TrayHost.Click.RightUp, RectOf(b));
+                e.Handled = true;
+            };
+            return b;
+        }
+
+        private static PxRect RectOf(FrameworkElement el)
+        {
+            try
+            {
+                var p = el.PointToScreen(new Point(0, 0));
+                double sc = App.Scale;
+                return new PxRect((int)p.X, (int)p.Y, (int)(p.X + el.ActualWidth * sc), (int)(p.Y + el.ActualHeight * sc));
+            }
+            catch { return new PxRect(0, 0, 16, 16); }
+        }
+
+        /// <summary>Dónde está dibujado un ícono de la bandeja en esta barra (o null).</summary>
+        public PxRect? TrayIconRect(TrayIcon ic) =>
+            IsVisible && _trayButtons.TryGetValue(ic.Id, out var b) && b.IsLoaded ? RectOf(b) : (PxRect?)null;
+
+        private void ShowTrayOverflow()
+        {
+            var host = TrayHost.Current;
+            if (host == null) return;
+            var hidden = new HashSet<string>(S.TrayHiddenIds);
+            var wrap = new WrapPanel { MaxWidth = 220 };
+            foreach (var ic in host.Icons.Where(i => !i.Hidden && i.Icon != null && hidden.Contains(i.StableId)))
+            {
+                var b = TrayButtonFor(ic, host);
+                b.Height = 30;
+                wrap.Children.Add(b);
+            }
+            var border = new Border
+            {
+                Margin = new Thickness(10),
+                Padding = new Thickness(6),
+                CornerRadius = new CornerRadius(10),
+                BorderThickness = new Thickness(1),
+                Child = wrap,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 4, Opacity = 0.35 }
+            };
+            border.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
+            border.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
+            var popup = new Popup
+            {
+                PlacementTarget = TrayButton,
+                Placement = PlacementMode.Bottom,
+                HorizontalOffset = -10,
+                VerticalOffset = -8,
+                AllowsTransparency = true,
+                StaysOpen = false,
+                PopupAnimation = PopupAnimation.Fade,
+                Child = border
+            };
+            PopupGuard.Attach(popup);
+            TrayButton.Tag = "open";
+            popup.Closed += (_, _) => TrayButton.Tag = null;
+            popup.IsOpen = true;
+        }
+
+        // ================== Clima ==================
+
+        private void UpdateWeather(WeatherData? w)
+        {
+            if (!S.ShowWeatherInMenuBar) { WeatherButton.Visibility = Visibility.Collapsed; return; }
+            w ??= App.LastWeather;
+            if (w == null) { WeatherButton.Visibility = Visibility.Collapsed; return; }
+            _weatherIcon.Set(WeatherCodes.Kind(w.Code), w.IsDay);
+            WeatherText.Text = $"{Math.Round(w.Temp)}°";
+            WeatherButton.ToolTip = $"{w.Place}: {WeatherCodes.Describe(w.Code).text}";
+            WeatherButton.Visibility = Visibility.Visible;
         }
 
         // ================== Reloj y estado ==================
@@ -175,6 +335,7 @@ namespace McBar.MenuBar
             // Volumen
             RefreshVolumeGlyph();
             UpdateAppName();
+            TrayHost.Current?.Prune();
         }
 
         private void RefreshVolumeGlyph()
@@ -200,6 +361,7 @@ namespace McBar.MenuBar
             cm.HorizontalOffset = -10;
             cm.VerticalOffset = -9;
             owner.Tag = "open";
+            PopupGuard.Attach(cm);
             cm.Closed += (_, _) => owner.Tag = null;
             cm.IsOpen = true;
         }
@@ -418,6 +580,7 @@ namespace McBar.MenuBar
             };
             settings.Click += (_, _) => { popup.IsOpen = false; Launcher.Open("ms-settings:sound"); };
             VolumeButton.Tag = "open";
+            PopupGuard.Attach(popup);
             popup.Closed += (_, _) => { VolumeButton.Tag = null; App.ScheduleTrim(); };
             popup.IsOpen = true;
         }

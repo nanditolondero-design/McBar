@@ -12,8 +12,26 @@
 - Cada ventana tiene **claves**: `exe:<ruta>` y, si existe, `aumid:<AppUserModelID>` (de la ventana o, en apps de la Store, del proceso hijo de ApplicationFrameHost).
 - Un ícono fijado tiene sus propias claves (`Core/AppIdentity.cs`); si alguna coincide, esa ventana es de ese ícono.
 
+## Monitores y área de trabajo (`Native/Monitors.cs`)
+- `Monitors.All()` lista los monitores; `App.BuildMonitors()` crea una barra y un Dock por monitor (o solo en el principal).
+- Ya **no se usa la API de AppBar**: `WorkArea` fija el área de trabajo de cada monitor con `SPI_SETWORKAREA` (monitor menos barra arriba y Dock abajo). Si el Explorador la cambia, se corrige (`WM_SETTINGCHANGE`, con límite para no pelear sin fin). Al salir se devuelve todo el monitor.
+- Pantalla completa: `Core/FullscreenWatcher.cs` mira solo la ventana con foco (se re-engancha al cambiar el foco); si cubre su monitor, se esconden la barra y el Dock de ese monitor.
+
+## Bandeja propia (`Native/TrayHost.cs`, `Core/TrayData.cs`)
+- Ventana invisible de clase `Shell_TrayWnd` puesta primera: `Shell_NotifyIcon` de las apps nos llega a nosotros (WM_COPYDATA tipo 1).
+- Al arrancar se manda `TaskbarCreated` para que todas las apps reenvíen sus íconos.
+- Todo se reenvía también al Explorador (y los mensajes de AppBar de otros programas, tipo 0, se le pasan tal cual).
+- Clics: se le manda a la app su `uCallbackMessage` con el formato de su versión (v4: NIN_SELECT / WM_CONTEXTMENU).
+- `Taskbar.ExplorerTray()` saltea nuestra propia ventana al buscar la barra real.
+
+## Animación de minimizar (`Native/ShellHook.cs`)
+- Ventana registrada con `RegisterShellHookWindow`; ante `HSHELL_GETMINRECT` se responde con el rectángulo del ícono de la app en el Dock.
+- Activa la opción de Windows "animar ventanas al minimizar y maximizar" y guarda el valor original para restaurarlo.
+
 ## Dock (`Dock/`)
-- Ventana transparente a lo ancho, abajo, registrada como AppBar (reserva el alto de la barra, no el de los íconos ampliados).
+- Ventana transparente abajo de cada monitor, del ancho necesario (o del monitor en estilo "ancho completo").
+- `DockBackdrop`: ventanita aparte con desenfoque acrílico del tamaño de la barra y esquinas recortadas; solo se mueve cuando cambia la barra.
+- Cada ícono tiene tamaño fijo (el máximo) y se escala/mueve con transformaciones: sin recalcular diseño en cada cuadro.
 - Los píxeles transparentes dejan pasar los clics (ventana "layered"); los íconos tienen un fondo casi invisible para que sí reciban clics.
 - **Motor de animación**: `CompositionTarget.Rendering` se engancha solo cuando algo cambia. Cada cuadro:
   1. tamaños deseados según el mouse (`Magnifier.TargetSizes`, con posiciones sin ampliar),
@@ -21,10 +39,13 @@
   3. disposición anclada al mouse (`Magnifier.Layout`),
   4. rebote (`Magnifier.Bounce`), etiqueta y ocultación automática.
   Cuando todo quedó quieto se desengancha.
-- Agregar/quitar elementos = crecer desde 0 / achicarse hasta 0 (misma animación).
+- Agregar/quitar elementos = crecer desde 0 / achicarse hasta 0 (misma animación). Quitar arrastrando = "nubecita" (escala + desvanecido).
+- Lado izquierdo: `Pinned` (apps y Launchpad). Lado derecho: `Stacks` (Descargas, Papelera, carpetas, archivos). Al cambiar, los Docks de otros monitores se rehacen (`SettingsStore.PinsChanged`).
+- `Core/PopupGuard.cs`: cierra menús y ventanitas al hacer clic en otra app (el Dock no toma el foco y WPF a veces no se enteraba).
 
 ## Barra de menú (`MenuBar/`)
-- AppBar arriba (28 px a 100 %), fondo acrílico (`SetWindowCompositionAttribute`).
+- Arriba de cada monitor (28 px a 100 %), fondo acrílico (`SetWindowCompositionAttribute`).
+- Íconos de la bandeja propia (en color o blanco y negro con máscara de opacidad) y clima (`Panels/WeatherIcon.cs`, dibujado; se actualiza cada 30 min).
 - No se activa al hacer clic: la app activa sigue teniendo el foco y los menús le mandan atajos con `SendInput`.
 - Escucha `TaskbarCreated` para recuperarse si el Explorador se reinicia.
 - Reloj: temporizador alineado al cambio de minuto. Red, batería y volumen: al cambiar (eventos del sistema) y cada minuto.
@@ -35,7 +56,7 @@
 - Se crean al abrir y se cierran del todo; luego `App.ScheduleTrim()` libera memoria.
 
 ## Íconos (`Core/IconLoader.cs`)
-- Hilo de fondo STA con cola. `IShellItemImageFactory` sirve para .exe, .lnk, carpetas, archivos y `shell:AppsFolder\<id>`.
+- Hilo de fondo STA con su propio Dispatcher (bucle de mensajes), que necesitan los objetos COM del Shell. `IShellItemImageFactory` sirve para .exe, .lnk, carpetas, archivos y `shell:AppsFolder\<id>`.
 - Caché chico para el Dock (tope 120); el Launchpad usa su propio caché que se descarta al cerrar.
 
 ## Barra de Windows (`Native/Taskbar.cs`)

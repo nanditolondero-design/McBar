@@ -8,10 +8,28 @@
 - Ocultar/restaurar barra de Windows de forma segura (`--restaurar`).
 - Pruebas xUnit de la lógica, workflow de GitHub, documentación.
 
+## Etapa 2 — versión 0.2 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Pedidos de Andrés después de probar la 0.1:
+- Espacio de la barra de Windows (franja negra) → área de trabajo propia por monitor.
+- Varios monitores → barra y Dock por monitor.
+- "Al minimizar la barra deja de funcionar" → detección propia de pantalla completa.
+- Launchpad con página vacía → carga en hilo con bucle de mensajes + plan B; aspecto tipo macOS.
+- Transparencia en todo → desenfoque real en Dock, Centro de control, Widgets (los menús siguen semitransparentes).
+- Animación rara al pasar el mouse (el fondo se movía) → fondo quieto por defecto, opción de estirar.
+- Menú contextual que achicaba el ícono y quedaba pegado → arreglado (PopupGuard).
+- Animaciones más fluidas → transformaciones en vez de recalcular el diseño, ventana del Dock más chica.
+- Animaciones al minimizar/restaurar → hacia el ícono del Dock (HSHELL_GETMINRECT) + activar la opción de Windows.
+- Arrastrar afuera para borrar → etiqueta + nubecita.
+- Sacar Papelera/Descargas y poner lo que quiera → lado derecho configurable.
+- Clima con íconos dinámicos en la barra.
+- Dock "flotando" → estilos Clásico / Flotante / Ancho completo.
+- Systray propio → TrayHost (Shell_TrayWnd propio + reenvío al Explorador).
+
 ## Limitaciones conocidas (posibles próximas etapas)
-- **Íconos de la bandeja de Windows** (WhatsApp, antivirus, etc.): por ahora se ven con el botón ⌃ de la barra, que muestra un momento la barra de Windows. A futuro: mostrarlos dentro de la barra de McBar.
+- **Bandeja**: alguna app vieja que no vuelva a mandar su ícono cuando McBar arranca aparece recién al reiniciarla. Los globitos de notificación siguen siendo los de Windows.
+- **Escalas distintas por monitor**: McBar usa la escala del sistema; en un monitor con otra escala se puede ver un poco borroso.
+- **Desenfoque en menús contextuales**: no (Windows no lo permite en ventanas emergentes de WPF sin riesgo); son semitransparentes.
 - **Menús reales de cada app**: Windows no los expone de forma general; se usan atajos estándar. A futuro: menús específicos para apps conocidas (Office, navegadores, Explorador).
 - **Animación "genio" al minimizar**: no se puede aplicar a ventanas de otras apps sin efectos de bajo nivel; se descartó para mantener bajo consumo.
-- **Varios monitores**: Dock y barra solo en el monitor principal.
 - **Notificaciones**: siguen siendo las de Windows.
 - Spotlight (búsqueda con atajo de teclado), "Mission Control" propio, pilas de otras carpetas, widgets de música (reproducción actual).

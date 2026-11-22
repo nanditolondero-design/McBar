@@ -4,7 +4,6 @@
 // (shell:AppsFolder\<id>). Los íconos del Dock se guardan en un caché chico; los del Launchpad no,
 // así se liberan al cerrar el Launchpad (bajo consumo de memoria).
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -19,31 +18,43 @@ namespace McBar.Core
 {
     internal static class IconLoader
     {
-        private static readonly BlockingCollection<Action> Queue = new BlockingCollection<Action>();
         private static readonly Dictionary<string, ImageSource> Cache = new Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
         private static readonly object CacheLock = new object();
-        private static Thread? _worker;
+        private static Dispatcher? _shell;
+        private static readonly object StartLock = new object();
 
-        private static void EnsureWorker()
+        /// <summary>
+        /// Hilo propio del Shell (STA) con su propio "bucle de mensajes" (Dispatcher.Run), como necesitan
+        /// los objetos COM del Shell de Windows. Antes era una cola simple y algunas consultas (la lista
+        /// de apps del Launchpad) podían quedarse colgadas.
+        /// </summary>
+        private static Dispatcher ShellDispatcher()
         {
-            if (_worker != null) return;
-            _worker = new Thread(() =>
+            lock (StartLock)
             {
-                foreach (var job in Queue.GetConsumingEnumerable())
+                if (_shell != null) return _shell;
+                var ready = new ManualResetEventSlim();
+                var t = new Thread(() =>
                 {
-                    try { job(); } catch (Exception ex) { Log.Write("IconLoader: " + ex.Message); }
-                }
-            })
-            { IsBackground = true, Name = "McBar.Shell", Priority = ThreadPriority.BelowNormal };
-            _worker.SetApartmentState(ApartmentState.STA);
-            _worker.Start();
+                    _shell = Dispatcher.CurrentDispatcher;
+                    ready.Set();
+                    Dispatcher.Run();
+                })
+                { IsBackground = true, Name = "McBar.Shell", Priority = ThreadPriority.BelowNormal };
+                t.SetApartmentState(ApartmentState.STA);
+                t.Start();
+                ready.Wait();
+                return _shell!;
+            }
         }
 
-        /// <summary>Ejecuta un trabajo en el hilo del Shell (STA). Útil para COM del Shell.</summary>
-        public static void RunOnShellThread(Action job)
+        /// <summary>Ejecuta un trabajo en el hilo del Shell (STA). Los urgentes van antes que los íconos.</summary>
+        public static void RunOnShellThread(Action job, bool urgent = false)
         {
-            EnsureWorker();
-            Queue.Add(job);
+            ShellDispatcher().BeginInvoke(urgent ? DispatcherPriority.Normal : DispatcherPriority.Background, new Action(() =>
+            {
+                try { job(); } catch (Exception ex) { Log.Write("Shell: " + ex.Message); }
+            }));
         }
 
         /// <summary>Pide un ícono. El callback se ejecuta en el hilo de la interfaz.</summary>

@@ -140,16 +140,15 @@ namespace McBar.Panels
                 body.Children.Add(Text("No se pudo obtener el clima. Revisá la conexión o la ciudad en Preferencias.", 12, false, true));
                 return;
             }
-            var (desc, symbol) = WeatherCodes.Describe(w.Code);
+            var (desc, _) = WeatherCodes.Describe(w.Code);
             var top = new Grid();
             var left = new StackPanel();
             left.Children.Add(Text(w.Place, 13, true));
             left.Children.Add(Text($"{Math.Round(w.Temp)}°", 38));
             top.Children.Add(left);
             var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom };
-            var sym = Text(symbol, 26);
-            sym.SetResourceReference(TextBlock.FontFamilyProperty, "Mc.Emoji");
-            sym.HorizontalAlignment = HorizontalAlignment.Right;
+            var sym = new WeatherIcon { Width = 46, Height = 46, Animated = true, HorizontalAlignment = HorizontalAlignment.Right };
+            sym.Set(WeatherCodes.Kind(w.Code), w.IsDay);
             right.Children.Add(sym);
             right.Children.Add(Text(desc, 12));
             right.Children.Add(Text($"Máx. {Math.Round(w.Max)}°  Mín. {Math.Round(w.Min)}°", 11.5, false, true));
@@ -162,9 +161,9 @@ namespace McBar.Panels
                 var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
                 var hh = Text(h.Time.ToString("HH", Es) + " h", 11, false, true);
                 hh.HorizontalAlignment = HorizontalAlignment.Center;
-                var s = Text(WeatherCodes.Describe(h.Code).symbol, 15);
-                s.SetResourceReference(TextBlock.FontFamilyProperty, "Mc.Emoji");
-                s.HorizontalAlignment = HorizontalAlignment.Center;
+                var s = new WeatherIcon { Width = 22, Height = 22, Margin = new Thickness(0, 2, 0, 2), HorizontalAlignment = HorizontalAlignment.Center };
+                int hour = h.Time.Hour;
+                s.Set(WeatherCodes.Kind(h.Code), hour >= 7 && hour < 20);
                 var tt = Text($"{Math.Round(h.Temp)}°", 12, true);
                 tt.HorizontalAlignment = HorizontalAlignment.Center;
                 sp.Children.Add(hh);

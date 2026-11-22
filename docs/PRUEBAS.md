@@ -5,6 +5,7 @@
 - `MagnifierTests` — ampliación (simetría, separadores, ancla bajo el mouse, centrado), acercamiento suave y rebote.
 - `IdentityAndCatalogTests` — claves de apps (.exe, Store, carpetas conocidas, accesos directos) y filtro del Launchpad.
 - `SettingsAndWeatherTests` — guardar/leer/corregir ajustes, códigos de clima, lectura de la respuesta de Open-Meteo.
+- `Stage2Tests` — área de trabajo, detección de pantalla completa, lectura de mensajes de bandeja, tipo de ícono del clima, lado derecho del Dock.
 
 Para correrlas a mano en Windows: `dotnet test tests/McBar.Tests/McBar.Tests.csproj`
 
@@ -50,6 +51,25 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] Launchpad: aparecen las apps (de escritorio y de la Store), búsqueda, páginas con rueda y puntitos, Esc cierra, clic derecho → Agregar al Dock.
 - [ ] Los paneles se cierran al hacer clic afuera, y tocar de nuevo el botón los cierra.
 - [ ] Preferencias: cada cambio se aplica al instante.
+
+### Etapa 2
+- [ ] Ya no queda la franja negra abajo: una ventana maximizada llega hasta el Dock (o hasta abajo de todo con ocultación automática).
+- [ ] Con dos monitores: barra y Dock en los dos; maximizar en cada uno respeta su barra y su Dock.
+- [ ] Minimizar una app (con el botón o con clic en el Dock): la ventana vuela hacia su ícono y el Dock/barra siguen funcionando.
+- [ ] Restaurar desde el Dock: la ventana sale desde el ícono.
+- [ ] Video en pantalla completa en un monitor: se esconden barra y Dock solo en ese monitor.
+- [ ] Clic derecho en un ícono: el ícono NO se achica; clic en otra app: el menú se cierra siempre.
+- [ ] Pasar el mouse por el Dock: el fondo queda quieto (con la opción "El fondo se estira" apagada) y la animación es fluida.
+- [ ] Estilos Clásico / Flotante / Ancho completo (clic derecho en el fondo del Dock → Estilo).
+- [ ] Arrastrar un ícono hacia arriba: aparece "Quitar del Dock"; al soltar, nubecita y desaparece.
+- [ ] Sacar Papelera y Descargas; volver a ponerlas con clic derecho en el fondo → Agregar al Dock.
+- [ ] Soltar una carpeta en el Dock: aparece a la derecha; clic muestra su contenido.
+- [ ] Clima en la barra: ícono acorde al clima (y luna de noche); en Widgets el ícono se anima.
+- [ ] Launchpad: aparecen las apps (primero dice "Cargando apps…"), fondo desenfocado, nombres con sombra, páginas fluidas.
+- [ ] Centro de control y Widgets con desenfoque detrás.
+- [ ] Bandeja: aparecen los íconos de WhatsApp, antivirus, Steam, etc.; clic izquierdo abre la app; clic derecho muestra su menú; doble clic funciona.
+- [ ] Preferencias → Bandeja: apagar un ícono lo manda al menú ⌃; "blanco y negro" cambia los íconos.
+- [ ] Salir de McBar: la barra de Windows vuelve con todos sus íconos de bandeja.
 
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
