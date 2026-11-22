@@ -82,7 +82,9 @@ namespace McBar.Core
         public static void EmptyRecycleBin()
         {
             // SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI (la confirmación la pide McBar con su propio diálogo)
-            Win32.SHEmptyRecycleBin(IntPtr.Zero, null, 0x1 | 0x2);
+            Taskbar.EnforceBurst(4); // vaciar la papelera hace que el Explorador muestre su barra en algún monitor
+            Win32.SHEmptyRecycleBin(IntPtr.Zero, null, 0x1 | 0x2 | 0x4 /* sin sonido */);
+            Taskbar.EnforceBurst(4);
         }
 
         public static bool SendToRecycleBin(string[] paths)
@@ -94,7 +96,10 @@ namespace McBar.Core
                 pFrom = string.Join("\0", paths) + "\0\0",
                 fFlags = 0x40 | 0x10 | 0x4 // FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
             };
-            return Win32.SHFileOperation(ref op) == 0;
+            Taskbar.EnforceBurst(3);
+            bool ok = Win32.SHFileOperation(ref op) == 0;
+            Taskbar.EnforceBurst(3);
+            return ok;
         }
 
         // ---------- Brillo (solo pantallas que lo permiten, normalmente notebooks) ----------

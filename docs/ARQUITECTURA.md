@@ -15,7 +15,8 @@
 ## Monitores y área de trabajo (`Native/Monitors.cs`)
 - `Monitors.All()` lista los monitores; `App.BuildMonitors()` crea una barra y un Dock por monitor (o solo en el principal).
 - Ya **no se usa la API de AppBar**: `WorkArea` fija el área de trabajo de cada monitor con `SPI_SETWORKAREA` (monitor menos barra arriba y Dock abajo). Si el Explorador la cambia, se corrige (`WM_SETTINGCHANGE`, con límite para no pelear sin fin). Al salir se devuelve todo el monitor.
-- Pantalla completa: `Core/FullscreenWatcher.cs` revisa la ventana con foco al cambiar el foco y desde el vigilante; si cubre su monitor (y no está maximizada), se esconden la barra y el Dock de ese monitor.
+- Pantalla completa: `Core/FullscreenWatcher.cs` recorre las ventanas en orden (de arriba hacia abajo) y, en cada monitor, mira la primera ventana "de verdad"; si cubre el monitor y no está maximizada, se esconden la barra y el Dock de ese monitor. Corre al cambiar el foco y desde el vigilante.
+- `Taskbar.EnforceBurst()`: vigilancia cada 100 ms por unos segundos después de acciones que hacen asomar la barra de Windows.
 - Vigilante (`App.StartWatchdog`, cada 0,7 s, solo consultas baratas): esconde la barra de Windows si asomó, mantiene la bandeja propia primera, revisa pantalla completa, verifica el área de trabajo y vuelve a poner arriba barra/isla/Dock.
 
 ## Bandeja propia (`Native/TrayHost.cs`, `Core/TrayData.cs`)
@@ -31,7 +32,7 @@
 
 ## Dock (`Dock/`)
 - Ventana transparente abajo de cada monitor, del ancho necesario (o del monitor en estilo "ancho completo").
-- `DockBackdrop`: ventanita aparte con desenfoque acrílico del tamaño de la barra y esquinas recortadas; solo se mueve cuando cambia la barra.
+- `DockBackdrop`: ventanita aparte, COMÚN (no en capas, porque Windows ignora el recorte redondeado en ventanas en capas), con fondo transparente vía `DwmExtendFrameIntoClientArea`, desenfoque acrílico y región redondeada; solo se mueve cuando cambia la barra.
 - Cada ícono tiene tamaño fijo (el máximo) y se escala/mueve con transformaciones: sin recalcular diseño en cada cuadro.
 - Los píxeles transparentes dejan pasar los clics (ventana "layered"); los íconos tienen un fondo casi invisible para que sí reciban clics.
 - **Motor de animación**: `CompositionTarget.Rendering` se engancha solo cuando algo cambia. Cada cuadro:
@@ -62,6 +63,9 @@
   - Música/video: `MediaWatcher` con `GlobalSystemMediaTransportControlsSessionManager` (WinRT).
   - Notificaciones: `NotificationWatcher` (lector oficial o lectura del cartelito por UI Automation, avisado por `WindowTracker` al mostrarse/descubrirse la ventana).
 - Si se reserva espacio, el área de trabajo de arriba es el alto de la isla en reposo.
+- Cajón: `ControlCenterContent` (el mismo contenido del Centro de control) se agrega debajo de la isla expandida (estado `Drawer`).
+- Apariencia: `IslandStyle` (black/graphite/glass/accent), `IslandSize`, `IslandShowDate`, `IslandGlow`. El estilo Vidrio usa un `DockBackdrop` que sigue a la píldora.
+- Avisos: con varios monitores solo se muestran en la isla del monitor de la ventana con foco (`App.ActiveMonitorDevice`).
 - `ShellHook` (ventana oculta) recibe `TaskbarCreated` y `WM_SETTINGCHANGE` para todo McBar.
 
 ## Paneles (`Panels/`)

@@ -97,7 +97,7 @@ namespace McBar
             Tracker = new WindowTracker();
             Fullscreen = new FullscreenWatcher();
             Fullscreen.Changed += ApplyFullscreen;
-            Tracker.ShellWindowShown += _ => { Taskbar.Enforce(); TrayHost.Current?.Raise(); };
+            Tracker.ShellWindowShown += _ => { Taskbar.EnforceBurst(); TrayHost.Current?.Raise(); };
             Tracker.ForegroundChanged += hwnd =>
             {
                 if (Taskbar.TemporarilyShown && !Taskbar.IsShellTrayClass(WindowOps.GetClass(hwnd))) Taskbar.EndTemporary();
@@ -128,6 +128,10 @@ namespace McBar
             {
                 Scale = Win32.SystemScale();
                 BuildMonitors();
+                // Al enchufar/desenchufar un monitor, Windows a veces termina de acomodarse un poco después: revisar de nuevo.
+                var again = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                again.Tick += (_, _) => { again.Stop(); Scale = Win32.SystemScale(); BuildMonitors(); };
+                again.Start();
             }));
 
             StartWeather();
@@ -242,11 +246,23 @@ namespace McBar
             var s = SettingsStore.Current;
             double top = m.Bounds.Top / Scale;
             if (!s.ShowMenuBar) return top + 8;
-            return top + (s.TopBarMode == "island" ? IslandWindow.TopMargin + IslandWindow.CompactHeight + 8 : MenuBarWindow.BarHeightDip + 6);
+            return top + (s.TopBarMode == "island" ? IslandWindow.TopMargin + IslandWindow.CompactHeightFor(s) + 8 : MenuBarWindow.BarHeightDip + 6);
         }
 
-        private static MonitorInfo MonitorOrPrimary(MonitorInfo? m) =>
-            m ?? Monitors.All().FirstOrDefault(x => x.Primary) ?? Monitors.All().First();
+        /// <summary>Datos frescos del monitor (el área de trabajo puede haber cambiado desde que se guardó).</summary>
+        private static MonitorInfo MonitorOrPrimary(MonitorInfo? m)
+        {
+            if (m != null) return Monitors.Get(m.Handle) ?? m;
+            return Monitors.All().FirstOrDefault(x => x.Primary) ?? Monitors.All().First();
+        }
+
+        /// <summary>Monitor donde está trabajando el usuario (el de la ventana con foco), para mostrar ahí los avisos de la isla.</summary>
+        public static string ActiveMonitorDevice()
+        {
+            var fg = Win32.GetForegroundWindow();
+            var m = fg != IntPtr.Zero ? Monitors.FromWindow(fg) : null;
+            return m?.Device ?? Monitors.All().FirstOrDefault(x => x.Primary)?.Device ?? "";
+        }
 
         /// <summary>Hacia dónde se achica una ventana al minimizarla: su ícono en el Dock de su monitor.</summary>
         private static PxRect? MinRectFor(IntPtr hwnd)
@@ -315,6 +331,8 @@ namespace McBar
                     Fullscreen?.Check();
                     if (++_watchdogTicks % 7 == 0) WorkArea.Verify();
                     if (_watchdogTicks % 4 == 0) KeepBarsOnTop();
+                    // Con "apps por monitor": si una ventana se pasó a otro monitor, actualizar los Docks.
+                    if (s.DockAppsPerMonitor && Docks.Count > 1 && _watchdogTicks % 3 == 0) foreach (var d in Docks) d.Resync();
                 }
                 catch (Exception ex) { Log.Write("Vigilante: " + ex.Message); }
             };
@@ -388,7 +406,7 @@ namespace McBar
         {
             var tray = TrayHost.Current;
             if (tray != null && tray.IsOwnBroadcastRecent) return; // fue nuestro propio aviso
-            if (SettingsStore.Current.HideWindowsTaskbar) Taskbar.Hide();
+            if (SettingsStore.Current.HideWindowsTaskbar) { Taskbar.Hide(); Taskbar.EnforceBurst(5); }
             UpdateWorkAreas();
             if (tray != null)
             {
@@ -413,6 +431,9 @@ namespace McBar
 
         public static void ToggleControlCenter(MonitorInfo? monitor = null)
         {
+            // Con la isla dinámica, el Centro de control se despliega como un cajón desde la isla.
+            var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
+            if (isl != null && isl.IsVisible) { isl.ToggleDrawer(); return; }
             if (_controlCenter != null && _controlCenter.IsVisible && !_controlCenter.IsClosing) { _controlCenter.CloseAnimated(); return; }
             if (_controlCenter != null && RecentlyClosed(_controlCenter.ClosedAt)) return;
             _widgets?.CloseAnimated();

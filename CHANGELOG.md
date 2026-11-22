@@ -1,5 +1,22 @@
 # Cambios
 
+## 0.3.2 — 22/11/2026
+Pedidos de Andrés después de probar la isla (video del 22/11):
+- **Se trababa todo**: los íconos de bandeja que pone el propio Windows (volumen, red) ya no se muestran ni se tocan. Tocarlos abría paneles de Windows anclados a su barra escondida, que quedaban invisibles y se quedaban con el mouse.
+- **Volumen repetido**: era el ícono de volumen de Windows en la bandeja; queda solo el de McBar.
+- **Reloj de la píldora más grande** (y tamaño configurable).
+- **Cajón**: en modo isla, el Centro de control (Wi-Fi, Bluetooth, modo oscuro, brillo, sonido) se despliega desde la píldora como un cajón. También lo abren los botones de Wi-Fi, volumen y batería de la isla.
+- **Apariencia de la isla** (Preferencias → Isla dinámica): estilo Negro, Grafito, Vidrio (con desenfoque) o Color; tamaño Chica/Normal/Grande; día junto a la hora; borde brillante.
+- **Esquinas del Dock**: el desenfoque detrás de la barra se veía con esquinas cuadradas. Ahora es una ventana común con recorte redondeado. Nueva opción para apagar el desenfoque.
+- **Varios monitores** (revisión completa):
+  - La pantalla completa se detecta en todos los monitores (antes solo en el de la ventana con foco: un video en el monitor 2 volvía a tener barras si trabajabas en el 1).
+  - Los avisos de la isla salen solo en el monitor donde estás trabajando.
+  - Los paneles usan los datos actuales del monitor.
+  - Al enchufar/desenchufar un monitor se vuelve a revisar a los 2 segundos.
+  - Nueva opción: cada Dock muestra solo las apps abiertas en su monitor.
+- **Barra de Windows al vaciar la papelera**: después de vaciar la papelera, borrar archivos o reiniciarse el Explorador, McBar la vigila cada 100 ms unos segundos para que casi no se vea. También cuando aparece sola.
+- El control de brillo (WMI) se inicia en segundo plano (en PCs de escritorio podía demorar el arranque).
+
 ## 0.3.1 — 22/11/2026
 Arreglos después de probar la 0.2 en la PC de Andrés:
 - **Lentitud**: el bucle de animación del Dock tenía un error que se repetía (registro: "Index was out of range" en DockWindow.Step). Ahora trabaja sobre una copia fija de la lista en cada cuadro y, si algo falla, se detiene en vez de repetir el error.

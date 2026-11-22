@@ -50,18 +50,23 @@ namespace McBar.Core
                 _volume.Changed += (v, m) => Post(new Activity { Kind = ActivityKind.Volume, Value = v, Muted = m });
                 if (!_volume.Start()) { _volume.Dispose(); _volume = null; }
 
-                try
+                // WMI puede tardar varios segundos en PCs de escritorio (sin control de brillo): en segundo plano.
+                System.Threading.Tasks.Task.Run(() =>
                 {
-                    _brightness = new ManagementEventWatcher(new ManagementScope(@"root\WMI"),
-                        new EventQuery("SELECT * FROM WmiMonitorBrightnessEvent"));
-                    _brightness.EventArrived += (_, e) =>
+                    try
                     {
-                        try { Post(new Activity { Kind = ActivityKind.Brightness, Value = Convert.ToDouble(e.NewEvent["Brightness"]) / 100.0 }); }
-                        catch { }
-                    };
-                    _brightness.Start();
-                }
-                catch { _brightness = null; } // PC de escritorio sin control de brillo
+                        var w = new ManagementEventWatcher(new ManagementScope(@"root\WMI"),
+                            new EventQuery("SELECT * FROM WmiMonitorBrightnessEvent"));
+                        w.EventArrived += (_, e) =>
+                        {
+                            try { Post(new Activity { Kind = ActivityKind.Brightness, Value = Convert.ToDouble(e.NewEvent["Brightness"]) / 100.0 }); }
+                            catch { }
+                        };
+                        w.Start();
+                        if (_running) _brightness = w; else { w.Stop(); w.Dispose(); }
+                    }
+                    catch { _brightness = null; } // PC de escritorio sin control de brillo
+                });
             }
 
             if (s.IslandBattery)

@@ -26,11 +26,26 @@ namespace McBar.MenuBar
 {
     internal sealed class IslandWindow : Window
     {
-        public const double TopMargin = 6, CompactHeight = 34;
-        private const double CompactWidth = 168, CompactMediaWidth = 270;
+        public const double TopMargin = 6;
+
+        // Tamaño de la píldora en reposo según Preferencias → Isla dinámica → Tamaño.
+        public static double CompactHeightFor(AppSettings s) => s.IslandSize == "small" ? 30 : s.IslandSize == "large" ? 42 : 36;
+        private static double ClockFontFor(AppSettings s) => s.IslandSize == "small" ? 14 : s.IslandSize == "large" ? 21 : 17;
+        private double CompactHeight => CompactHeightFor(SettingsStore.Current);
+        private double CompactWidth
+        {
+            get
+            {
+                var s = SettingsStore.Current;
+                double w = s.IslandSize == "small" ? 140 : s.IslandSize == "large" ? 220 : 180;
+                if (s.IslandShowDate) w += s.IslandSize == "large" ? 110 : 85;
+                return w;
+            }
+        }
+        private double CompactMediaWidth => CompactWidth + 100;
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
-        private enum State { Compact, Expanded, Activity, Media }
+        private enum State { Compact, Expanded, Activity, Media, Drawer }
 
         private readonly MonitorInfo _monitor;
         private readonly MenuBarContent _content;
@@ -62,6 +77,10 @@ namespace McBar.MenuBar
         private readonly TextBlock _miniTitle = new TextBlock();
         private readonly TextBlock _miniPlayGlyph = new TextBlock();
 
+        private readonly Border _drawer = new Border { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 6, 0, 0) };
+        private readonly Dock.DockBackdrop _backdrop = new Dock.DockBackdrop();
+        private readonly Action _onSettings;
+        private int _winLeftPx, _winTopPx, _winWidthPx;
         private readonly DispatcherTimer _expandTimer, _collapseTimer, _activityTimer, _clockTimer, _progressTimer;
         private readonly Action<Activity> _onActivity;
         private readonly Action _onMedia;
@@ -72,7 +91,7 @@ namespace McBar.MenuBar
 
         public MonitorInfo Monitor => _monitor;
         public int ReservePx => _wantVisible && SettingsStore.Current.IslandReserveSpace
-            ? (int)Math.Ceiling((TopMargin + CompactHeight + 4) * App.Scale) : 0;
+            ? (int)Math.Ceiling((TopMargin + CompactHeightFor(SettingsStore.Current) + 4) * App.Scale) : 0;
 
         public IslandWindow(MonitorInfo monitor)
         {
@@ -96,8 +115,12 @@ namespace McBar.MenuBar
 
             _content = new MenuBarContent(monitor);
             _content.SetTwoRows(true);
+            _content.InIsland = true;
 
-            _pill.Background = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+            // Fondo con desenfoque (solo en estilo "Vidrio"): la isla queda siempre por encima de él.
+            _backdrop.Show();
+            Owner = _backdrop;
+            _backdrop.Hide();
             _pill.HorizontalAlignment = HorizontalAlignment.Center;
             _pill.VerticalAlignment = VerticalAlignment.Top;
             _pill.Margin = new Thickness(0, TopMargin, 0, 0);
@@ -105,7 +128,11 @@ namespace McBar.MenuBar
             _pill.Height = CompactHeight;
             _pill.CornerRadius = new CornerRadius(CompactHeight / 2);
             _pill.ClipToBounds = true;
-            _pill.SizeChanged += (_, _) => _pill.CornerRadius = new CornerRadius(Math.Min(_pill.ActualHeight / 2, 26));
+            _pill.SizeChanged += (_, _) =>
+            {
+                _pill.CornerRadius = new CornerRadius(Math.Min(_pill.ActualHeight / 2, 26));
+                PlaceBackdrop();
+            };
             _pill.Child = _layers;
 
             BuildCompact();
@@ -131,6 +158,7 @@ namespace McBar.MenuBar
             {
                 if (_pill.IsMouseOver) { _collapseTimer.Stop(); return; }
                 if (PopupGuard.AnyOpen) return; // esperar a que se cierre el menú
+                if (_state == State.Drawer && Mouse.LeftButton == MouseButtonState.Pressed) return; // arrastrando un deslizador
                 _collapseTimer.Stop();
                 GoCompact();
             };
@@ -154,7 +182,7 @@ namespace McBar.MenuBar
             _pill.MouseLeave += (_, _) =>
             {
                 _expandTimer.Stop();
-                if (_state == State.Expanded || _state == State.Media) _collapseTimer.Start();
+                if (_state == State.Expanded || _state == State.Media || _state == State.Drawer) _collapseTimer.Start();
             };
             _compact.MouseLeftButtonUp += (_, e) =>
             {
@@ -174,9 +202,53 @@ namespace McBar.MenuBar
                 WindowOps.MakeToolNoActivate(this);
             };
 
+            _onSettings = () => { ApplyAppearance(); if (_state == State.Compact) GoCompact(); };
+            SettingsStore.Changed += _onSettings;
+            ThemeManager.ThemeChanged += ApplyAppearance;
+
+            ApplyAppearance();
             UpdateCompact();
             OnMediaChanged();
             ScheduleClock();
+        }
+
+        // ================== Apariencia ==================
+
+        /// <summary>Colores y tamaño de la píldora según Preferencias → Isla dinámica.</summary>
+        private void ApplyAppearance()
+        {
+            var s = SettingsStore.Current;
+            Brush bg;
+            switch (s.IslandStyle)
+            {
+                case "graphite": bg = new SolidColorBrush(Color.FromRgb(0x2C, 0x2C, 0x30)); break;
+                case "glass": bg = new SolidColorBrush(Color.FromArgb(0x80, 0x18, 0x18, 0x1C)); break;
+                case "accent":
+                    var a = Application.Current.TryFindResource("Mc.Accent") is SolidColorBrush ab ? ab.Color : Color.FromRgb(0x0A, 0x84, 0xFF);
+                    bg = new SolidColorBrush(Color.FromRgb((byte)(a.R * 0.55), (byte)(a.G * 0.55), (byte)(a.B * 0.55)));
+                    break;
+                default: bg = new SolidColorBrush(Color.FromRgb(0, 0, 0)); break;
+            }
+            _pill.Background = bg;
+            bool glow = s.IslandGlow || s.IslandStyle == "glass";
+            _pill.BorderThickness = new Thickness(glow ? 1 : 0);
+            _pill.BorderBrush = new SolidColorBrush(Color.FromArgb(glow ? (byte)0x50 : (byte)0, 0xFF, 0xFF, 0xFF));
+            _compactTime.FontSize = ClockFontFor(s);
+            _compactArt.Width = _compactArt.Height = CompactHeight - 12;
+            _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, CompactHeight - 12, CompactHeight - 12), 6, 6);
+            UpdateCompact();
+
+            if (s.IslandStyle == "glass" && s.BackdropBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
+            else _backdrop.Hide();
+        }
+
+        private void PlaceBackdrop()
+        {
+            if (SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
+            double sc = App.Scale;
+            int w = (int)Math.Round(_pill.ActualWidth * sc), h = (int)Math.Round(_pill.ActualHeight * sc);
+            int x = _winLeftPx + (_winWidthPx - w) / 2, y = _winTopPx + (int)Math.Round(TopMargin * sc);
+            _backdrop.Place(x, y, w, h, (int)Math.Round(Math.Min(_pill.ActualHeight / 2, 26) * sc));
         }
 
         // ================== Ventana ==================
@@ -189,7 +261,7 @@ namespace McBar.MenuBar
                 if (!_fullscreen) Show();
                 ApplyGeometry();
             }
-            else Hide();
+            else { Hide(); _backdrop.Hide(); }
         }
 
         public void ApplyGeometry()
@@ -197,18 +269,25 @@ namespace McBar.MenuBar
             if (_hwnd == IntPtr.Zero || !_wantVisible) return;
             var b = _monitor.Bounds;
             int w = (int)Math.Ceiling(Width * App.Scale), h = (int)Math.Ceiling(Height * App.Scale);
-            Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, b.Left + (b.Width - w) / 2, b.Top, w, h, Win32.SWP_NOACTIVATE);
+            _winLeftPx = b.Left + (b.Width - w) / 2;
+            _winTopPx = b.Top;
+            _winWidthPx = w;
+            Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, w, h, Win32.SWP_NOACTIVATE);
+            ApplyAppearance();
         }
 
         public void SetFullscreen(bool fullscreen)
         {
             _fullscreen = fullscreen;
             if (!_wantVisible) return;
-            if (fullscreen) Hide(); else { Show(); ApplyGeometry(); }
+            if (fullscreen) { Hide(); _backdrop.Hide(); } else { Show(); ApplyGeometry(); }
         }
 
         public void Teardown()
         {
+            SettingsStore.Changed -= _onSettings;
+            ThemeManager.ThemeChanged -= ApplyAppearance;
+            try { _backdrop.Close(); } catch { }
             ActivityHub.Raised -= _onActivity;
             ActivityHub.MediaChanged -= _onMedia;
             _expandTimer.Stop(); _collapseTimer.Stop(); _activityTimer.Stop(); _clockTimer.Stop(); _progressTimer.Stop();
@@ -250,6 +329,7 @@ namespace McBar.MenuBar
         private FrameworkElement CurrentLayer => _state switch
         {
             State.Expanded => _expanded,
+            State.Drawer => _expanded,
             State.Activity => _activity,
             State.Media => _media,
             _ => _compact
@@ -257,6 +337,7 @@ namespace McBar.MenuBar
 
         private void GoCompact()
         {
+            CloseDrawerContent();
             _state = State.Compact;
             _activityKind = null;
             _progressTimer.Stop();
@@ -268,6 +349,7 @@ namespace McBar.MenuBar
 
         private void GoExpanded()
         {
+            CloseDrawerContent();
             _state = State.Expanded;
             _activityKind = null;
             _progressTimer.Stop();
@@ -280,8 +362,35 @@ namespace McBar.MenuBar
             UpdateEqualizer();
         }
 
+        // ================== Cajón (Centro de control) ==================
+
+        /// <summary>Despliega (o pliega) el Centro de control como un cajón desde la isla.</summary>
+        public void ToggleDrawer()
+        {
+            if (_state == State.Drawer) { GoExpanded(); return; }
+            _expandTimer.Stop();
+            _collapseTimer.Stop();
+            UpdateMiniMedia();
+            _drawer.Child = new McBar.Panels.ControlCenterContent(() => GoCompact()) { Width = 330, HorizontalAlignment = HorizontalAlignment.Center };
+            _drawer.Visibility = Visibility.Visible;
+            _state = State.Drawer;
+            ShowLayer(_expanded);
+            _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), 380);
+            double h = _expanded.DesiredSize.Height + 22;
+            AnimateSize(w, h);
+            UpdateEqualizer();
+        }
+
+        private void CloseDrawerContent()
+        {
+            _drawer.Child = null;
+            _drawer.Visibility = Visibility.Collapsed;
+        }
+
         private void GoMedia()
         {
+            CloseDrawerContent();
             if (ActivityHub.Media?.Current == null) { GoExpanded(); return; }
             _state = State.Media;
             _activityKind = null;
@@ -297,7 +406,9 @@ namespace McBar.MenuBar
         private void ShowActivity(Activity a)
         {
             if (!_wantVisible || _fullscreen) return;
-            if (_state == State.Expanded || _state == State.Media) return; // no interrumpir al usuario
+            // Con varios monitores, el aviso sale solo en la isla del monitor donde estás trabajando.
+            if (App.Islands.Count > 1 && App.ActiveMonitorDevice() != _monitor.Device) return;
+            if (_state == State.Expanded || _state == State.Media || _state == State.Drawer) return; // no interrumpir al usuario
 
             bool sameKind = _state == State.Activity && _activityKind == a.Kind;
             _activity.Children.Clear();
@@ -460,7 +571,10 @@ namespace McBar.MenuBar
 
         private void UpdateCompact()
         {
-            _compactTime.Text = DateTime.Now.ToString("HH:mm", Es);
+            var now = DateTime.Now;
+            _compactTime.Text = SettingsStore.Current.IslandShowDate
+                ? $"{now.ToString("ddd", Es).TrimEnd('.')} {now.Day}  {now.ToString("HH:mm", Es)}"
+                : now.ToString("HH:mm", Es);
             var b = SystemInfo.Battery();
             bool low = b.HasBattery && !b.Charging && b.Percent <= 20;
             bool media = ActivityHub.Media?.Current != null;
@@ -518,6 +632,7 @@ namespace McBar.MenuBar
             _miniMedia.Background = Brushes.Transparent;
             _miniMedia.MouseLeftButtonUp += (_, e) => { if (!(e.OriginalSource is TextBlock tb && tb.Tag as string == "ctl")) GoMedia(); };
             _expanded.Children.Add(_miniMedia);
+            _expanded.Children.Add(_drawer);
         }
 
         private void UpdateMiniMedia()

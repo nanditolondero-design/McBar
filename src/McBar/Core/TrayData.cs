@@ -40,6 +40,12 @@ namespace McBar.Core
         public bool Hidden { get; set; }
         public string ExePath { get; set; } = "";
 
+        /// <summary>
+        /// Íconos que pone el propio Windows (volumen, red, batería del Explorador). No se muestran: McBar
+        /// tiene los suyos, y tocarlos abría paneles de Windows anclados a la barra escondida que trababan todo.
+        /// </summary>
+        public bool IsWindowsSystem => ExePath.EndsWith("\\explorer.exe", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>Identificador que se mantiene entre reinicios (para recordar cuáles ocultar).</summary>
         public string StableId => Guid != Guid.Empty ? "g:" + Guid.ToString("N") : (ExePath.ToLowerInvariant() + "|" + Uid);
     }

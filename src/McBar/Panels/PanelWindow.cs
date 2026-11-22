@@ -103,7 +103,7 @@ namespace McBar.Panels
 
         // ---------- Ayudantes para armar contenido ----------
 
-        protected static TextBlock Text(string text, double size = 13, bool bold = false, bool dim = false)
+        internal static TextBlock Text(string text, double size = 13, bool bold = false, bool dim = false)
         {
             var t = new TextBlock { Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap };
             if (bold) t.FontWeight = FontWeights.SemiBold;
@@ -111,14 +111,14 @@ namespace McBar.Panels
             return t;
         }
 
-        protected static TextBlock Glyph(string glyph, double size = 14)
+        internal static TextBlock Glyph(string glyph, double size = 14)
         {
             var t = new TextBlock { Text = glyph, FontSize = size, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             t.SetResourceReference(TextBlock.FontFamilyProperty, "Mc.Icons");
             return t;
         }
 
-        protected static Border Tile(UIElement child)
+        internal static Border Tile(UIElement child)
         {
             var b = new Border { Child = child };
             b.SetResourceReference(StyleProperty, "McTile");
@@ -126,7 +126,7 @@ namespace McBar.Panels
         }
 
         /// <summary>Botón redondo con un ícono (encendido = color de acento).</summary>
-        protected static Button CircleButton(string glyph, bool active, Action onClick, double size = 32)
+        internal static Button CircleButton(string glyph, bool active, Action onClick, double size = 32)
         {
             var circle = new Border { Width = size, Height = size, CornerRadius = new CornerRadius(size / 2) };
             var g = Glyph(glyph, size * 0.45);
@@ -138,13 +138,13 @@ namespace McBar.Panels
             return b;
         }
 
-        protected static void SetCircleState(Border circle, TextBlock glyph, bool active)
+        internal static void SetCircleState(Border circle, TextBlock glyph, bool active)
         {
             circle.SetResourceReference(Border.BackgroundProperty, active ? "Mc.Accent" : "Mc.Hover");
             glyph.SetResourceReference(TextBlock.ForegroundProperty, active ? "Mc.AccentText" : "Mc.Text");
         }
 
-        protected static Slider McSlider(double min, double max, double value)
+        internal static Slider McSlider(double min, double max, double value)
         {
             var s = new Slider { Minimum = min, Maximum = max, Value = value };
             s.SetResourceReference(StyleProperty, "McSlider");

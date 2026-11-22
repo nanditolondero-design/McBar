@@ -135,6 +135,7 @@ namespace McBar.Dock
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, _winWidthPx, _winHeightPx, Win32.SWP_NOACTIVATE);
 
             HotZone.Visibility = S.DockAutoHide ? Visibility.Visible : Visibility.Collapsed;
+            if (!_fullscreen) _backdrop.Visibility = S.BackdropBlur ? Visibility.Visible : Visibility.Hidden;
             if (!S.DockAutoHide) _hidden = false;
 
             Bar.CornerRadius = new CornerRadius(Radius);
@@ -165,7 +166,7 @@ namespace McBar.Dock
             _fullscreen = fullscreen;
             var v = fullscreen ? Visibility.Hidden : Visibility.Visible;
             Visibility = v;
-            _backdrop.Visibility = v;
+            _backdrop.Visibility = fullscreen || !S.BackdropBlur ? Visibility.Hidden : Visibility.Visible;
         }
 
         public void Teardown()
@@ -180,6 +181,7 @@ namespace McBar.Dock
         private void OnSettingsChanged()
         {
             ApplyGeometry();
+            SyncWindows(); // por si cambió "apps por monitor"
             if (_lastIconSize != IconPixelSize()) ReloadIcons();
             EnsureAnimating();
         }
@@ -329,10 +331,24 @@ namespace McBar.Dock
             }
         }
 
+        private string _lastSyncKey = "";
+
+        /// <summary>Vuelve a repartir las ventanas solo si cambió algo (lo llama el vigilante con "apps por monitor").</summary>
+        public void Resync()
+        {
+            var key = string.Join(",", App.Tracker.Windows.Select(w => w.Hwnd.ToInt64() + "@" + (Monitors.FromWindow(w.Hwnd)?.Device ?? "")));
+            if (key == _lastSyncKey) return;
+            _lastSyncKey = key;
+            SyncWindows();
+        }
+
         /// <summary>Reparte las ventanas abiertas entre los íconos fijados y agrega/quita apps abiertas sin fijar.</summary>
         private void SyncWindows()
         {
-            var windows = App.Tracker.Windows;
+            IEnumerable<TrackedWindow> all = App.Tracker.Windows;
+            if (S.DockAppsPerMonitor && App.Docks.Count > 1)
+                all = all.Where(w => Monitors.FromWindow(w.Hwnd)?.Device == _monitor.Device);
+            var windows = all.ToList();
             var claimed = new HashSet<IntPtr>();
 
             foreach (var it in _items.Where(i => i.Kind == DockItemKind.App && i.IsPinned && !i.IsStack))

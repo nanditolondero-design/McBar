@@ -45,6 +45,22 @@ namespace McBar.Tests
         }
 
         [Fact]
+        public void Ajustes_AparienciaDeLaIslaValida()
+        {
+            var s = SettingsStore.Sanitize(new AppSettings { IslandStyle = "rosa", IslandSize = "gigante" });
+            Assert.Equal("black", s.IslandStyle);
+            Assert.Equal("normal", s.IslandSize);
+            Assert.Equal("glass", SettingsStore.Sanitize(new AppSettings { IslandStyle = "glass" }).IslandStyle);
+        }
+
+        [Fact]
+        public void Bandeja_IconosDeWindowsSeReconocen()
+        {
+            Assert.True(new TrayIcon { ExePath = @"C:\Windows\explorer.exe" }.IsWindowsSystem);
+            Assert.False(new TrayIcon { ExePath = @"C:\Program Files\WhatsApp\WhatsApp.exe" }.IsWindowsSystem);
+        }
+
+        [Fact]
         public void Musica_PosicionEnPausaNoAvanza()
         {
             var m = new MediaInfo { Playing = false, Position = TimeSpan.FromSeconds(30), Duration = TimeSpan.FromMinutes(3), PositionUpdated = DateTimeOffset.Now.AddSeconds(-20) };

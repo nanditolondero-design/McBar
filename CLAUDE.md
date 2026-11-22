@@ -39,6 +39,8 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Ajustes nuevos: propiedad en `AppSettings`, corregir rango en `SettingsStore.Sanitize`, control en `SettingsWindow`, reaccionar a `SettingsStore.Changed`.
 
 ## Puntos delicados
+- Íconos de bandeja del propio Windows (`TrayIcon.IsWindowsSystem`): nunca mostrarlos ni mandarles clics.
+- Varios monitores: todo lo que se muestra va atado a un `MonitorInfo`; pedir datos frescos con `Monitors.Get(handle)` antes de usar el área de trabajo.
 - Barra e isla comparten `MenuBarContent`: cualquier botón/menú nuevo va ahí (sirve para las dos). La isla es siempre oscura.
 - `ActivityHub` solo corre en modo isla; toda fuente nueva de eventos tiene que ser por eventos (nada de sondeos) y avisar en el hilo de la interfaz.
 - TFM `net8.0-windows10.0.19041.0` (APIs de WinRT): no importar `Windows.Foundation` ni `Windows.UI` en archivos de WPF (choques de nombres como `Size`/`Color`).

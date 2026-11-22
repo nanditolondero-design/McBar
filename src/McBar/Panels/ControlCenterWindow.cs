@@ -1,5 +1,7 @@
 // McBar — Creado por Andrés Londero
 // Centro de control estilo macOS: conexiones, modo oscuro, concentración, brillo y sonido.
+// El contenido (ControlCenterContent) se usa en la ventanita de la barra de menú y en el "cajón"
+// que se despliega desde la isla dinámica.
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -7,17 +9,29 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using McBar.Core;
 using McBar.Native;
+using static McBar.Panels.PanelWindow;
 
 namespace McBar.Panels
 {
     internal sealed class ControlCenterWindow : PanelWindow
     {
-        private readonly DispatcherTimer _brightnessDebounce;
-        private int _pendingBrightness = -1;
-
         public ControlCenterWindow() : base(330, false)
         {
             Title = "Centro de control";
+            Card.Child = new ControlCenterContent(CloseAnimated);
+        }
+    }
+
+    internal sealed class ControlCenterContent : Border
+    {
+        private readonly DispatcherTimer _brightnessDebounce;
+        private readonly Action _close;
+        private int _pendingBrightness = -1;
+
+        /// <param name="close">Qué hacer para cerrar (la ventanita se cierra; el cajón de la isla se pliega).</param>
+        public ControlCenterContent(Action close)
+        {
+            _close = close;
             _brightnessDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(160) };
             _brightnessDebounce.Tick += (_, _) =>
             {
@@ -25,7 +39,7 @@ namespace McBar.Panels
                 int v = _pendingBrightness;
                 Task.Run(() => SystemInfo.SetBrightness(v));
             };
-            Card.Child = Build();
+            Child = Build();
         }
 
         private UIElement Build()
@@ -86,8 +100,8 @@ namespace McBar.Panels
             var row3 = new Grid();
             row3.ColumnDefinitions.Add(new ColumnDefinition());
             row3.ColumnDefinitions.Add(new ColumnDefinition());
-            var t1 = Tile(SimpleAction("", "Configuración", () => { CloseAnimated(); Launcher.Open("ms-settings:"); }));
-            var t2 = Tile(SimpleAction("", "Preferencias de McBar", () => { CloseAnimated(); App.OpenSettings(); }));
+            var t1 = Tile(SimpleAction("", "Configuración", () => { _close(); Launcher.Open("ms-settings:"); }));
+            var t2 = Tile(SimpleAction("", "Preferencias de McBar", () => { _close(); App.OpenSettings(); }));
             Grid.SetColumn(t2, 1);
             row3.Children.Add(t1);
             row3.Children.Add(t2);
@@ -165,7 +179,7 @@ namespace McBar.Panels
             {
                 var more = new Button { Content = Glyph("", 11), Padding = new Thickness(6, 2, 6, 2), HorizontalAlignment = HorizontalAlignment.Right, ToolTip = "Configuración" };
                 more.SetResourceReference(StyleProperty, "McFlatButton");
-                more.Click += (_, _) => { CloseAnimated(); Launcher.Open(settingsUri); };
+                more.Click += (_, _) => { _close(); Launcher.Open(settingsUri); };
                 head.Children.Add(more);
             }
             sp.Children.Add(head);

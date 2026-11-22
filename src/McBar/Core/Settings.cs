@@ -32,6 +32,10 @@ namespace McBar.Core
         /// <summary>false: el fondo del Dock queda quieto y solo se agrandan los íconos. true: el fondo se estira (como macOS).</summary>
         public bool DockBackgroundStretch { get; set; } = false;
         public bool DockOnAllMonitors { get; set; } = true;
+        /// <summary>Desenfoque real detrás del Dock y de la isla en estilo Vidrio.</summary>
+        public bool BackdropBlur { get; set; } = true;
+        /// <summary>Con varios monitores: cada Dock muestra solo las apps abiertas en su monitor (las fijadas se ven siempre).</summary>
+        public bool DockAppsPerMonitor { get; set; } = false;
         public bool AnimateWindows { get; set; } = true;
         /// <summary>Valor original de "animar ventanas al minimizar y maximizar" de Windows (para restaurarlo al salir).</summary>
         public int? OriginalMinAnimate { get; set; }
@@ -52,6 +56,12 @@ namespace McBar.Core
         /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
         public bool IslandReserveSpace { get; set; } = true;
         public bool IslandMedia { get; set; } = true;
+        /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
+        public string IslandStyle { get; set; } = "black";
+        /// <summary>"small", "normal" o "large".</summary>
+        public string IslandSize { get; set; } = "normal";
+        public bool IslandShowDate { get; set; } = false;
+        public bool IslandGlow { get; set; } = false;
         public bool IslandVolume { get; set; } = true;
         public bool IslandBattery { get; set; } = true;
         public bool IslandNotifications { get; set; } = true;
@@ -160,6 +170,8 @@ namespace McBar.Core
             s.TrayHiddenIds ??= new List<string>();
             if (s.DockStyle != "floating" && s.DockStyle != "full") s.DockStyle = "classic";
             if (s.TopBarMode != "island") s.TopBarMode = "menubar";
+            if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
+            if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";
             s.WeatherCity ??= "";
             return s;
         }

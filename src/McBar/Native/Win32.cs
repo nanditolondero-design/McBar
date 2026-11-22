@@ -221,6 +221,10 @@ namespace McBar.Native
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr GetModuleHandle(string? name);
         [DllImport("shell32.dll")] public static extern int SHGetKnownFolderItem([MarshalAs(UnmanagedType.LPStruct)] Guid id, uint flags, IntPtr token, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.Interface)] out object? ppv);
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MARGINS { public int left, right, top, bottom; }
+        [DllImport("dwmapi.dll")] public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
         public static double SystemScale()
         {
             try { return GetDpiForSystem() / 96.0; } catch { return 1.0; }

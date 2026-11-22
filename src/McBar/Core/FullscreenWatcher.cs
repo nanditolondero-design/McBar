@@ -37,11 +37,29 @@ namespace McBar.Core
             _debounce.Start();
         }
 
+        /// <summary>
+        /// Revisa TODOS los monitores (no solo el de la ventana con foco): en cada monitor mira la ventana
+        /// "de verdad" que está más arriba; si lo cubre entero y no está maximizada, ese monitor está en
+        /// pantalla completa. Así un video en el monitor 2 sigue sin barras aunque trabajes en el monitor 1.
+        /// </summary>
         public void Check()
         {
-            var fg = Win32.GetForegroundWindow();
+            var monitors = Monitors.All();
+            var decided = new HashSet<string>();
             var now = new HashSet<string>();
-            if (IsFullscreen(fg, out var device)) now.Add(device);
+            Win32.EnumWindows((h, _) =>
+            {
+                if (decided.Count >= monitors.Count) return false; // ya están todos resueltos
+                if (!IsCandidate(h)) return true;
+                var m = Monitors.FromWindow(h);
+                if (m == null || decided.Contains(m.Device)) return true;
+                decided.Add(m.Device);
+                if (!Win32.IsZoomed(h) && Win32.GetWindowRect(h, out var r) &&
+                    IsCovering(new PxRect(r.left, r.top, r.right, r.bottom), m.Bounds))
+                    now.Add(m.Device);
+                return true;
+            }, IntPtr.Zero);
+
             if (!now.SetEquals(FullscreenMonitors))
             {
                 FullscreenMonitors.Clear();
@@ -50,19 +68,17 @@ namespace McBar.Core
             }
         }
 
-        private bool IsFullscreen(IntPtr hwnd, out string device)
+        /// <summary>Ventanas que cuentan: visibles, de apps de verdad (no superposiciones transparentes, ni McBar, ni el escritorio).</summary>
+        private bool IsCandidate(IntPtr h)
         {
-            device = "";
-            if (hwnd == IntPtr.Zero || !Win32.IsWindowVisible(hwnd) || Win32.IsIconic(hwnd)) return false;
-            if (Win32.ProcessOf(hwnd) == _ownPid) return false;
-            if (Win32.IsZoomed(hwnd)) return false; // maximizada no es pantalla completa
-            var cls = WindowOps.GetClass(hwnd);
-            if (cls == "Progman" || cls == "WorkerW" || Taskbar.IsShellTrayClass(cls)) return false;
-            if (!Win32.GetWindowRect(hwnd, out var r)) return false;
-            var m = Monitors.FromWindow(hwnd);
-            if (m == null) return false;
-            device = m.Device;
-            return IsCovering(new PxRect(r.left, r.top, r.right, r.bottom), m.Bounds);
+            if (!Win32.IsWindowVisible(h) || Win32.IsIconic(h)) return false;
+            var ex = Win32.GetExStyle(h);
+            if ((ex & Win32.WS_EX_TOOLWINDOW) != 0 || (ex & Win32.WS_EX_NOACTIVATE) != 0 || (ex & 0x20 /*WS_EX_TRANSPARENT*/) != 0) return false;
+            if (Win32.DwmGetWindowAttribute(h, Win32.DWMWA_CLOAKED, out int cloaked, 4) == 0 && cloaked != 0) return false;
+            if (Win32.ProcessOf(h) == _ownPid) return false;
+            var cls = WindowOps.GetClass(h);
+            if (cls == "Progman" || cls == "WorkerW" || Taskbar.IsShellTrayClass(cls) || cls == "Shell_TrayWnd") return false;
+            return true;
         }
 
         /// <summary>¿La ventana cubre todo el monitor? (pura, se prueba)</summary>

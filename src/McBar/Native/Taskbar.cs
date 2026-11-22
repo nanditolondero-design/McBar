@@ -97,6 +97,32 @@ namespace McBar.Native
             TemporarilyShown = false;
         }
 
+        private static System.Windows.Threading.DispatcherTimer? _burst;
+        private static DateTime _burstUntil;
+
+        /// <summary>
+        /// Vigilancia rápida (cada 100 ms) durante unos segundos. Se usa después de acciones que hacen que el
+        /// Explorador vuelva a mostrar su barra en algún monitor (vaciar la papelera, borrar archivos, etc.)
+        /// y cada vez que aparece, para que casi no se llegue a ver.
+        /// </summary>
+        public static void EnforceBurst(double seconds = 2.5)
+        {
+            if (!IsHiddenByUs) return;
+            Enforce();
+            var until = DateTime.Now.AddSeconds(seconds);
+            if (until > _burstUntil) _burstUntil = until;
+            if (_burst == null)
+            {
+                _burst = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Send) { Interval = TimeSpan.FromMilliseconds(100) };
+                _burst.Tick += (_, _) =>
+                {
+                    Enforce();
+                    if (DateTime.Now > _burstUntil) _burst!.Stop();
+                };
+            }
+            _burst.Start();
+        }
+
         /// <summary>Muestra la barra de Windows un momento para usar los íconos de la bandeja (Win+B).</summary>
         public static void ShowTemporarily()
         {

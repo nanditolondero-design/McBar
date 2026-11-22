@@ -93,6 +93,18 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] La barra de Windows no aparece sola (si asoma, desaparece en menos de un segundo).
 - [ ] Launchpad: se ven las apps en la primera página y en las siguientes (rueda del mouse o puntitos).
 
+### Versión 0.3.2
+- [ ] Isla: no aparece el ícono de volumen de Windows (solo el de McBar) y nada se traba al tocar los íconos.
+- [ ] Isla: el reloj se ve grande; Preferencias → Isla dinámica → Tamaño/Estilo/Día/Borde cambian la píldora al instante.
+- [ ] Isla: tocar Centro de control, Wi-Fi, volumen o batería despliega el cajón con los atajos; sacar el mouse lo pliega.
+- [ ] Estilo Vidrio: la píldora se ve translúcida con desenfoque y bordes redondeados prolijos.
+- [ ] Dock: el desenfoque de atrás tiene las esquinas redondeadas (sin esquinas cuadradas).
+- [ ] Dos monitores: video en pantalla completa en el monitor 2 mientras se trabaja en el 1 → el monitor 2 sigue sin barras.
+- [ ] Dos monitores: subir el volumen → el aviso sale solo en la isla del monitor donde está la ventana activa.
+- [ ] Dos monitores: "Cada Dock muestra solo las apps abiertas en su monitor" → mover una ventana de monitor la pasa de Dock en ~2 s.
+- [ ] Desenchufar y volver a enchufar un monitor: barras y Docks se rehacen bien.
+- [ ] Vaciar la papelera desde el Dock: la barra de Windows no aparece (o apenas un instante).
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

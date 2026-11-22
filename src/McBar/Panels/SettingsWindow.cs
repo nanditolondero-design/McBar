@@ -14,6 +14,7 @@ namespace McBar.Panels
     internal sealed class SettingsWindow : Window
     {
         private readonly DispatcherTimer _apply;
+        private int _segCounter;
 
         public SettingsWindow()
         {
@@ -61,6 +62,8 @@ namespace McBar.Panels
             dock.Children.Add(Segment("Estilo", new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo") },
                 s.DockStyle, v => { s.DockStyle = v; Changed(); }));
             dock.Children.Add(Switch("El fondo se estira al ampliar (como macOS)", s.DockBackgroundStretch, v => s.DockBackgroundStretch = v));
+            dock.Children.Add(Switch("Desenfoque detrás del Dock", s.BackdropBlur, v => s.BackdropBlur = v));
+            dock.Children.Add(Switch("Cada Dock muestra solo las apps abiertas en su monitor", s.DockAppsPerMonitor, v => s.DockAppsPerMonitor = v));
             dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
             dock.Children.Add(Switch("Animar ventanas al minimizar y restaurar (hacia el Dock)", s.AnimateWindows, v => s.AnimateWindows = v));
             root.Children.Add(Group(dock));
@@ -80,6 +83,12 @@ namespace McBar.Panels
             // ---------- Isla dinámica ----------
             root.Children.Add(Header("Isla dinámica"));
             var isl = new StackPanel();
+            isl.Children.Add(Segment("Estilo", new[] { ("black", "Negro"), ("graphite", "Grafito"), ("glass", "Vidrio"), ("accent", "Color") },
+                s.IslandStyle, v => { s.IslandStyle = v; Changed(); }));
+            isl.Children.Add(Segment("Tamaño", new[] { ("small", "Chica"), ("normal", "Normal"), ("large", "Grande") },
+                s.IslandSize, v => { s.IslandSize = v; Changed(); }));
+            isl.Children.Add(Switch("Mostrar el día junto a la hora", s.IslandShowDate, v => s.IslandShowDate = v));
+            isl.Children.Add(Switch("Borde brillante", s.IslandGlow, v => s.IslandGlow = v));
             isl.Children.Add(Switch("Dejar lugar arriba para la isla (las ventanas no quedan debajo)", s.IslandReserveSpace, v => s.IslandReserveSpace = v));
             isl.Children.Add(Switch("Música y videos (con controles)", s.IslandMedia, v => s.IslandMedia = v));
             isl.Children.Add(Switch("Volumen y brillo", s.IslandVolume, v => s.IslandVolume = v));
@@ -198,7 +207,7 @@ namespace McBar.Panels
             var hint = new TextBlock { Text = "Visibles en la barra (los apagados quedan en el menú ⌃):", FontSize = 12, Margin = new Thickness(0, 0, 0, 4) };
             hint.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             sp.Children.Add(hint);
-            foreach (var ic in host.Icons.Where(i => i.Icon != null).GroupBy(i => i.StableId).Select(g => g.First()))
+            foreach (var ic in host.Icons.Where(i => i.Icon != null && !i.IsWindowsSystem).GroupBy(i => i.StableId).Select(g => g.First()))
             {
                 string name = !string.IsNullOrWhiteSpace(ic.Tooltip) ? ic.Tooltip.Split('\n')[0] : System.IO.Path.GetFileNameWithoutExtension(ic.ExePath);
                 if (name.Length > 48) name = name.Substring(0, 47) + "…";
@@ -227,7 +236,7 @@ namespace McBar.Panels
             var seg = new StackPanel { Orientation = Orientation.Horizontal };
             var segBorder = new Border { Child = seg, CornerRadius = new CornerRadius(8), Padding = new Thickness(1) };
             segBorder.SetResourceReference(Border.BackgroundProperty, "Mc.Hover");
-            string group = "Seg" + text;
+            string group = "Seg" + text + "_" + (++_segCounter); // grupo único (hay dos "Estilo")
             foreach (var (key, name) in options)
             {
                 var rb = new RadioButton { Content = name, GroupName = group, IsChecked = current == key };

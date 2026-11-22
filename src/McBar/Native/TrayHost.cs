@@ -296,6 +296,7 @@ namespace McBar.Native
 
         public void Send(TrayIcon icon, Click click, PxRect anchor)
         {
+            if (icon.IsWindowsSystem) return; // nunca tocar los íconos propios de Windows
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
             Win32.AllowSetForegroundWindow(Win32.ProcessOf(icon.HWnd)); // para que pueda mostrar su menú al frente
             int[] msgs = click switch

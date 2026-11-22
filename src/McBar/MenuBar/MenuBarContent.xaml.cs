@@ -41,6 +41,9 @@ namespace McBar.MenuBar
 
         public MonitorInfo Monitor => _monitor;
 
+        /// <summary>true cuando este contenido está dentro de la isla: Wi-Fi, volumen, batería y Centro de control abren el cajón.</summary>
+        public bool InIsland { get; set; }
+
         private IntPtr Target => App.Tracker.LastExternalForeground;
         private static AppSettings S => SettingsStore.Current;
 
@@ -61,9 +64,9 @@ namespace McBar.MenuBar
             HelpButton.Click += (_, _) => OpenMenu(HelpButton, BuildHelpMenu());
             TrayButton.Click += (_, _) => { if (TrayHost.Current != null) ShowTrayOverflow(); else Taskbar.ShowTemporarily(); };
             WeatherButton.Click += (_, _) => App.ToggleWidgets(_monitor);
-            WifiButton.Click += (_, _) => OpenMenu(WifiButton, BuildNetworkMenu());
-            BatteryButton.Click += (_, _) => OpenMenu(BatteryButton, BuildBatteryMenu());
-            VolumeButton.Click += (_, _) => ShowVolumePopup();
+            WifiButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else OpenMenu(WifiButton, BuildNetworkMenu()); };
+            BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
+            VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else ShowVolumePopup(); };
             SearchButton.Click += (_, _) => App.ToggleLaunchpad(_monitor);
             ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
             ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
@@ -141,7 +144,7 @@ namespace McBar.MenuBar
                 return;
             }
             var hidden = new HashSet<string>(S.TrayHiddenIds);
-            var visible = host.Icons.Where(i => !i.Hidden && i.Icon != null).ToList();
+            var visible = host.Icons.Where(i => !i.Hidden && i.Icon != null && !i.IsWindowsSystem).ToList();
             foreach (var ic in visible.Where(i => !hidden.Contains(i.StableId)))
             {
                 var b = TrayButtonFor(ic, host);
@@ -206,7 +209,7 @@ namespace McBar.MenuBar
             if (host == null) return;
             var hidden = new HashSet<string>(S.TrayHiddenIds);
             var wrap = new WrapPanel { MaxWidth = 220 };
-            foreach (var ic in host.Icons.Where(i => !i.Hidden && i.Icon != null && hidden.Contains(i.StableId)))
+            foreach (var ic in host.Icons.Where(i => !i.Hidden && i.Icon != null && !i.IsWindowsSystem && hidden.Contains(i.StableId)))
             {
                 var b = TrayButtonFor(ic, host);
                 b.Height = 30;

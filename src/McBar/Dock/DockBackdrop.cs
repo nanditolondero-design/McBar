@@ -3,6 +3,10 @@
 // Es una ventanita aparte, del tamaño justo de la barra y con las esquinas recortadas, porque el
 // desenfoque de Windows se aplica a toda la ventana y la ventana del Dock es más grande que la barra.
 // Solo se mueve cuando cambia el tamaño de la barra (no en cada cuadro de la ampliación).
+//
+// 0.3.2: ahora es una ventana COMÚN (no "en capas"): en las ventanas en capas Windows ignora el recorte
+// redondeado y se veían las esquinas cuadradas del desenfoque. En una ventana común el recorte (región)
+// sí se respeta. El fondo se hace transparente extendiendo el "vidrio" de Windows a toda la ventana.
 using System;
 using System.Windows;
 using System.Windows.Interop;
@@ -20,8 +24,8 @@ namespace McBar.Dock
         public DockBackdrop()
         {
             WindowStyle = WindowStyle.None;
-            AllowsTransparency = true;
-            Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+            AllowsTransparency = false;
+            Background = Brushes.Transparent;
             ShowInTaskbar = false;
             Topmost = true;
             ShowActivated = false;
@@ -37,6 +41,11 @@ namespace McBar.Dock
             {
                 _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
+                // Fondo transparente en una ventana común: vidrio de Windows en toda la ventana.
+                var src = HwndSource.FromHwnd(_hwnd);
+                if (src?.CompositionTarget != null) src.CompositionTarget.BackgroundColor = Colors.Transparent;
+                var m = new Win32.MARGINS { left = -1, right = -1, top = -1, bottom = -1 };
+                Win32.DwmExtendFrameIntoClientArea(_hwnd, ref m);
                 ApplyBlur();
             };
             ThemeManager.ThemeChanged += ApplyBlur;

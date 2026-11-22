@@ -33,6 +33,9 @@ Pedidos de Andrés después de probar la 0.1:
 ## Versión 0.3.1 (22/11/2026) — arreglos de rendimiento y errores
 Reportado por Andrés: app lenta, sin animación al soltar para quitar, barra superior que se oculta, Launchpad con páginas vacías, barra de Windows que aparece sola. Ver CHANGELOG.
 
+## Versión 0.3.2 (22/11/2026)
+Isla: cajón del Centro de control, apariencia configurable, reloj grande; sin íconos de bandeja de Windows; revisión de varios monitores; esquinas del desenfoque del Dock; barra de Windows al vaciar la papelera. Ver CHANGELOG.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.
