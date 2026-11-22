@@ -170,5 +170,28 @@ namespace McBar.Tests
             Assert.Equal(23.0, w.FeelsLike, 3);
             Assert.Equal(2, w.Hours24.Count);
         }
+            // ---------- 0.4.2 ----------
+
+        [Fact]
+        public void Launchpad_OcultarYMostrarApps()
+        {
+            var apps = Apps("Chrome", "Excel", "Word");
+            var hidden = new List<string>();
+            Assert.True(LaunchpadLayout.ToggleHidden(hidden, "t:Excel"));
+            Assert.Equal(new[] { "Chrome", "Word" }, LaunchpadLayout.Visible(apps, hidden, a => a.Target, false).Select(a => a.Name));
+            Assert.Equal(3, LaunchpadLayout.Visible(apps, hidden, a => a.Target, true).Count);
+            Assert.False(LaunchpadLayout.ToggleHidden(hidden, "T:EXCEL")); // sin importar mayúsculas
+            Assert.Empty(hidden);
+        }
+
+        [Fact]
+        public void Ajustes_ModoGotaEsValido()
+        {
+            var s = SettingsStore.Sanitize(new AppSettings { TopBarMode = "drop", LaunchpadHidden = null! });
+            Assert.Equal("drop", s.TopBarMode);
+            Assert.True(s.IsIslandLike);
+            Assert.NotNull(s.LaunchpadHidden);
+            Assert.Equal("menubar", SettingsStore.Sanitize(new AppSettings { TopBarMode = "raro" }).TopBarMode);
+        }
     }
 }

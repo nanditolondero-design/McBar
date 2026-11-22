@@ -56,6 +56,7 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).
 - `WindowTracker`: el delegado del hook debe quedar referenciado en un campo (si no, el GC lo borra y la app se cae).
 - Ventanas del Dock y la barra: `WS_EX_NOACTIVATE`, así la app activa no pierde el foco y los menús Archivo/Edición le mandan los atajos a ella.
+- Isla y gota comparten `IslandWindow`: para saber si hay isla usar `AppSettings.IsIslandLike`, nunca comparar con "island" solo.
 - Dock: nada de `Effect` (DropShadowEffect, Blur) ni `BitmapCache` en elementos que cambian de tamaño cada cuadro; la sombra son dos `Border` (`BarShadow1/2`). La forma de la ventana es rectangular con margen: las esquinas las suaviza WPF.
 - Nunca desenfoque de Windows (accent) en una ventana rápida que sea más grande que lo que se ve: Windows lo aplica a toda la ventana, no a la forma.
 - `WorkArea.Verify` corrige SIN avisar (`notify: false`); solo los pedidos explícitos (`WorkArea.Set`) avisan a las ventanas.

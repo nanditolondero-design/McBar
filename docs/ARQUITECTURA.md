@@ -94,6 +94,9 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Gota (0.4.2)
+`TopBarMode = "drop"` usa la misma `IslandWindow` que la isla (`AppSettings.IsIslandLike`). Diferencias: separación 0 con el borde (`TopGapFor`), solo esquinas de abajo redondeadas (`Corners`) y dos "hombros" (`MakeShoulder`: cuadradito menos un cuarto de círculo) a los costados de la píldora. La forma de la ventana es un rectángulo que incluye los hombros.
+
 ## Clima propio (0.4.1)
 `Core/Weather.cs` pide a Open-Meteo el tiempo actual (con sensación, humedad, viento), 24 horas y 7 días. `Panels/WeatherView` lo dibuja; se usa en el cajón `DrawerKind.Weather` de la isla y en `WeatherWindow` (barra de menú, `App.ToggleWeather`).
 

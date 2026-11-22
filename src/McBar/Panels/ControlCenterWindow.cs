@@ -109,63 +109,71 @@ namespace McBar.Panels
             return root;
         }
 
-        private static UIElement ConnRow(string glyph, string title, string subtitle, bool active, Action click)
+        // 0.4.1 (pedido de Andrés): cada opción es un botón ENTERO (ícono + texto), no solo el circulito.
+
+        private static Border Circle(string glyph, bool active, out TextBlock g)
         {
-            var g = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+            var circle = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(16) };
+            g = Glyph(glyph, 14);
+            circle.Child = g;
+            SetCircleState(circle, g, active);
+            return circle;
+        }
+
+        private static Button RowButton(UIElement icon, UIElement text, Action click)
+        {
+            var g = new Grid();
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition());
-            var btn = CircleButton(glyph, active, click);
-            g.Children.Add(btn);
+            g.Children.Add(icon);
+            Grid.SetColumn(text, 1);
+            g.Children.Add(text);
+            var b = new Button { Content = g };
+            b.SetResourceReference(StyleProperty, "McRowButton");
+            b.Click += (_, _) => click();
+            return b;
+        }
+
+        private static TextBlock RowLabel(string title)
+        {
+            var label = Text(title, 12.5, true);
+            label.Margin = new Thickness(8, 0, 0, 0);
+            label.VerticalAlignment = VerticalAlignment.Center;
+            return label;
+        }
+
+        private static UIElement ConnRow(string glyph, string title, string subtitle, bool active, Action click)
+        {
             var sp = new StackPanel { Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
             sp.Children.Add(Text(title, 12.5, true));
             var sub = Text(subtitle, 11, false, true);
             sub.TextWrapping = TextWrapping.NoWrap;
             sub.TextTrimming = TextTrimming.CharacterEllipsis;
             sp.Children.Add(sub);
-            Grid.SetColumn(sp, 1);
-            g.Children.Add(sp);
-            return g;
+            var btn = RowButton(Circle(glyph, active, out _), sp, click);
+            btn.Margin = new Thickness(-4, 0, -4, 0);
+            return btn;
         }
 
         private UIElement DarkModeToggle()
         {
             bool dark = SystemInfo.WindowsIsDark();
-            var g = new Grid();
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.ColumnDefinitions.Add(new ColumnDefinition());
-            var circle = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(16) };
-            var glyph = Glyph("", 14);
-            circle.Child = glyph;
-            SetCircleState(circle, glyph, dark);
-            var btn = new Button { Content = circle, Padding = new Thickness(0) };
-            btn.SetResourceReference(StyleProperty, "McFlatButton");
-            btn.Click += (_, _) =>
+            var circle = Circle("\uE708", dark, out var glyph);
+            var btn = RowButton(circle, RowLabel("Modo oscuro"), () =>
             {
                 dark = !dark;
                 SystemInfo.SetWindowsDark(dark);
                 SetCircleState(circle, glyph, dark);
-            };
-            g.Children.Add(btn);
-            var label = Text("Modo oscuro", 12.5, true);
-            label.Margin = new Thickness(8, 0, 0, 0);
-            label.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(label, 1);
-            g.Children.Add(label);
-            return g;
+            });
+            btn.Margin = new Thickness(-4, -3, -4, -3);
+            return btn;
         }
 
         private static UIElement SimpleAction(string glyph, string title, Action click)
         {
-            var g = new Grid();
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.ColumnDefinitions.Add(new ColumnDefinition());
-            g.Children.Add(CircleButton(glyph, false, click));
-            var label = Text(title, 12.5, true);
-            label.Margin = new Thickness(8, 0, 0, 0);
-            label.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(label, 1);
-            g.Children.Add(label);
-            return g;
+            var btn = RowButton(Circle(glyph, false, out _), RowLabel(title), click);
+            btn.Margin = new Thickness(-4, -3, -4, -3);
+            return btn;
         }
 
         /// <summary>Título + fila con ícono (opcionalmente botón) y deslizador, como en macOS.</summary>

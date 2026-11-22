@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.4.1)
+## Qué incluye (versión 0.4.2)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -29,6 +29,8 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - A la derecha: **bandeja propia** (los íconos de WhatsApp, antivirus, etc., con sus menús de clic derecho), **clima** con ícono dinámico, batería, red, volumen, búsqueda, Centro de control y reloj.
 - Los íconos de la bandeja se pueden mostrar en color o en blanco y negro, y ocultar los que no quieras (quedan en el menú ⌃).
 - Fondo desenfocado (acrílico).
+
+**Gota** (opcional, 0.4.2): igual que la isla pero pegada al borde de arriba, como una gota que sale de la pantalla.
 
 **Isla dinámica** (opcional, en Preferencias → Barra superior → Tipo): en lugar de la barra de menú, una píldora negra arriba al centro, como en el iPhone.
 - En reposo muestra la hora (y la tapa del disco con un ecualizador si suena algo).

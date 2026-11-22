@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.4.2 — 22/11/2026
+Pedidos de Andrés:
+- **Ocultar apps del Launchpad**: clic derecho → "Ocultar del Launchpad". Abajo a la derecha aparece "Mostrar apps ocultas (N)": las muestra atenuadas y desde ahí se pueden "Dejar de ocultar". Se guardan en settings.json (`LaunchpadHidden`).
+- **Nuevo modo de barra superior "Gota"** (Preferencias → Barra superior → Tipo): como la isla, pero pegada al borde de arriba, con curvas que la unen al borde como una gota, y del mismo tamaño dinámico (crece con los menús, los avisos y los cajones).
+- **Centro de control con botones enteros**: Wi-Fi, Bluetooth, Modo avión, Modo oscuro, Concentración, Configuración y Preferencias se activan tocando toda la fila (ícono y texto), no solo el circulito. También en el cajón de la isla y la gota.
+- Error de compilación de la 0.4.1 en Preferencias (tipo del contenido de las pestañas) corregido.
+
 ## 0.4.1 — 22/11/2026
 Pedidos de Andrés después de probar la 0.4.0 (registro de su PC revisado):
 - **Ventanas que "querían acomodarse y no podían"**: el registro mostraba que McBar y el Explorador se peleaban por el área de trabajo cada pocos minutos. Ahora las correcciones de McBar son silenciosas (no avisan a todas las ventanas, así nada se sacude ni el Explorador reacciona) y, si la pelea sigue, McBar deja de corregir hasta que cambie algo (monitores, Preferencias o reinicio del Explorador).

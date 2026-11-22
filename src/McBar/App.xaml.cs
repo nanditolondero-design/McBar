@@ -192,7 +192,7 @@ namespace McBar
             Docks.Clear();
             MenuBars.Clear();
             Islands.Clear();
-            bool island = s.TopBarMode == "island";
+            bool island = s.IsIslandLike;
             if (island && s.ShowMenuBar) ActivityHub.Start(); else ActivityHub.Stop();
             WorkArea.Reset();
 
@@ -252,7 +252,7 @@ namespace McBar
             var s = SettingsStore.Current;
             double top = m.Bounds.Top / Scale;
             if (!s.ShowMenuBar) return top + 8;
-            return top + (s.TopBarMode == "island" ? IslandWindow.TopMargin + IslandWindow.CompactHeightFor(s) + 8 : MenuBarWindow.BarHeightDip + 6);
+            return top + (s.IsIslandLike ? IslandWindow.TopGapFor(s) + IslandWindow.CompactHeightFor(s) + 8 : MenuBarWindow.BarHeightDip + 6);
         }
 
         /// <summary>Datos frescos del monitor (el área de trabajo puede haber cambiado desde que se guardó).</summary>
@@ -399,7 +399,7 @@ namespace McBar
             if (IslandKey(s) != _lastIslandKey)
             {
                 _lastIslandKey = IslandKey(s);
-                if (s.TopBarMode == "island" && s.ShowMenuBar) ActivityHub.Restart();
+                if (s.IsIslandLike && s.ShowMenuBar) ActivityHub.Restart();
             }
             BuildMonitors(); // si cambiaron monitores/visibilidad/modo se rehace; si no, solo recalcula áreas
             foreach (var mb in MenuBars) mb.SetVisible(s.ShowMenuBar);

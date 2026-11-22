@@ -81,7 +81,7 @@ namespace McBar.Panels
             root.Children.Add(Header("Barra superior"));
             var bar = new StackPanel();
             bar.Children.Add(Switch("Mostrar la barra superior", s.ShowMenuBar, v => s.ShowMenuBar = v));
-            bar.Children.Add(Segment("Tipo", new[] { ("menubar", "Barra de menú"), ("island", "Isla dinámica") },
+            bar.Children.Add(Segment("Tipo", new[] { ("menubar", "Barra de menú"), ("island", "Isla dinámica"), ("drop", "Gota") },
                 s.TopBarMode, v => { s.TopBarMode = v; Changed(); }));
             bar.Children.Add(Switch("Mostrar el porcentaje de batería", s.ShowBatteryPercent, v => s.ShowBatteryPercent = v));
             bar.Children.Add(Switch("Mostrar la fecha en el reloj", s.ShowDateInClock, v => s.ShowDateInClock = v));

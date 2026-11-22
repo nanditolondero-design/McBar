@@ -60,6 +60,24 @@ namespace McBar.Core
             return result;
         }
 
+        /// <summary>Saca las apps ocultas (salvo que se pidan todas). 0.4.2.</summary>
+        public static List<T> Visible<T>(IEnumerable<T> apps, ICollection<string> hidden, Func<T, string> target, bool showHidden)
+        {
+            if (showHidden || hidden.Count == 0) return apps.ToList();
+            var set = new HashSet<string>(hidden, StringComparer.OrdinalIgnoreCase);
+            return apps.Where(a => !set.Contains(target(a))).ToList();
+        }
+
+        /// <summary>Oculta o vuelve a mostrar una app. Devuelve true si quedó oculta.</summary>
+        public static bool ToggleHidden(IList<string> hidden, string target)
+        {
+            int i = -1;
+            for (int k = 0; k < hidden.Count; k++) if (string.Equals(hidden[k], target, StringComparison.OrdinalIgnoreCase)) { i = k; break; }
+            if (i >= 0) { hidden.RemoveAt(i); return false; }
+            hidden.Add(target);
+            return true;
+        }
+
         public static LaunchpadFolder? FolderOf(IList<LaunchpadFolder> folders, string target) =>
             folders.FirstOrDefault(f => f.Targets.Contains(target, StringComparer.OrdinalIgnoreCase));
 

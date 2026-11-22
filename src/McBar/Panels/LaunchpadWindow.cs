@@ -52,6 +52,9 @@ namespace McBar.Panels
         private CatalogApp? _dragApp;
         private bool _dragged;
         private static List<LaunchpadFolder> Folders => SettingsStore.Current.LaunchpadFolders;
+        private static List<string> Hidden => SettingsStore.Current.LaunchpadHidden;
+        private bool _showHidden;
+        private readonly TextBlock _hiddenToggle = new TextBlock { FontSize = 12, Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 40, 0) };
         private UIElement? _currentPage;
         private int _page, _pageCount = 1;
         private DateTime _lastWheel = DateTime.MinValue;
@@ -113,6 +116,11 @@ namespace McBar.Panels
             Grid.SetRow(_dots, 2);
             _dots.VerticalAlignment = VerticalAlignment.Center;
             _content.Children.Add(_dots);
+            // 0.4.2: mostrar/esconder las apps ocultas
+            Grid.SetRow(_hiddenToggle, 2);
+            _hiddenToggle.Foreground = new SolidColorBrush(Color.FromArgb(0xC0, 0xFF, 0xFF, 0xFF));
+            _hiddenToggle.MouseLeftButtonUp += (_, e) => { e.Handled = true; _showHidden = !_showHidden; Filter(_page); };
+            _content.Children.Add(_hiddenToggle);
             Content = _root;
 
             SourceInitialized += (_, _) =>
@@ -185,9 +193,13 @@ namespace McBar.Panels
         private void Filter(int keepPage = 0)
         {
             var q = _search.Text.Trim();
+            var apps = LaunchpadLayout.Visible(_all, Hidden, a => a.Target, _showHidden);
             _shown = q.Length == 0
-                ? LaunchpadLayout.Arrange(_all, Folders, a => a.Target)
-                : LaunchpadLayout.Search(_all, Folders, a => a.Target, a => a.Name, q);
+                ? LaunchpadLayout.Arrange(apps, Folders, a => a.Target)
+                : LaunchpadLayout.Search(apps, Folders, a => a.Target, a => a.Name, q);
+            int hiddenCount = _all.Count(a => Hidden.Contains(a.Target, StringComparer.OrdinalIgnoreCase));
+            _hiddenToggle.Visibility = hiddenCount > 0 || _showHidden ? Visibility.Visible : Visibility.Collapsed;
+            _hiddenToggle.Text = _showHidden ? "Esconder las apps ocultas" : $"Mostrar apps ocultas ({hiddenCount})";
             _pageCount = Math.Max(1, (int)Math.Ceiling(_shown.Count / (double)PerPage));
             BuildDots();
             ShowPage(Math.Clamp(q.Length == 0 ? keepPage : 0, 0, _pageCount - 1), 0);
@@ -329,6 +341,8 @@ namespace McBar.Panels
         private UIElement Tile(CatalogApp app, LaunchpadFolder? inFolder)
         {
             var card = Card(IconImage(app, 80), app.Name);
+            bool isHidden = Hidden.Contains(app.Target, StringComparer.OrdinalIgnoreCase);
+            if (isHidden) card.Opacity = 0.45; // oculta (solo se ve con "Mostrar apps ocultas")
             card.PreviewMouseLeftButtonDown += (_, e) => { _dragApp = app; _dragStart = e.GetPosition(this); _dragged = false; };
             card.PreviewMouseMove += (_, e) => TryStartDrag(card, app, e);
             card.MouseLeftButtonUp += (_, e) =>
@@ -379,6 +393,8 @@ namespace McBar.Panels
                 }
                 cm.Items.Add(to);
             }
+            var hide = new MenuItem { Header = isHidden ? "Dejar de ocultar" : "Ocultar del Launchpad" };
+            hide.Click += (_, _) => { LaunchpadLayout.ToggleHidden(Hidden, app.Target); SettingsStore.Save(); Filter(_page); };
             var nf = new MenuItem { Header = "Nueva carpeta" };
             nf.Click += (_, _) =>
             {
@@ -387,6 +403,8 @@ namespace McBar.Panels
                 OpenFolder(f, focusName: true);
             };
             cm.Items.Add(nf);
+            cm.Items.Add(new Separator());
+            cm.Items.Add(hide);
             card.ContextMenu = cm;
             return card;
         }

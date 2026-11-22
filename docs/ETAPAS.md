@@ -51,6 +51,9 @@ Pedido de Andrés: fondo del Launchpad más transparente, carpetas o grupos de �
 ## Versión 0.4.1 (22/11/2026)
 Rendimiento, ventanas que se sacudían (área de trabajo), aspecto nuevo del Dock (fondo que crece + vidrio propio), Papelera que se perdía, widget del clima propio, isla Vidrio sin cuadrado oscuro, Launchpad menos transparente, Preferencias en pestañas. Ver CHANGELOG.
 
+## Versión 0.4.2 (22/11/2026)
+Ocultar apps del Launchpad, modo "Gota" para la barra superior, Centro de control con filas enteras como botones. Ver CHANGELOG.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.

@@ -57,6 +57,10 @@ namespace McBar.Core
         /// </summary>
         public int LookVersion { get; set; }
 
+        /// <summary>Isla o gota (las dos usan la ventana de la isla).</summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsIslandLike => TopBarMode == "island" || TopBarMode == "drop";
+
         public static List<PinnedApp> DefaultStacks() => new List<PinnedApp>
         {
             new PinnedApp { Name = "Descargas", Target = "mcbar:downloads" },
@@ -68,7 +72,7 @@ namespace McBar.Core
         public bool ShowBatteryPercent { get; set; } = true;
         public bool ShowDateInClock { get; set; } = true;
         public bool MenuBarOnAllMonitors { get; set; } = true;
-        /// <summary>"menubar" (barra de menú clásica) o "island" (isla dinámica).</summary>
+        /// <summary>"menubar" (barra de menú clásica), "island" (isla dinámica) o "drop" (gota: la isla pegada al borde de arriba, 0.4.2).</summary>
         public string TopBarMode { get; set; } = "menubar";
         /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
         public bool IslandReserveSpace { get; set; } = true;
@@ -95,6 +99,8 @@ namespace McBar.Core
         public int LaunchpadTransparency { get; set; } = 50;
         public bool LaunchpadBlur { get; set; } = true;
         public List<LaunchpadFolder> LaunchpadFolders { get; set; } = new List<LaunchpadFolder>();
+        /// <summary>Apps ocultas del Launchpad (Target). 0.4.2.</summary>
+        public List<string> LaunchpadHidden { get; set; } = new List<string>();
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -217,9 +223,10 @@ namespace McBar.Core
             s.Stacks.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Target));
             s.TrayHiddenIds ??= new List<string>();
             if (s.DockStyle != "floating" && s.DockStyle != "full") s.DockStyle = "classic";
-            if (s.TopBarMode != "island") s.TopBarMode = "menubar";
+            if (s.TopBarMode != "island" && s.TopBarMode != "drop") s.TopBarMode = "menubar";
             s.LaunchpadTransparency = Math.Clamp(s.LaunchpadTransparency, 0, 100);
             s.LaunchpadFolders ??= new List<LaunchpadFolder>();
+            s.LaunchpadHidden ??= new List<string>();
             s.LaunchpadFolders.RemoveAll(f => f == null || f.Targets == null || f.Targets.Count == 0);
             if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
             if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";

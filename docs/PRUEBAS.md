@@ -147,6 +147,12 @@ Launchpad:
 - [ ] Launchpad: abrir/cerrar fluido; Transparencia en 0 = casi opaco, en 100 = casi transparente.
 - [ ] Preferencias: pestañas a la izquierda; al cerrar y volver a abrir, queda en la última.
 
+### Versión 0.4.2
+- [ ] Launchpad: clic derecho en una app → "Ocultar del Launchpad": desaparece y abajo a la derecha aparece "Mostrar apps ocultas (1)". Tocándolo se ve atenuada; clic derecho → "Dejar de ocultar".
+- [ ] Preferencias → Barra superior → Tipo: "Gota": la píldora queda pegada al borde de arriba con curvas suaves a los costados; se agranda con el mouse, los avisos y los cajones.
+- [ ] Gota con estilo Vidrio y con Borde brillante: se ve bien, sin cuadrados.
+- [ ] Centro de control: tocar el texto "Bluetooth" (no el círculo) abre la configuración; tocar "Modo oscuro" cambia el tema.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.
