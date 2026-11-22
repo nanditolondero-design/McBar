@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.3.3 — 22/11/2026
+- **Animaciones lentas**: el Dock y la isla ahora son ventanas comunes, aceleradas por la tarjeta de video, con fondo transparente (vidrio de DWM) y forma recortada. Antes eran ventanas "en capas", que Windows copia enteras en cada cuadro de animación. Fuera de la forma (barra, íconos, píldora) los clics pasan a las ventanas de atrás. Si en alguna PC se ven con fondo negro: Preferencias → "Animaciones rápidas" apagado vuelve al modo anterior.
+- **Ventanas "locas" con la ocultación automática**: McBar y el Explorador se peleaban por el área de trabajo y cada corrección reacomodaba todas las ventanas maximizadas. Ahora se espera 1,5 s antes de revisar, se revisa cada ~10 s y, si el Explorador la cambia 3 veces en 30 s, McBar deja de corregirla por 3 minutos (queda anotado en el registro).
+- Se anota en el registro si Windows no acepta poner su barra en "ocultar automáticamente".
+
 ## 0.3.2 — 22/11/2026
 Pedidos de Andrés después de probar la isla (video del 22/11):
 - **Se trababa todo**: los íconos de bandeja que pone el propio Windows (volumen, red) ya no se muestran ni se tocan. Tocarlos abría paneles de Windows anclados a su barra escondida, que quedaban invisibles y se quedaban con el mouse.

@@ -81,6 +81,8 @@ namespace McBar.MenuBar
         private readonly Dock.DockBackdrop _backdrop = new Dock.DockBackdrop();
         private readonly Action _onSettings;
         private int _winLeftPx, _winTopPx, _winWidthPx;
+        private readonly bool _fast;   // ventana rápida (común con vidrio de DWM y forma recortada)
+        private string _shapeKey = "";
         private readonly DispatcherTimer _expandTimer, _collapseTimer, _activityTimer, _clockTimer, _progressTimer;
         private readonly Action<Activity> _onActivity;
         private readonly Action _onMedia;
@@ -96,8 +98,9 @@ namespace McBar.MenuBar
         public IslandWindow(MonitorInfo monitor)
         {
             _monitor = monitor;
+            _fast = SettingsStore.Current.FastWindows;
             WindowStyle = WindowStyle.None;
-            AllowsTransparency = true;
+            AllowsTransparency = !_fast;
             Background = Brushes.Transparent;
             ShowInTaskbar = false;
             Topmost = true;
@@ -132,6 +135,7 @@ namespace McBar.MenuBar
             {
                 _pill.CornerRadius = new CornerRadius(Math.Min(_pill.ActualHeight / 2, 26));
                 PlaceBackdrop();
+                UpdateShape();
             };
             _pill.Child = _layers;
 
@@ -200,6 +204,7 @@ namespace McBar.MenuBar
             {
                 _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
+                if (_fast) { WindowOps.MakeGlass(this); UpdateShape(); }
             };
 
             _onSettings = () => { ApplyAppearance(); if (_state == State.Compact) GoCompact(); };
@@ -238,13 +243,39 @@ namespace McBar.MenuBar
             _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, CompactHeight - 12, CompactHeight - 12), 6, 6);
             UpdateCompact();
 
-            if (s.IslandStyle == "glass" && s.BackdropBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
+            bool glassBlur = s.IslandStyle == "glass" && s.BackdropBlur;
+            if (_fast)
+            {
+                // En la ventana rápida el desenfoque va en la propia isla (la forma lo recorta a la píldora).
+                _backdrop.Hide();
+                if (_hwnd != IntPtr.Zero)
+                {
+                    if (glassBlur) WindowOps.EnableBlur(this, Color.FromArgb(0x40, 0x10, 0x10, 0x14));
+                    else WindowOps.DisableBlur(this);
+                }
+            }
+            else if (glassBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
             else _backdrop.Hide();
+        }
+
+        /// <summary>Forma de la ventana rápida = la píldora (fuera de ella los clics pasan a las ventanas de atrás).</summary>
+        private void UpdateShape()
+        {
+            if (!_fast || _hwnd == IntPtr.Zero) return;
+            double sc = App.Scale;
+            double w = _pill.ActualWidth > 0 ? _pill.ActualWidth : _pill.Width;
+            double h = _pill.ActualHeight > 0 ? _pill.ActualHeight : _pill.Height;
+            int px = (int)Math.Round((ActualWidth - w) / 2 * sc), py = (int)Math.Round(TopMargin * sc);
+            int pw = (int)Math.Round(w * sc), ph = (int)Math.Round(h * sc), r = (int)Math.Round(Math.Min(h / 2, 26) * sc);
+            string key = $"{px},{py},{pw},{ph},{r}";
+            if (key == _shapeKey) return;
+            _shapeKey = key;
+            WindowOps.SetShape(_hwnd, px, py, pw, ph, r);
         }
 
         private void PlaceBackdrop()
         {
-            if (SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
+            if (_fast || SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
             double sc = App.Scale;
             int w = (int)Math.Round(_pill.ActualWidth * sc), h = (int)Math.Round(_pill.ActualHeight * sc);
             int x = _winLeftPx + (_winWidthPx - w) / 2, y = _winTopPx + (int)Math.Round(TopMargin * sc);
@@ -273,6 +304,8 @@ namespace McBar.MenuBar
             _winTopPx = b.Top;
             _winWidthPx = w;
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, w, h, Win32.SWP_NOACTIVATE);
+            _shapeKey = "";
+            UpdateShape();
             ApplyAppearance();
         }
 

@@ -24,6 +24,7 @@ namespace McBar
         private static DispatcherTimer? _trimTimer;
         private static DispatcherTimer? _weatherTimer;
         private static DispatcherTimer? _watchdog;
+        private static DispatcherTimer? _workAreaDebounce;
         private static int _watchdogTicks;
         private static bool _cleanedUp;
 
@@ -115,7 +116,10 @@ namespace McBar
 
             Hook = new ShellHook { MinRectProvider = MinRectFor };
             Hook.TaskbarCreated += OnExplorerRestarted;
-            Hook.WorkAreaChanged += WorkArea.Verify;
+            // Esperar un poco antes de revisar (el Explorador suele mandar varios avisos seguidos).
+            _workAreaDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+            _workAreaDebounce.Tick += (_, _) => { _workAreaDebounce!.Stop(); WorkArea.Verify(); };
+            Hook.WorkAreaChanged += () => { _workAreaDebounce.Stop(); _workAreaDebounce.Start(); };
             if (s.AnimateWindows) ShellHook.EnsureAnimationOn();
 
             _lastHideTaskbar = s.HideWindowsTaskbar;
@@ -176,7 +180,7 @@ namespace McBar
             var monitors = Monitors.All();
             if (monitors.Count == 0) return;
             string key = string.Join(";", monitors.Select(m => m.Device + "@" + m.Bounds)) +
-                         $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{s.TopBarMode}|{Scale}";
+                         $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{s.TopBarMode}|{s.FastWindows}|{Scale}";
             if (key == _lastLayoutKey && Docks.Count > 0) { UpdateWorkAreas(); return; }
             _lastLayoutKey = key;
 
@@ -329,7 +333,7 @@ namespace McBar
                     if (s.HideWindowsTaskbar) Taskbar.Enforce();
                     TrayHost.Current?.EnsureFirst();
                     Fullscreen?.Check();
-                    if (++_watchdogTicks % 7 == 0) WorkArea.Verify();
+                    if (++_watchdogTicks % 14 == 0) WorkArea.Verify(); // cada ~10 s
                     if (_watchdogTicks % 4 == 0) KeepBarsOnTop();
                     // Con "apps por monitor": si una ventana se pasó a otro monitor, actualizar los Docks.
                     if (s.DockAppsPerMonitor && Docks.Count > 1 && _watchdogTicks % 3 == 0) foreach (var d in Docks) d.Resync();

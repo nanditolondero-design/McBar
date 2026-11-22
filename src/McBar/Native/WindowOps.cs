@@ -54,6 +54,66 @@ namespace McBar.Native
             catch { /* sin desenfoque */ }
         }
 
+        /// <summary>
+        /// Ventana COMÚN con fondo transparente (el "vidrio" de Windows extendido a toda la ventana).
+        /// La dibuja la tarjeta de video directamente: mucho más rápida que una ventana "en capas"
+        /// (AllowsTransparency), que Windows copia entera en cada cuadro. La forma (dónde recibe clics) se
+        /// define con SetShape. Requiere AllowsTransparency = false y Background = Transparent.
+        /// </summary>
+        public static void MakeGlass(Window w)
+        {
+            try
+            {
+                var h = new WindowInteropHelper(w).Handle;
+                var src = HwndSource.FromHwnd(h);
+                if (src?.CompositionTarget != null) src.CompositionTarget.BackgroundColor = Colors.Transparent;
+                var m = new Win32.MARGINS { left = -1, right = -1, top = -1, bottom = -1 };
+                Win32.DwmExtendFrameIntoClientArea(h, ref m);
+            }
+            catch (Exception ex) { McBar.Core.Log.Write("Vidrio: " + ex.Message); }
+        }
+
+        /// <summary>Forma de la ventana (en píxeles de la ventana): rectángulo redondeado + rectángulos extra.</summary>
+        public static void SetShape(IntPtr hwnd, int x, int y, int w, int h, int radius, params (int x, int y, int w, int h)[] extra)
+        {
+            if (hwnd == IntPtr.Zero) return;
+            var rgn = Win32.CreateRoundRectRgn(x, y, x + Math.Max(1, w) + 1, y + Math.Max(1, h) + 1, radius * 2, radius * 2);
+            foreach (var r in extra)
+            {
+                if (r.w <= 0 || r.h <= 0) continue;
+                var add = Win32.CreateRectRgn(r.x, r.y, r.x + r.w, r.y + r.h);
+                Win32.CombineRgn(rgn, rgn, add, Win32.RGN_OR);
+                Win32.DeleteObject(add);
+            }
+            Win32.SetWindowRgn(hwnd, rgn, true); // Windows se queda con la región
+        }
+
+        /// <summary>Quita la forma (toda la ventana recibe clics).</summary>
+        public static void ClearShape(IntPtr hwnd)
+        {
+            if (hwnd != IntPtr.Zero) Win32.SetWindowRgn(hwnd, IntPtr.Zero, true);
+        }
+
+        /// <summary>Saca el desenfoque (vuelve a un fondo normal).</summary>
+        public static void DisableBlur(Window w)
+        {
+            try
+            {
+                var h = new WindowInteropHelper(w).Handle;
+                var accent = new Win32.AccentPolicy { AccentState = 0 };
+                int size = Marshal.SizeOf(accent);
+                var ptr = Marshal.AllocHGlobal(size);
+                try
+                {
+                    Marshal.StructureToPtr(accent, ptr, false);
+                    var data = new Win32.WindowCompositionAttributeData { Attribute = 19, Data = ptr, SizeOfData = size };
+                    Win32.SetWindowCompositionAttribute(h, ref data);
+                }
+                finally { Marshal.FreeHGlobal(ptr); }
+            }
+            catch { }
+        }
+
         public static void SetDarkTitleBar(Window w, bool dark)
         {
             try

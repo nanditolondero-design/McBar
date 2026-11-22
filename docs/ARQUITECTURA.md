@@ -30,6 +30,14 @@
 - Ventana registrada con `RegisterShellHookWindow`; ante `HSHELL_GETMINRECT` se responde con el rectángulo del ícono de la app en el Dock.
 - Activa la opción de Windows "animar ventanas al minimizar y maximizar" y guarda el valor original para restaurarlo.
 
+## Ventanas rápidas (0.3.3)
+- `WindowOps.MakeGlass`: ventana común (AllowsTransparency=false) con el vidrio de DWM extendido a todo el cliente y `CompositionTarget.BackgroundColor` transparente → la dibuja la tarjeta de video.
+- `WindowOps.SetShape`: región de la ventana (rectángulo redondeado + rectángulos extra). Define dónde se dibuja y dónde recibe clics.
+- Dock: forma = barra + zona de íconos agrandados/etiqueta + franja de ocultación automática (se recalcula solo cuando cambia). Durante la "nubecita" la forma es toda la ventana.
+- Isla: forma = la píldora (se recalcula en cada cuadro de su animación de tamaño). En estilo Vidrio el desenfoque va en la propia isla.
+- `AppSettings.FastWindows = false` vuelve a las ventanas "en capas" (modo compatible).
+- Área de trabajo: `WorkArea.Verify` con freno anti-pelea (3 correcciones en 30 s → pausa de 3 minutos).
+
 ## Dock (`Dock/`)
 - Ventana transparente abajo de cada monitor, del ancho necesario (o del monitor en estilo "ancho completo").
 - `DockBackdrop`: ventanita aparte, COMÚN (no en capas, porque Windows ignora el recorte redondeado en ventanas en capas), con fondo transparente vía `DwmExtendFrameIntoClientArea`, desenfoque acrílico y región redondeada; solo se mueve cuando cambia la barra.

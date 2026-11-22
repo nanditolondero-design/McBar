@@ -74,10 +74,17 @@ namespace McBar.Dock
         /// <summary>Píxeles a reservar abajo para que las ventanas maximizadas no queden tapadas.</summary>
         public int ReservePx => S.DockAutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * App.Scale);
 
+        // Ventana rápida (común, con vidrio de DWM y forma recortada) en lugar de "en capas".
+        private readonly bool _fast;
+        private string _shapeKey = "";
+        private int _puffActive;
+
         internal DockWindow(MonitorInfo monitor)
         {
             InitializeComponent();
             _monitor = monitor;
+            _fast = S.FastWindows;
+            if (_fast) AllowsTransparency = false;
 
             _backdrop = new DockBackdrop();
             _backdrop.Show();
@@ -100,6 +107,7 @@ namespace McBar.Dock
             {
                 _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
+                if (_fast) WindowOps.MakeGlass(this);
                 ApplyGeometry();
             };
             Loaded += (_, _) =>
@@ -150,6 +158,7 @@ namespace McBar.Dock
                 Bar.CacheMode = null;
             }
             foreach (var it in _items) it.View.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
+            _shapeKey = "";
             App.UpdateWorkAreas();
             EnsureAnimating();
         }
@@ -530,6 +539,7 @@ namespace McBar.Dock
 
             bool showDots = S.ShowIndicators;
             double dotY = ActualHeight - BottomMargin - Pad / 2 - 2;
+            double zl = double.MaxValue, zr = double.MinValue, zt = double.MaxValue; // zona ocupada por los íconos
             for (int i = 0; i < n; i++)
             {
                 var it = items[i];
@@ -564,6 +574,13 @@ namespace McBar.Dock
                 }
                 it.View.Place(left, cur[i], IconBottom - extraUp, bounce, extraScale, opacity,
                               showDots && it.IsRunning && it.Kind == DockItemKind.App, dotY, BarTop);
+                if (it.Kind != DockItemKind.Separator && cur[i] > 0.5)
+                {
+                    double grow = (extraScale - 1) * cur[i] / 2;
+                    zl = Math.Min(zl, left - grow);
+                    zr = Math.Max(zr, left + cur[i] + grow);
+                    zt = Math.Min(zt, IconBottom - extraUp - cur[i] * extraScale - bounce);
+                }
             }
 
             // etiqueta: nombre al pasar el mouse, o "Quitar del Dock" al arrastrar afuera
@@ -580,12 +597,38 @@ namespace McBar.Dock
                 Label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 var ls = Label.DesiredSize;
                 double up = labelFor == _pressItem && _dragging ? Math.Max(0, _pressPoint.Y - _dragPos.Y) : 0;
-                Canvas.SetLeft(Label, labelFor.LayoutLeft + labelFor.LayoutSize / 2 - ls.Width / 2);
-                Canvas.SetTop(Label, IconBottom - up - labelFor.LayoutSize - 12 - ls.Height);
+                double lx = labelFor.LayoutLeft + labelFor.LayoutSize / 2 - ls.Width / 2;
+                double ly = IconBottom - up - labelFor.LayoutSize - 12 - ls.Height;
+                Canvas.SetLeft(Label, lx);
+                Canvas.SetTop(Label, ly);
+                zl = Math.Min(zl, lx); zr = Math.Max(zr, lx + ls.Width); zt = Math.Min(zt, ly);
             }
             else Label.Visibility = Visibility.Collapsed;
 
+            UpdateShape(barLeft, barW, hy, zl, zr, zt);
+
             return moving;
+        }
+
+        /// <summary>
+        /// Forma de la ventana rápida: la barra (redondeada) + la zona de los íconos agrandados/etiqueta +
+        /// la franja de abajo si se oculta sola. Fuera de esa forma los clics pasan a las ventanas de atrás.
+        /// </summary>
+        private void UpdateShape(double barLeft, double barW, double hy, double zl, double zr, double zt)
+        {
+            if (!_fast || _hwnd == IntPtr.Zero || _puffActive > 0) return;
+            double sc = App.Scale;
+            int R(double v) => (int)Math.Round(v * sc);
+            double barTop = BarTop + hy;
+            var extra = new List<(int x, int y, int w, int h)>();
+            if (zr > zl && zt < barTop - 0.5)
+                extra.Add((R(zl), R(zt + hy) - 2, R(zr - zl) + 1, R(barTop - zt) + 6));
+            if (S.DockAutoHide)
+                extra.Add((0, R(ActualHeight) - R(3) - 1, R(ActualWidth), R(3) + 2));
+            string key = $"{R(barLeft)},{R(barTop)},{R(barW)},{R(BarHeight)}|" + string.Join(";", extra);
+            if (key == _shapeKey) return;
+            _shapeKey = key;
+            WindowOps.SetShape(_hwnd, R(barLeft), R(barTop), R(barW), R(BarHeight), R(Radius), extra.ToArray());
         }
 
         // ================== Mouse ==================
@@ -845,6 +888,7 @@ namespace McBar.Dock
         private void Puff(double cx, double cy, double size)
         {
             var rnd = new Random();
+            if (_fast && _hwnd != IntPtr.Zero) { _puffActive++; WindowOps.ClearShape(_hwnd); _shapeKey = ""; }
             var layer = new Canvas { IsHitTestVisible = false };
             Panel.SetZIndex(layer, 2000);
             Stage.Children.Add(layer);
@@ -876,7 +920,14 @@ namespace McBar.Dock
                 e.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0.95, 0, dur) { BeginTime = TimeSpan.FromMilliseconds(60) });
             }
             var cleanup = new DispatcherTimer { Interval = dur + TimeSpan.FromMilliseconds(120) };
-            cleanup.Tick += (_, _) => { cleanup.Stop(); Stage.Children.Remove(layer); };
+            cleanup.Tick += (_, _) =>
+            {
+                cleanup.Stop();
+                Stage.Children.Remove(layer);
+                if (_puffActive > 0) _puffActive--;
+                _shapeKey = "";
+                EnsureAnimating(); // vuelve a calcular la forma
+            };
             cleanup.Start();
         }
 

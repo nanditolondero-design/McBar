@@ -34,6 +34,8 @@ namespace McBar.Core
         public bool DockOnAllMonitors { get; set; } = true;
         /// <summary>Desenfoque real detrás del Dock y de la isla en estilo Vidrio.</summary>
         public bool BackdropBlur { get; set; } = true;
+        /// <summary>Dock e isla como ventanas aceleradas por la tarjeta de video. Apagar solo si se ven fondos negros.</summary>
+        public bool FastWindows { get; set; } = true;
         /// <summary>Con varios monitores: cada Dock muestra solo las apps abiertas en su monitor (las fijadas se ven siempre).</summary>
         public bool DockAppsPerMonitor { get; set; } = false;
         public bool AnimateWindows { get; set; } = true;

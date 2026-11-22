@@ -68,8 +68,8 @@ namespace McBar.Native
     internal static class WorkArea
     {
         private static readonly Dictionary<string, PxRect> Desired = new Dictionary<string, PxRect>();
-        private static DateTime _windowStart = DateTime.MinValue;
-        private static int _fixesInWindow;
+        private static readonly Queue<DateTime> Fixes = new Queue<DateTime>();
+        private static DateTime _pausedUntil = DateTime.MinValue;
 
         /// <summary>Calcula el área de trabajo: el monitor menos lo reservado arriba y abajo (pura, se prueba).</summary>
         public static PxRect Compute(PxRect bounds, int topPx, int bottomPx) =>
@@ -90,21 +90,28 @@ namespace McBar.Native
             Win32.SystemParametersInfoRect(Win32.SPI_SETWORKAREA, 0, ref rc, Win32.SPIF_SENDCHANGE);
         }
 
-        /// <summary>Si Windows (o el Explorador) cambió el área de trabajo, la vuelve a poner como la queremos.</summary>
+        /// <summary>
+        /// Si Windows (o el Explorador) cambió el área de trabajo, la vuelve a poner como la queremos.
+        /// 0.3.3: NUNCA pelear sin fin. Cada corrección hace que todas las ventanas maximizadas se reacomoden;
+        /// si el Explorador la vuelve a cambiar seguido (3 veces en 30 s), McBar deja de corregir por 3 minutos.
+        /// </summary>
         public static void Verify()
         {
-            if (Desired.Count == 0) return;
-            if ((DateTime.Now - _windowStart).TotalSeconds > 10) { _windowStart = DateTime.Now; _fixesInWindow = 0; }
-            if (_fixesInWindow > 6) return; // no pelear sin fin con otro programa
+            if (Desired.Count == 0 || DateTime.Now < _pausedUntil) return;
+            while (Fixes.Count > 0 && (DateTime.Now - Fixes.Peek()).TotalSeconds > 30) Fixes.Dequeue();
             foreach (var m in Monitors.All())
             {
                 if (!Desired.TryGetValue(m.Device, out var want)) continue;
                 var w = m.Work;
-                if (w.Left != want.Left || w.Top != want.Top || w.Right != want.Right || w.Bottom != want.Bottom)
+                if (w.Left == want.Left && w.Top == want.Top && w.Right == want.Right && w.Bottom == want.Bottom) continue;
+                if (Fixes.Count >= 3)
                 {
-                    _fixesInWindow++;
-                    Apply(want);
+                    _pausedUntil = DateTime.Now.AddMinutes(3);
+                    Log.Write("El Explorador sigue cambiando el área de trabajo; McBar deja de corregirla por 3 minutos para no sacudir las ventanas.");
+                    return;
                 }
+                Fixes.Enqueue(DateTime.Now);
+                Apply(want);
             }
         }
 

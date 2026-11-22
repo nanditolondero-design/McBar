@@ -225,6 +225,10 @@ namespace McBar.Native
         public struct MARGINS { public int left, right, top, bottom; }
         [DllImport("dwmapi.dll")] public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
 
+        [DllImport("gdi32.dll")] public static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
+        [DllImport("gdi32.dll")] public static extern int CombineRgn(IntPtr dest, IntPtr src1, IntPtr src2, int mode);
+        public const int RGN_OR = 2;
+
         public static double SystemScale()
         {
             try { return GetDpiForSystem() / 96.0; } catch { return 1.0; }

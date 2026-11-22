@@ -105,6 +105,13 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] Desenchufar y volver a enchufar un monitor: barras y Docks se rehacen bien.
 - [ ] Vaciar la papelera desde el Dock: la barra de Windows no aparece (o apenas un instante).
 
+### Versión 0.3.3
+- [ ] Pasar el mouse por el Dock y abrir/cerrar la isla: animaciones fluidas.
+- [ ] El Dock y la isla NO se ven con fondo negro (si pasa: anotar Windows/placa de video y apagar "Animaciones rápidas").
+- [ ] Se puede hacer clic en las ventanas que están al lado y arriba del Dock y alrededor de la isla.
+- [ ] Activar "Ocultar y mostrar el Dock automáticamente": las ventanas maximizadas se acomodan una sola vez y quedan quietas.
+- [ ] Revisar `mcbar.log`: si aparece "El Explorador sigue cambiando el área de trabajo" o "Windows no aceptó poner su barra en ocultar automáticamente", avisar.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

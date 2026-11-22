@@ -39,6 +39,8 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Ajustes nuevos: propiedad en `AppSettings`, corregir rango en `SettingsStore.Sanitize`, control en `SettingsWindow`, reaccionar a `SettingsStore.Changed`.
 
 ## Puntos delicados
+- Dock e isla son ventanas "rápidas" (vidrio de DWM + región). Si se agrega algo que se dibuja fuera de la barra/píldora, incluirlo en la forma (`UpdateShape`) o no se va a ver ni recibir clics.
+- Nunca corregir el área de trabajo en un bucle: cada corrección reacomoda todas las ventanas maximizadas.
 - Íconos de bandeja del propio Windows (`TrayIcon.IsWindowsSystem`): nunca mostrarlos ni mandarles clics.
 - Varios monitores: todo lo que se muestra va atado a un `MonitorInfo`; pedir datos frescos con `Monitors.Get(handle)` antes de usar el área de trabajo.
 - Barra e isla comparten `MenuBarContent`: cualquier botón/menú nuevo va ahí (sirve para las dos). La isla es siempre oscura.

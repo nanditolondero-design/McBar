@@ -70,6 +70,8 @@ namespace McBar.Native
                 SettingsStore.Save();
             }
             SetState(ABS_AUTOHIDE);
+            if ((GetState() & ABS_AUTOHIDE) == 0)
+                Log.Write("Windows no aceptó poner su barra en 'ocultar automáticamente' (McBar igual fija el área de trabajo).");
             foreach (var h in TrayWindows()) Win32.ShowWindow(h, Win32.SW_HIDE);
             IsHiddenByUs = true;
             TemporarilyShown = false;
