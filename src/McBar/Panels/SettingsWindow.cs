@@ -183,8 +183,9 @@ namespace McBar.Panels
         /// contenido de la elegida a la derecha. Cada sección empieza en un título (Header) y los botones de
         /// abajo (Acerca de / Salir) quedan siempre visibles.
         /// </summary>
-        private UIElement Tabbed(StackPanel built)
+        private UIElement Tabbed(UIElement builtElement)
         {
+            if (builtElement is not StackPanel built) return builtElement; // Build() siempre devuelve un StackPanel
             var sections = new List<(string title, StackPanel body)>();
             var tail = new StackPanel { Margin = new Thickness(26, 0, 26, 14) };
             var items = built.Children.Cast<UIElement>().ToList();
