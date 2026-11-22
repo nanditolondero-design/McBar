@@ -176,6 +176,9 @@ Tema:
 - [ ] Apariencia → Vidrio: paneles, menús, Dock, barra e isla transparentes con brillo en el borde.
 - [ ] Preferencias → Launchpad: "Transparencia del fondo" se lee completo.
 
+### Versión 0.4.4
+- [ ] Isla: minimizar todo y pasar el mouse por la isla: un solo renglón con el logo de McBar a la derecha. Elegir una ventana: vuelven las dos filas con el nombre de la app y sus menús.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

@@ -57,6 +57,9 @@ Ocultar apps del Launchpad, modo "Gota" para la barra superior, Centro de contro
 ## Versión 0.4.3 (22/11/2026)
 Launchpad: selección múltiple, carpetas ocultables y movibles, orden propio, desinstalar, arrastrar al Dock/escritorio, efecto al pasar el mouse. Barra: menús solo con app activa, sin Gota, píldora oculta en pantalla completa. Dock: estilos Barra y Solo íconos, resaltado, desenfoque sin estirar, paquetes de íconos. Tema Vidrio. Ver CHANGELOG.
 
+## Versión 0.4.4 (22/11/2026)
+Isla en un solo renglón (logo a la derecha) cuando no hay app activa.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.

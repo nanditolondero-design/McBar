@@ -1,5 +1,8 @@
 # Cambios
 
+## 0.4.4 — 22/11/2026
+- **Isla sin app activa en un solo renglón** (pedido de Andrés): cuando no hay ventana elegida, la primera fila quedaba solo con el logo de McBar. Ahora el logo pasa a la derecha, después de la bandeja, el clima, la red, el volumen y el reloj, y todo queda en una sola fila (la isla se achica). Al elegir una app vuelven las dos filas con sus menús.
+
 ## 0.4.3 — 22/11/2026
 Pedidos de Andrés:
 

@@ -108,11 +108,52 @@ namespace McBar.MenuBar
         // ================== Diseño ==================
 
         /// <summary>Una fila (barra de menú) o dos filas centradas (isla dinámica expandida).</summary>
+        private bool _wantTwoRows;
+        private bool _hasApp = true;
+
+        /// <summary>¿Se está mostrando en dos filas ahora? (en la isla, solo si hay una app activa)</summary>
+        public bool IsTwoRowsNow { get; private set; }
+
+        /// <summary>Avisa cuando cambia de una a dos filas (la isla se reacomoda).</summary>
+        public event Action? RowsChanged;
+
         public void SetTwoRows(bool twoRows)
         {
+            _wantTwoRows = twoRows;
+            ApplyRows();
+        }
+
+        /// <summary>
+        /// 0.4.4 (pedido de Andrés): en la isla, si no hay app activa la primera fila quedaba solo con el logo.
+        /// Entonces el logo pasa a la derecha, después de todo lo demás, y queda todo en UN solo renglón.
+        /// </summary>
+        private void ApplyRows()
+        {
+            bool twoRows = _wantTwoRows && _hasApp;
+            bool logoRight = _wantTwoRows && !_hasApp;
+            if (logoRight && LogoButton.Parent == LeftGroup)
+            {
+                LeftGroup.Children.Remove(LogoButton);
+                RightGroup.Children.Add(LogoButton);
+            }
+            else if (!logoRight && LogoButton.Parent == RightGroup)
+            {
+                RightGroup.Children.Remove(LogoButton);
+                LeftGroup.Children.Insert(0, LogoButton);
+            }
+            LeftGroup.Visibility = logoRight ? Visibility.Collapsed : Visibility.Visible;
+            bool changed = IsTwoRowsNow != twoRows;
+            IsTwoRowsNow = twoRows;
+
             LayoutGrid.RowDefinitions.Clear();
             LayoutGrid.ColumnDefinitions.Clear();
-            if (twoRows)
+            if (logoRight)
+            {
+                LayoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
+                Grid.SetRow(RightGroup, 0); Grid.SetColumn(RightGroup, 0);
+                RightGroup.HorizontalAlignment = HorizontalAlignment.Center;
+            }
+            else if (twoRows)
             {
                 LayoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
                 LayoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
@@ -131,6 +172,7 @@ namespace McBar.MenuBar
                 LeftGroup.HorizontalAlignment = HorizontalAlignment.Left;
                 RightGroup.HorizontalAlignment = HorizontalAlignment.Right;
             }
+            if (changed) RowsChanged?.Invoke();
         }
 
         public void Teardown()
@@ -340,6 +382,7 @@ namespace McBar.MenuBar
             var t = Target;
             bool has = HasActiveApp(t);
             if (has) AppNameText.Text = App.Tracker.AppNameFor(t);
+            if (has != _hasApp) { _hasApp = has; ApplyRows(); }
             var v = has ? Visibility.Visible : Visibility.Collapsed;
             foreach (var b in new UIElement[] { AppNameButton, FileButton, EditButton, ViewButton, WindowButton, HelpButton })
             {

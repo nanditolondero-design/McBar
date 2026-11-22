@@ -126,6 +126,7 @@ namespace McBar.MenuBar
 
             _content = new MenuBarContent(monitor);
             _content.SetTwoRows(true);
+            _content.RowsChanged += () => { if (_state == State.Expanded) GoExpanded(); };
             _content.InIsland = true;
 
             // Fondo con desenfoque (solo en estilo "Vidrio"): la isla queda siempre por encima de él.
@@ -411,7 +412,7 @@ namespace McBar.MenuBar
             UpdateMiniMedia();
             _content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double w = Math.Max(520, _content.DesiredSize.Width + 40);
-            double h = 80 + (_miniMedia.Visibility == Visibility.Visible ? 54 : 0);
+            double h = (_content.IsTwoRowsNow ? 80 : 48) + (_miniMedia.Visibility == Visibility.Visible ? 54 : 0);
             ShowLayer(_expanded);
             AnimateSize(w, h);
             UpdateEqualizer();
