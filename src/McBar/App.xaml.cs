@@ -461,7 +461,7 @@ namespace McBar
         }
 
         /// <summary>Cajón propio de cada ícono de la isla (Wi-Fi, sonido, batería).</summary>
-        public static void ToggleIslandDrawer(MonitorInfo? monitor, IslandWindow.DrawerKind kind)
+        internal static void ToggleIslandDrawer(MonitorInfo? monitor, IslandWindow.DrawerKind kind)
         {
             var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
             if (isl != null && isl.IsVisible) isl.ToggleDrawer(kind);

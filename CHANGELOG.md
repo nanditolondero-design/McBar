@@ -18,6 +18,7 @@ Pedidos de Andrés: fondo del Launchpad más transparente, carpetas, y dejar de 
 - **Panel de widgets con un hueco vacío abajo**: ahora mide lo que su contenido.
 - **Launchpad**: el buscador quedaba debajo de la isla; ahora está más abajo.
 - Avisos de compilación en MediaWatcher.cs (llamada sin await) resueltos.
+- Error de compilación CS0051 (App.ToggleIslandDrawer era público y usaba un tipo interno): ahora es `internal`.
 
 ## 0.3.3 — 22/11/2026
 - **Animaciones lentas**: el Dock y la isla ahora son ventanas comunes, aceleradas por la tarjeta de video, con fondo transparente (vidrio de DWM) y forma recortada. Antes eran ventanas "en capas", que Windows copia enteras en cada cuadro de animación. Fuera de la forma (barra, íconos, píldora) los clics pasan a las ventanas de atrás. Si en alguna PC se ven con fondo negro: Preferencias → "Animaciones rápidas" apagado vuelve al modo anterior.
