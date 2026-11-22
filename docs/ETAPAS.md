@@ -25,7 +25,14 @@ Pedidos de Andrés después de probar la 0.1:
 - Dock "flotando" → estilos Clásico / Flotante / Ancho completo.
 - Systray propio → TrayHost (Shell_TrayWnd propio + reenvío al Explorador).
 
+## Etapa 3 — versión 0.3 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+- Isla dinámica como opción en Preferencias (elegido por Andrés), con todo lo de la barra adentro.
+- Eventos elegidos: música y videos, volumen y brillo, batería y carga, notificaciones.
+- Notificaciones: primero intenta el lector oficial de Windows; si Windows no lo permite (pasa con apps no instaladas como paquete), lee el cartelito de la notificación con la accesibilidad de Windows. En Preferencias se ve cuál está usando.
+
 ## Limitaciones conocidas (posibles próximas etapas)
+- **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
+- **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.
 - **Bandeja**: alguna app vieja que no vuelva a mandar su ícono cuando McBar arranca aparece recién al reiniciarla. Los globitos de notificación siguen siendo los de Windows.
 - **Escalas distintas por monitor**: McBar usa la escala del sistema; en un monitor con otra escala se puede ver un poco borroso.
 - **Desenfoque en menús contextuales**: no (Windows no lo permite en ventanas emergentes de WPF sin riesgo); son semitransparentes.

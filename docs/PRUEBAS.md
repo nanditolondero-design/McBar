@@ -5,6 +5,7 @@
 - `MagnifierTests` — ampliación (simetría, separadores, ancla bajo el mouse, centrado), acercamiento suave y rebote.
 - `IdentityAndCatalogTests` — claves de apps (.exe, Store, carpetas conocidas, accesos directos) y filtro del Launchpad.
 - `SettingsAndWeatherTests` — guardar/leer/corregir ajustes, códigos de clima, lectura de la respuesta de Open-Meteo.
+- `Stage3Tests` — avisos de batería de la isla, modo de barra y posición estimada de la música.
 - `Stage2Tests` — área de trabajo, detección de pantalla completa, lectura de mensajes de bandeja, tipo de ícono del clima, lado derecho del Dock.
 
 Para correrlas a mano en Windows: `dotnet test tests/McBar.Tests/McBar.Tests.csproj`
@@ -70,6 +71,19 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] Bandeja: aparecen los íconos de WhatsApp, antivirus, Steam, etc.; clic izquierdo abre la app; clic derecho muestra su menú; doble clic funciona.
 - [ ] Preferencias → Bandeja: apagar un ícono lo manda al menú ⌃; "blanco y negro" cambia los íconos.
 - [ ] Salir de McBar: la barra de Windows vuelve con todos sus íconos de bandeja.
+
+### Etapa 3 — Isla dinámica (Preferencias → Barra superior → Tipo: Isla dinámica)
+- [ ] Desaparece la barra de menú y aparece la isla negra arriba al centro con la hora.
+- [ ] Las ventanas maximizadas empiezan debajo de la isla (con "Dejar lugar arriba" activado).
+- [ ] Pasar el mouse: se agranda con animación y muestra menús, bandeja, clima, batería, red, volumen, búsqueda, Centro de control y reloj; todo funciona igual que en la barra.
+- [ ] Abrir un menú desde la isla: la isla no se cierra hasta cerrar el menú.
+- [ ] Sacar el mouse: vuelve a la píldora chica.
+- [ ] Subir/bajar el volumen con el teclado o el mezclador de Windows: la isla muestra la barrita de volumen.
+- [ ] Notebook: cambiar el brillo muestra la barrita amarilla; enchufar/desenchufar muestra "Cargando"/"Usando la batería".
+- [ ] Reproducir algo en Spotify o YouTube: aparece la tapa y el ecualizador en reposo; al cambiar de tema se muestra el tema nuevo.
+- [ ] Tocar la isla mientras suena algo: reproductor con progreso; anterior/pausa/siguiente funcionan.
+- [ ] Llega un mensaje de WhatsApp/mail: se muestra en la isla. (Anotar qué dice Preferencias en "Notificaciones:".)
+- [ ] Volver a "Barra de menú": vuelve la barra normal.
 
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.

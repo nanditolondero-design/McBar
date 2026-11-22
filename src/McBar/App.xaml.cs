@@ -34,6 +34,7 @@ namespace McBar
 
         public static List<DockWindow> Docks { get; } = new List<DockWindow>();
         public static List<MenuBarWindow> MenuBars { get; } = new List<MenuBarWindow>();
+        internal static List<IslandWindow> Islands { get; } = new List<IslandWindow>();
         /// <summary>El Dock del monitor principal (para "Agregar al Dock" desde el Launchpad).</summary>
         public static DockWindow? Dock => Docks.FirstOrDefault(d => d.Monitor.Primary) ?? Docks.FirstOrDefault();
 
@@ -47,6 +48,9 @@ namespace McBar
         private static SettingsWindow? _settings;
         private static string _lastLayoutKey = "";
         private static bool _lastHideTaskbar, _lastStartWithWindows, _lastAnimate, _lastOwnTray;
+        private static string _lastIslandKey = "";
+
+        private static string IslandKey(AppSettings s) => $"{s.IslandMedia}{s.IslandVolume}{s.IslandBattery}{s.IslandNotifications}";
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -108,12 +112,15 @@ namespace McBar
             BuildMonitors();
 
             Hook = new ShellHook { MinRectProvider = MinRectFor };
+            Hook.TaskbarCreated += OnExplorerRestarted;
+            Hook.WorkAreaChanged += WorkArea.Verify;
             if (s.AnimateWindows) ShellHook.EnsureAnimationOn();
 
             _lastHideTaskbar = s.HideWindowsTaskbar;
             _lastStartWithWindows = s.StartWithWindows;
             _lastAnimate = s.AnimateWindows;
             _lastOwnTray = s.UseOwnTray;
+            _lastIslandKey = IslandKey(s);
             SettingsStore.Changed += OnSettingsChanged;
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Current.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -162,14 +169,18 @@ namespace McBar
             var monitors = Monitors.All();
             if (monitors.Count == 0) return;
             string key = string.Join(";", monitors.Select(m => m.Device + "@" + m.Bounds)) +
-                         $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{Scale}";
+                         $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{s.TopBarMode}|{Scale}";
             if (key == _lastLayoutKey && Docks.Count > 0) { UpdateWorkAreas(); return; }
             _lastLayoutKey = key;
 
             foreach (var d in Docks) { try { d.Teardown(); d.Close(); } catch { } }
             foreach (var mb in MenuBars) { try { mb.Teardown(); mb.Close(); } catch { } }
+            foreach (var isl in Islands) { try { isl.Teardown(); isl.Close(); } catch { } }
             Docks.Clear();
             MenuBars.Clear();
+            Islands.Clear();
+            bool island = s.TopBarMode == "island";
+            if (island && s.ShowMenuBar) ActivityHub.Start(); else ActivityHub.Stop();
             WorkArea.Reset();
 
             foreach (var m in monitors)
@@ -177,9 +188,18 @@ namespace McBar
                 bool primary = m.Primary || m == monitors[0];
                 if (primary || s.MenuBarOnAllMonitors)
                 {
-                    var mb = new MenuBarWindow(m);
-                    MenuBars.Add(mb);
-                    mb.SetVisible(s.ShowMenuBar);
+                    if (island)
+                    {
+                        var isl = new IslandWindow(m);
+                        Islands.Add(isl);
+                        isl.SetVisible(s.ShowMenuBar);
+                    }
+                    else
+                    {
+                        var mb = new MenuBarWindow(m);
+                        MenuBars.Add(mb);
+                        mb.SetVisible(s.ShowMenuBar);
+                    }
                 }
                 if (primary || s.DockOnAllMonitors)
                 {
@@ -198,8 +218,10 @@ namespace McBar
             foreach (var m in Monitors.All())
             {
                 var mb = MenuBars.FirstOrDefault(x => x.Monitor.Device == m.Device);
+                var isl = Islands.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 var d = Docks.FirstOrDefault(x => x.Monitor.Device == m.Device);
-                WorkArea.Set(m, mb?.ReservePx ?? 0, d?.ReservePx ?? 0);
+                int top = mb?.ReservePx ?? isl?.ReservePx ?? 0;
+                WorkArea.Set(m, top, d?.ReservePx ?? 0);
             }
         }
 
@@ -208,6 +230,16 @@ namespace McBar
             var fs = Fullscreen?.FullscreenMonitors ?? new HashSet<string>();
             foreach (var d in Docks) d.SetFullscreen(fs.Contains(d.Monitor.Device));
             foreach (var mb in MenuBars) mb.SetFullscreen(fs.Contains(mb.Monitor.Device));
+            foreach (var isl in Islands) isl.SetFullscreen(fs.Contains(isl.Monitor.Device));
+        }
+
+        /// <summary>Dónde empiezan los paneles (Centro de control, Widgets) debajo de la barra o la isla, en unidades WPF.</summary>
+        public static double TopInsetDip(MonitorInfo m)
+        {
+            var s = SettingsStore.Current;
+            double top = m.Bounds.Top / Scale;
+            if (!s.ShowMenuBar) return top + 8;
+            return top + (s.TopBarMode == "island" ? IslandWindow.TopMargin + IslandWindow.CompactHeight + 8 : MenuBarWindow.BarHeightDip + 6);
         }
 
         private static MonitorInfo MonitorOrPrimary(MonitorInfo? m) =>
@@ -240,6 +272,11 @@ namespace McBar
                 foreach (var mb in MenuBars)
                 {
                     var r = mb.TrayIconRect(ic);
+                    if (r != null) return r;
+                }
+                foreach (var isl in Islands)
+                {
+                    var r = isl.TrayIconRect(ic);
                     if (r != null) return r;
                 }
                 return null;
@@ -290,8 +327,14 @@ namespace McBar
                 _lastOwnTray = s.UseOwnTray;
             }
             if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
-            BuildMonitors(); // si cambiaron monitores/visibilidad se rehace; si no, solo recalcula áreas
+            if (IslandKey(s) != _lastIslandKey)
+            {
+                _lastIslandKey = IslandKey(s);
+                if (s.TopBarMode == "island" && s.ShowMenuBar) ActivityHub.Restart();
+            }
+            BuildMonitors(); // si cambiaron monitores/visibilidad/modo se rehace; si no, solo recalcula áreas
             foreach (var mb in MenuBars) mb.SetVisible(s.ShowMenuBar);
+            foreach (var isl in Islands) isl.SetVisible(s.ShowMenuBar);
             UpdateWorkAreas();
         }
 
@@ -341,7 +384,7 @@ namespace McBar
             _controlCenter?.CloseAnimated();
             var m = MonitorOrPrimary(monitor);
             _widgets = new WidgetsWindow();
-            double top = m.Bounds.Top / Scale + (SettingsStore.Current.ShowMenuBar ? MenuBarWindow.BarHeightDip + 6 : 8);
+            double top = TopInsetDip(m);
             double bottom = m.Work.Bottom / Scale - 8;
             _widgets.ShowBelowMenuBar(m, Math.Max(300, bottom - top));
         }
@@ -386,6 +429,8 @@ namespace McBar
             _cleanedUp = true;
             foreach (var d in Docks) { try { d.Teardown(); } catch { } }
             foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }
+            foreach (var isl in Islands) { try { isl.Teardown(); } catch { } }
+            try { ActivityHub.Stop(); } catch { }
             try { TrayHost.Current?.Dispose(); } catch { }
             try { Hook?.Dispose(); } catch { }
             try { Fullscreen?.Dispose(); } catch { }

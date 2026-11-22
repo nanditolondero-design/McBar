@@ -74,7 +74,7 @@ namespace McBar.Panels
         public void ShowBelowMenuBar(MonitorInfo monitor, double? height = null)
         {
             double sc = App.Scale;
-            double top = monitor.Bounds.Top / sc + (SettingsStore.Current.ShowMenuBar ? MenuBar.MenuBarWindow.BarHeightDip + 6 : 8);
+            double top = App.TopInsetDip(monitor);
             Left = monitor.Bounds.Right / sc - Width - 8;
             Top = top;
             if (height != null) Height = height.Value; else SizeToContent = SizeToContent.Height;

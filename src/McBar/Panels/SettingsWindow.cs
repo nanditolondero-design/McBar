@@ -66,14 +66,29 @@ namespace McBar.Panels
             root.Children.Add(Group(dock));
 
             // ---------- Barra de menú ----------
-            root.Children.Add(Header("Barra de menú"));
+            root.Children.Add(Header("Barra superior"));
             var bar = new StackPanel();
-            bar.Children.Add(Switch("Mostrar la barra de menú arriba", s.ShowMenuBar, v => s.ShowMenuBar = v));
+            bar.Children.Add(Switch("Mostrar la barra superior", s.ShowMenuBar, v => s.ShowMenuBar = v));
+            bar.Children.Add(Segment("Tipo", new[] { ("menubar", "Barra de menú"), ("island", "Isla dinámica") },
+                s.TopBarMode, v => { s.TopBarMode = v; Changed(); }));
             bar.Children.Add(Switch("Mostrar el porcentaje de batería", s.ShowBatteryPercent, v => s.ShowBatteryPercent = v));
             bar.Children.Add(Switch("Mostrar la fecha en el reloj", s.ShowDateInClock, v => s.ShowDateInClock = v));
             bar.Children.Add(Switch("Mostrar el clima", s.ShowWeatherInMenuBar, v => s.ShowWeatherInMenuBar = v));
             bar.Children.Add(Switch("Mostrar la barra en todos los monitores", s.MenuBarOnAllMonitors, v => s.MenuBarOnAllMonitors = v));
             root.Children.Add(Group(bar));
+
+            // ---------- Isla dinámica ----------
+            root.Children.Add(Header("Isla dinámica"));
+            var isl = new StackPanel();
+            isl.Children.Add(Switch("Dejar lugar arriba para la isla (las ventanas no quedan debajo)", s.IslandReserveSpace, v => s.IslandReserveSpace = v));
+            isl.Children.Add(Switch("Música y videos (con controles)", s.IslandMedia, v => s.IslandMedia = v));
+            isl.Children.Add(Switch("Volumen y brillo", s.IslandVolume, v => s.IslandVolume = v));
+            isl.Children.Add(Switch("Batería y carga", s.IslandBattery, v => s.IslandBattery = v));
+            isl.Children.Add(Switch("Notificaciones", s.IslandNotifications, v => s.IslandNotifications = v));
+            var mode = new TextBlock { Text = "Notificaciones: " + McBar.Core.ActivityHub.NotificationMode, FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
+            mode.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            isl.Children.Add(mode);
+            root.Children.Add(Group(isl));
 
             // ---------- Bandeja ----------
             root.Children.Add(Header("Bandeja del sistema"));

@@ -91,6 +91,12 @@ namespace McBar.Core
             {
                 var cls = WindowOps.GetClass(hwnd);
                 if (Taskbar.IsShellTrayClass(cls)) ShellWindowShown?.Invoke(cls);
+                ActivityHub.OnWindowShown(hwnd, cls); // cartelitos de notificación (isla dinámica)
+            }
+            else if (ev == Win32.EVENT_OBJECT_UNCLOAKED)
+            {
+                // Las ventanas modernas (como el cartelito de notificación) se "descubren" en vez de mostrarse.
+                ActivityHub.OnWindowShown(hwnd, WindowOps.GetClass(hwnd));
             }
 
             if (ev == Win32.EVENT_OBJECT_DESTROY && !_cache.ContainsKey(hwnd)) return;

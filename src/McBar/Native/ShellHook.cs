@@ -15,6 +15,12 @@ namespace McBar.Native
         private const int HSHELL_GETMINRECT = 5;
         private readonly HwndSource _source;
         private readonly uint _shellMsg;
+        private readonly uint _taskbarCreatedMsg;
+
+        /// <summary>El Explorador (o la bandeja propia) avisó "se creó la barra de tareas".</summary>
+        public event Action? TaskbarCreated;
+        /// <summary>Alguien cambió el área de trabajo de un monitor.</summary>
+        public event Action? WorkAreaChanged;
 
         /// <summary>Devuelve el rectángulo (en píxeles) del ícono de la app de esa ventana, o null.</summary>
         public Func<IntPtr, PxRect?>? MinRectProvider { get; set; }
@@ -25,11 +31,23 @@ namespace McBar.Native
             _source = new HwndSource(p);
             _source.AddHook(WndProc);
             _shellMsg = Win32.RegisterWindowMessage("SHELLHOOK");
+            _taskbarCreatedMsg = Win32.RegisterWindowMessage("TaskbarCreated");
             Win32.RegisterShellHookWindow(_source.Handle);
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            // Esta ventana oculta también recibe los avisos generales de Windows (sirve con barra o con isla).
+            if (_taskbarCreatedMsg != 0 && msg == (int)_taskbarCreatedMsg)
+            {
+                _source.Dispatcher.BeginInvoke(new Action(() => TaskbarCreated?.Invoke()));
+                return IntPtr.Zero;
+            }
+            if (msg == (int)Win32.WM_SETTINGCHANGE && wParam.ToInt64() == Win32.SPI_SETWORKAREA)
+            {
+                _source.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() => WorkAreaChanged?.Invoke()));
+                return IntPtr.Zero;
+            }
             if (msg == (int)_shellMsg && (wParam.ToInt64() & 0x7FFF) == HSHELL_GETMINRECT && lParam != IntPtr.Zero && MinRectProvider != null)
             {
                 try

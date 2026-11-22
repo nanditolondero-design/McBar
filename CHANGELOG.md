@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.3.0 — 22/11/2026
+- Isla dinámica estilo iPhone como alternativa a la barra de menú (Preferencias → Barra superior → Tipo).
+  - Reposo con la hora; expandida con menús, bandeja y estado; actividades de volumen, brillo, batería, música y notificaciones; reproductor con controles.
+- El contenido de la barra de menú pasó a un componente compartido (MenuBarContent) que usan la barra y la isla.
+- Los avisos del Explorador (TaskbarCreated, cambios de área de trabajo) ahora los recibe una ventana oculta, así funcionan con barra o con isla.
+- El proyecto apunta a Windows 10 (net8.0-windows10.0.19041.0) para usar los controles multimedia y las notificaciones de Windows.
+
 ## 0.2.0 — 22/11/2026
 Arreglos:
 - Se libera el espacio que Windows guardaba para su barra de tareas (franja negra abajo): McBar fija el área de trabajo de cada monitor.

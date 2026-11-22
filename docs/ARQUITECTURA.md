@@ -50,6 +50,19 @@
 - Escucha `TaskbarCreated` para recuperarse si el Explorador se reinicia.
 - Reloj: temporizador alineado al cambio de minuto. Red, batería y volumen: al cambiar (eventos del sistema) y cada minuto.
 
+## Isla dinámica (`MenuBar/IslandWindow.cs`, `Core/ActivityHub.cs`)
+- `MenuBarContent` (UserControl) tiene todos los botones y menús de la barra; la barra lo usa en una fila y la isla en dos filas.
+- `IslandWindow`: ventana transparente arriba al centro de cada monitor con una píldora (`Border`) que cambia de tamaño con animación (BackEase). Capas: reposo, expandida, actividad y reproductor (fundido entre capas).
+- Siempre negra: mezcla `Themes/Dark.xaml` en sus recursos, así sus menús también son oscuros.
+- `ActivityHub` (solo se enciende en modo isla):
+  - Volumen: `VolumeWatcher` implementa `IAudioEndpointVolumeCallback` (Core Audio avisa; los cambios hechos por McBar llevan una marca y se ignoran).
+  - Brillo: evento WMI `WmiMonitorBrightnessEvent` (solo pantallas que lo permiten).
+  - Batería: `SystemEvents.PowerModeChanged` → `BatteryActivity()` decide qué mostrar.
+  - Música/video: `MediaWatcher` con `GlobalSystemMediaTransportControlsSessionManager` (WinRT).
+  - Notificaciones: `NotificationWatcher` (lector oficial o lectura del cartelito por UI Automation, avisado por `WindowTracker` al mostrarse/descubrirse la ventana).
+- Si se reserva espacio, el área de trabajo de arriba es el alto de la isla en reposo.
+- `ShellHook` (ventana oculta) recibe `TaskbarCreated` y `WM_SETTINGCHANGE` para todo McBar.
+
 ## Paneles (`Panels/`)
 - `PanelWindow`: base con tarjeta, sombra, animación y cierre al perder el foco.
 - `ControlCenterWindow`, `WidgetsWindow`, `LaunchpadWindow`, `SettingsWindow`, `McDialog`.

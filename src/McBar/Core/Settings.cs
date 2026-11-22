@@ -47,6 +47,14 @@ namespace McBar.Core
         public bool ShowBatteryPercent { get; set; } = true;
         public bool ShowDateInClock { get; set; } = true;
         public bool MenuBarOnAllMonitors { get; set; } = true;
+        /// <summary>"menubar" (barra de menú clásica) o "island" (isla dinámica).</summary>
+        public string TopBarMode { get; set; } = "menubar";
+        /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
+        public bool IslandReserveSpace { get; set; } = true;
+        public bool IslandMedia { get; set; } = true;
+        public bool IslandVolume { get; set; } = true;
+        public bool IslandBattery { get; set; } = true;
+        public bool IslandNotifications { get; set; } = true;
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -151,6 +159,7 @@ namespace McBar.Core
             s.Stacks.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Target));
             s.TrayHiddenIds ??= new List<string>();
             if (s.DockStyle != "floating" && s.DockStyle != "full") s.DockStyle = "classic";
+            if (s.TopBarMode != "island") s.TopBarMode = "menubar";
             s.WeatherCity ??= "";
             return s;
         }

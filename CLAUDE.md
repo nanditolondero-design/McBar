@@ -11,7 +11,7 @@ McBar: Dock + barra de menú estilo macOS para Windows 10/11. Autor: Andrés Lon
 - Siempre restaurar la barra de tareas de Windows al salir o ante un error.
 
 ## Tecnología
-- C# / .NET 8 / WPF (`net8.0-windows`), x64, publicación de un solo archivo autocontenido + ReadyToRun.
+- C# / .NET 8 / WPF (`net8.0-windows10.0.19041.0`), x64, publicación de un solo archivo autocontenido + ReadyToRun.
 - Única dependencia NuGet: `System.Management` (brillo por WMI).
 - Pruebas: xUnit en `tests/McBar.Tests` (solo lógica sin interfaz).
 - No hay compilador en el entorno de Claude: el código se compila en GitHub Actions (`windows-latest`). Escribir con cuidado y revisar el log de Actions si falla.
@@ -24,7 +24,7 @@ src/McBar/
   Native/                Win32 (P/Invoke), AppBar, COM del Shell, audio, barra de Windows, operaciones de ventanas
   Core/                  ajustes, seguimiento de ventanas, identidad de apps, catálogo, íconos, clima, ampliación (matemática), sistema
   Dock/                  DockWindow + DockItem (vista y modelo) + DockBackdrop (desenfoque)
-  MenuBar/               MenuBarWindow
+  MenuBar/               MenuBarContent (contenido compartido), MenuBarWindow (barra), IslandWindow (isla dinámica)
   Panels/                PanelWindow (base), Centro de control, Widgets, Launchpad, Preferencias, diálogos
 tests/McBar.Tests/       pruebas xUnit
 docs/                    arquitectura, etapas, pruebas manuales
@@ -39,6 +39,9 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Ajustes nuevos: propiedad en `AppSettings`, corregir rango en `SettingsStore.Sanitize`, control en `SettingsWindow`, reaccionar a `SettingsStore.Changed`.
 
 ## Puntos delicados
+- Barra e isla comparten `MenuBarContent`: cualquier botón/menú nuevo va ahí (sirve para las dos). La isla es siempre oscura.
+- `ActivityHub` solo corre en modo isla; toda fuente nueva de eventos tiene que ser por eventos (nada de sondeos) y avisar en el hilo de la interfaz.
+- TFM `net8.0-windows10.0.19041.0` (APIs de WinRT): no importar `Windows.Foundation` ni `Windows.UI` en archivos de WPF (choques de nombres como `Size`/`Color`).
 - `WorkArea` (no AppBar): el área de trabajo de cada monitor la fija McBar. Siempre llamar `App.UpdateWorkAreas()` si cambia algo que ocupa espacio, y `WorkArea.Reset()` al salir.
 - `TrayHost`: nuestra ventana se llama `Shell_TrayWnd`. Todo lo que no sea bandeja (mensajes de AppBar) se reenvía al Explorador; `Taskbar.ExplorerTray()` saltea la nuestra. Ignorar `TaskbarCreated` propio (`IsOwnBroadcastRecent`).
 - Menús y popups del Dock/barra: siempre `PopupGuard.Attach(...)`.
