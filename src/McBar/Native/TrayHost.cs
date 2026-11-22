@@ -7,14 +7,17 @@
 //     clase y nos manda el ícono a nosotros.
 //  2. Se avisa a todas las apps "se creó una barra de tareas nueva" (mensaje TaskbarCreated) para que
 //     vuelvan a mandar sus íconos.
-//  3. Todo lo que recibimos se REENVÍA también al Explorador, así Windows sigue funcionando igual
-//     (las notificaciones, los mensajes de AppBar de otros programas, etc.) y al cerrar McBar no se pierde nada.
+//  3. Todo lo que recibimos se REENVÍA también al Explorador, así Windows sigue funcionando igual.
 //  4. Al hacer clic en un ícono, le mandamos a la app el mismo mensaje que le mandaría Windows.
+//
+// IMPORTANTE (0.3.1): la ventana vive en un HILO PROPIO. Antes estaba en el hilo de la interfaz y cada
+// mensaje de cualquier app (más el reenvío al Explorador) frenaba el Dock y la barra.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -33,33 +36,51 @@ namespace McBar.Native
                           WM_RBUTTONDOWN = 0x204, WM_RBUTTONUP = 0x205, WM_CONTEXTMENU = 0x7B, NIN_SELECT = 0x400;
 
         private readonly Win32.WndProcDelegate _wndProc; // referencia viva para el GC
-        private readonly Dispatcher _dispatcher;
-        private readonly List<TrayIcon> _icons = new List<TrayIcon>();
+        private readonly Dispatcher _ui;
+        private Dispatcher? _trayThread;
+        private readonly List<TrayIcon> _icons = new List<TrayIcon>(); // solo se toca en el hilo de la bandeja
+        private volatile TrayIcon[] _snapshot = Array.Empty<TrayIcon>(); // copia para leer desde la interfaz
         private readonly Dictionary<uint, string> _exeByPid = new Dictionary<uint, string>();
         private IntPtr _hwnd;
         private uint _taskbarCreated;
-        private bool _changePending;
+        private int _changePending;
 
-        public IReadOnlyList<TrayIcon> Icons => _icons;
+        /// <summary>Íconos actuales (copia segura para la interfaz).</summary>
+        public IReadOnlyList<TrayIcon> Icons => _snapshot;
+        public IntPtr Hwnd => _hwnd;
         public DateTime LastBroadcast { get; private set; } = DateTime.MinValue;
 
         /// <summary>Cambió la lista de íconos (se avisa agrupado, en el hilo de la interfaz).</summary>
         public event Action? Changed;
 
-        /// <summary>Dónde está dibujado un ícono (en píxeles), para las apps que lo preguntan.</summary>
+        /// <summary>Dónde está dibujado un ícono (en píxeles). Se consulta en el hilo de la interfaz.</summary>
         public Func<TrayIcon, PxRect?>? IconRectProvider { get; set; }
 
         private TrayHost()
         {
             _wndProc = WndProc;
-            _dispatcher = Dispatcher.CurrentDispatcher;
+            _ui = Dispatcher.CurrentDispatcher;
         }
 
+        /// <summary>Llamar desde el hilo de la interfaz.</summary>
         public static TrayHost? Start()
         {
             if (Current != null) return Current;
             var host = new TrayHost();
-            if (!host.Create()) return null;
+            var ready = new ManualResetEventSlim();
+            bool ok = false;
+            var t = new Thread(() =>
+            {
+                host._trayThread = Dispatcher.CurrentDispatcher;
+                ok = host.Create();
+                ready.Set();
+                if (ok) Dispatcher.Run(); // bucle de mensajes propio de la bandeja
+            })
+            { IsBackground = true, Name = "McBar.Bandeja" };
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            ready.Wait(5000);
+            if (!ok) return null;
             Current = host;
             host.Raise();
             host.Broadcast();
@@ -79,7 +100,7 @@ namespace McBar.Native
                     hInstance = hInst,
                     lpszClassName = "Shell_TrayWnd"
                 };
-                Win32.RegisterClassEx(ref wc); // si ya estaba registrada (reinicio de la bandeja), sigue igual
+                Win32.RegisterClassEx(ref wc);
                 _hwnd = Win32.CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, "Shell_TrayWnd", "", WS_POPUP, 0, 0, 0, 0,
                                              IntPtr.Zero, IntPtr.Zero, hInst, IntPtr.Zero);
                 if (_hwnd == IntPtr.Zero) { Log.Write("Bandeja: no se pudo crear la ventana"); return false; }
@@ -88,14 +109,19 @@ namespace McBar.Native
             catch (Exception ex) { Log.Write("Bandeja: " + ex.Message); return false; }
         }
 
-        /// <summary>Pone nuestra ventana primera entre las "Shell_TrayWnd" (así las apps nos encuentran a nosotros).</summary>
+        /// <summary>Pone nuestra ventana primera entre las "Shell_TrayWnd".</summary>
         public void Raise()
         {
             if (_hwnd != IntPtr.Zero)
                 Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
         }
 
-        /// <summary>Pide a todas las apps que vuelvan a mandar sus íconos.</summary>
+        /// <summary>Si el Explorador quedó primero, volver a ponernos primeros (lo llama el vigilante cada tanto).</summary>
+        public void EnsureFirst()
+        {
+            if (_hwnd != IntPtr.Zero && Win32.FindWindow("Shell_TrayWnd", null) != _hwnd) Raise();
+        }
+
         public void Broadcast()
         {
             LastBroadcast = DateTime.Now;
@@ -103,6 +129,8 @@ namespace McBar.Native
         }
 
         public bool IsOwnBroadcastRecent => (DateTime.Now - LastBroadcast).TotalSeconds < 5;
+
+        // ================== Hilo de la bandeja ==================
 
         private IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
@@ -130,7 +158,6 @@ namespace McBar.Native
                     }
                 }
                 catch (Exception ex) { Log.Write("Bandeja: " + ex.Message); }
-                // Todo lo demás (mensajes de AppBar de otros programas, etc.) lo atiende el Explorador.
                 return Forward(wParam, lParam, 3000);
             }
             return Win32.DefWindowProc(hwnd, msg, wParam, lParam);
@@ -184,7 +211,6 @@ namespace McBar.Native
             }
         }
 
-        /// <summary>Respuesta a Shell_NotifyIconGetRect: dónde está el ícono.</summary>
         private IntPtr Identify(byte[] d)
         {
             if (TrayData.U32(d, 0) != TrayData.Signature) return IntPtr.Zero;
@@ -192,8 +218,16 @@ namespace McBar.Native
             uint hwnd = TrayData.U32(d, 12), uid = TrayData.U32(d, 16);
             Guid g = d.Length >= 36 ? new Guid(new ReadOnlySpan<byte>(d, 20, 16)) : Guid.Empty;
             var icon = _icons.FirstOrDefault(i => (g != Guid.Empty && i.Guid == g) || ((uint)i.HWnd.ToInt64() == hwnd && i.Uid == uid));
-            if (icon == null || IconRectProvider == null) return IntPtr.Zero;
-            var r = IconRectProvider(icon);
+            var provider = IconRectProvider;
+            if (icon == null || provider == null) return IntPtr.Zero;
+            PxRect? r = null;
+            try
+            {
+                // Se pregunta a la interfaz con tiempo límite (nunca bloquear la bandeja).
+                var op = _ui.BeginInvoke(new Func<PxRect?>(() => provider(icon)));
+                if (op.Wait(TimeSpan.FromMilliseconds(200)) == DispatcherOperationStatus.Completed) r = op.Result as PxRect?;
+            }
+            catch { }
             if (r == null) return IntPtr.Zero;
             int x = which == 1 ? r.Value.Left : r.Value.Right;
             int y = which == 1 ? r.Value.Top : r.Value.Bottom;
@@ -208,7 +242,7 @@ namespace McBar.Native
             try
             {
                 var src = Imaging.CreateBitmapSourceFromHIcon(copy, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                src.Freeze();
+                src.Freeze(); // congelado: se puede usar desde el hilo de la interfaz
                 return src;
             }
             catch { return null; }
@@ -237,11 +271,12 @@ namespace McBar.Native
 
         private void NotifyChanged()
         {
-            if (_changePending) return;
-            _changePending = true;
-            _dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            _snapshot = _icons.ToArray();
+            if (Interlocked.Exchange(ref _changePending, 1) == 1) return;
+            // agrupar: muchas apps actualizan su ícono seguido (algunas cada segundo)
+            _ui.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
-                _changePending = false;
+                Interlocked.Exchange(ref _changePending, 0);
                 Changed?.Invoke();
             }));
         }
@@ -249,14 +284,16 @@ namespace McBar.Native
         /// <summary>Saca los íconos de apps que se cerraron sin avisar.</summary>
         public void Prune()
         {
-            if (_icons.RemoveAll(i => !Win32.IsWindow(i.HWnd)) > 0) NotifyChanged();
+            _trayThread?.BeginInvoke(new Action(() =>
+            {
+                if (_icons.RemoveAll(i => !Win32.IsWindow(i.HWnd)) > 0) NotifyChanged();
+            }));
         }
 
-        // ---------- Clics ----------
+        // ================== Clics (desde la interfaz) ==================
 
         public enum Click { LeftDown, LeftUp, LeftDouble, RightDown, RightUp }
 
-        /// <summary>Le manda a la app el mismo mensaje que le mandaría Windows al tocar su ícono.</summary>
         public void Send(TrayIcon icon, Click click, PxRect anchor)
         {
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
@@ -290,9 +327,21 @@ namespace McBar.Native
 
         public void Dispose()
         {
-            if (_hwnd != IntPtr.Zero) { Win32.DestroyWindow(_hwnd); _hwnd = IntPtr.Zero; }
+            var t = _trayThread;
+            if (t != null)
+            {
+                try
+                {
+                    t.Invoke(new Action(() =>
+                    {
+                        if (_hwnd != IntPtr.Zero) { Win32.DestroyWindow(_hwnd); _hwnd = IntPtr.Zero; }
+                    }), TimeSpan.FromSeconds(2));
+                    t.BeginInvokeShutdown(DispatcherPriority.Normal);
+                }
+                catch { }
+            }
             Current = null;
-            _icons.Clear();
+            _snapshot = Array.Empty<TrayIcon>();
             // Las apps vuelven a mandar sus íconos a la barra de Windows (por las dudas, ya se le reenviaban).
             Win32.PostMessage(Win32.HWND_BROADCAST, _taskbarCreated, IntPtr.Zero, IntPtr.Zero);
         }

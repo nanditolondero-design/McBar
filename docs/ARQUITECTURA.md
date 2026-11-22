@@ -15,10 +15,11 @@
 ## Monitores y área de trabajo (`Native/Monitors.cs`)
 - `Monitors.All()` lista los monitores; `App.BuildMonitors()` crea una barra y un Dock por monitor (o solo en el principal).
 - Ya **no se usa la API de AppBar**: `WorkArea` fija el área de trabajo de cada monitor con `SPI_SETWORKAREA` (monitor menos barra arriba y Dock abajo). Si el Explorador la cambia, se corrige (`WM_SETTINGCHANGE`, con límite para no pelear sin fin). Al salir se devuelve todo el monitor.
-- Pantalla completa: `Core/FullscreenWatcher.cs` mira solo la ventana con foco (se re-engancha al cambiar el foco); si cubre su monitor, se esconden la barra y el Dock de ese monitor.
+- Pantalla completa: `Core/FullscreenWatcher.cs` revisa la ventana con foco al cambiar el foco y desde el vigilante; si cubre su monitor (y no está maximizada), se esconden la barra y el Dock de ese monitor.
+- Vigilante (`App.StartWatchdog`, cada 0,7 s, solo consultas baratas): esconde la barra de Windows si asomó, mantiene la bandeja propia primera, revisa pantalla completa, verifica el área de trabajo y vuelve a poner arriba barra/isla/Dock.
 
 ## Bandeja propia (`Native/TrayHost.cs`, `Core/TrayData.cs`)
-- Ventana invisible de clase `Shell_TrayWnd` puesta primera: `Shell_NotifyIcon` de las apps nos llega a nosotros (WM_COPYDATA tipo 1).
+- Ventana invisible de clase `Shell_TrayWnd` en un **hilo propio** (no frena la interfaz), puesta primera: `Shell_NotifyIcon` de las apps nos llega a nosotros (WM_COPYDATA tipo 1).
 - Al arrancar se manda `TaskbarCreated` para que todas las apps reenvíen sus íconos.
 - Todo se reenvía también al Explorador (y los mensajes de AppBar de otros programas, tipo 0, se le pasan tal cual).
 - Clics: se le manda a la app su `uCallbackMessage` con el formato de su versión (v4: NIN_SELECT / WM_CONTEXTMENU).

@@ -23,6 +23,8 @@ namespace McBar
         private static Mutex? _mutex;
         private static DispatcherTimer? _trimTimer;
         private static DispatcherTimer? _weatherTimer;
+        private static DispatcherTimer? _watchdog;
+        private static int _watchdogTicks;
         private static bool _cleanedUp;
 
         /// <summary>Escala de pantalla del sistema (1 = 100 %, 1.25 = 125 %...).</summary>
@@ -129,6 +131,7 @@ namespace McBar
             }));
 
             StartWeather();
+            StartWatchdog();
             ScheduleTrim(6);
         }
 
@@ -290,6 +293,46 @@ namespace McBar
             TrayChanged?.Invoke();
         }
 
+        // ================== Vigilante ==================
+
+        /// <summary>
+        /// Revisión liviana cada 0,7 s (unas pocas consultas a Windows, nada de dibujar):
+        /// - la barra de Windows no debe aparecer (algunas apps la hacen asomar al parpadear),
+        /// - la bandeja propia tiene que seguir siendo la primera,
+        /// - pantalla completa,
+        /// - el área de trabajo sigue como la dejamos (cada ~5 s).
+        /// </summary>
+        private static void StartWatchdog()
+        {
+            _watchdog = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(700) };
+            _watchdog.Tick += (_, _) =>
+            {
+                try
+                {
+                    var s = SettingsStore.Current;
+                    if (s.HideWindowsTaskbar) Taskbar.Enforce();
+                    TrayHost.Current?.EnsureFirst();
+                    Fullscreen?.Check();
+                    if (++_watchdogTicks % 7 == 0) WorkArea.Verify();
+                    if (_watchdogTicks % 4 == 0) KeepBarsOnTop();
+                }
+                catch (Exception ex) { Log.Write("Vigilante: " + ex.Message); }
+            };
+            _watchdog.Start();
+        }
+
+        /// <summary>Vuelve a poner arriba de todo la barra/isla y el Dock (por si otra ventana "siempre visible" los tapó).</summary>
+        private static void KeepBarsOnTop()
+        {
+            const uint flags = Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE;
+            foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
+            {
+                if (!w.IsVisible) continue;
+                var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
+                if (h != IntPtr.Zero) Win32.SetWindowPos(h, Win32.HWND_TOPMOST, 0, 0, 0, 0, flags);
+            }
+        }
+
         // ================== Clima ==================
 
         private static void StartWeather()
@@ -427,6 +470,7 @@ namespace McBar
         {
             if (_cleanedUp) return;
             _cleanedUp = true;
+            _watchdog?.Stop();
             foreach (var d in Docks) { try { d.Teardown(); } catch { } }
             foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }
             foreach (var isl in Islands) { try { isl.Teardown(); } catch { } }

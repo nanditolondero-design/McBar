@@ -1,5 +1,15 @@
 # Cambios
 
+## 0.3.1 — 22/11/2026
+Arreglos después de probar la 0.2 en la PC de Andrés:
+- **Lentitud**: el bucle de animación del Dock tenía un error que se repetía (registro: "Index was out of range" en DockWindow.Step). Ahora trabaja sobre una copia fija de la lista en cada cuadro y, si algo falla, se detiene en vez de repetir el error.
+- **Lentitud**: la bandeja propia ahora corre en su propio hilo; antes cada mensaje de cada app (y su reenvío al Explorador) frenaba la interfaz.
+- **Lentitud**: la detección de pantalla completa ya no escucha cada movimiento de la ventana activa (despertaba a McBar con cada movimiento del mouse); ahora se revisa al cambiar el foco y una vez por segundo.
+- **Animación al quitar del Dock**: ahora se ve una nubecita de humo donde se suelta el ícono.
+- **Barra superior que se escondía**: una ventana maximizada ya no cuenta como "pantalla completa". Además la barra, la isla y el Dock se vuelven a poner arriba de todo cada pocos segundos.
+- **Barra de Windows que aparecía sola**: un vigilante liviano (cada 0,7 s) la vuelve a esconder y mantiene la bandeja propia primera.
+- **Launchpad con páginas vacías**: se dibuja solo la página visible con tarjetas simples (sin efectos), con animación al pasar de página.
+
 ## 0.3.0 — 22/11/2026
 - Isla dinámica estilo iPhone como alternativa a la barra de menú (Preferencias → Barra superior → Tipo).
   - Reposo con la hora; expandida con menús, bandeja y estado; actividades de volumen, brillo, batería, música y notificaciones; reproductor con controles.

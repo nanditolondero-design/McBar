@@ -414,7 +414,15 @@ namespace McBar.Dock
             double now = _clock.Elapsed.TotalSeconds;
             double dt = Math.Clamp(now - _lastTick, 0.001, 0.05);
             _lastTick = now;
-            if (!Step(dt, now))
+            bool more;
+            try { more = Step(dt, now); }
+            catch (Exception ex)
+            {
+                // Nunca dejar un error repitiéndose en cada cuadro (eso hacía lenta la app).
+                Log.Write("Dock (animación): " + ex.Message);
+                more = false;
+            }
+            if (!more)
             {
                 CompositionTarget.Rendering -= OnRendering;
                 _animating = false;
@@ -437,15 +445,17 @@ namespace McBar.Dock
                 if (it.PoofStart >= 0 && now - it.PoofStart >= 0.28) RemoveNow(it);
                 else if (it.Removing && it.PoofStart < 0 && it.CurrentSize <= 0.5) RemoveNow(it);
             }
-            n = _items.Count;
+            // Copia fija de la lista para este cuadro: si algo la cambia mientras tanto, no se rompe nada.
+            var items = _items.ToArray();
+            n = items.Length;
             if (n == 0) return false;
 
             var baseSizes = new double[n];
             var scalable = new bool[n];
             for (int i = 0; i < n; i++)
             {
-                baseSizes[i] = BaseOf(_items[i]);
-                scalable[i] = _items[i].Kind != DockItemKind.Separator;
+                baseSizes[i] = BaseOf(items[i]);
+                scalable[i] = items[i].Kind != DockItemKind.Separator;
             }
 
             // Con un menú abierto se mantiene la ampliación (antes el ícono se achicaba).
@@ -457,7 +467,7 @@ namespace McBar.Dock
             var cur = new double[n];
             for (int i = 0; i < n; i++)
             {
-                var it = _items[i];
+                var it = items[i];
                 double v = Magnifier.Approach(it.CurrentSize, targets[i], dt, mouse != null ? 18 : 12);
                 if (v != targets[i]) moving = true;
                 it.CurrentSize = v;
@@ -506,7 +516,7 @@ namespace McBar.Dock
             double dotY = ActualHeight - BottomMargin - Pad / 2 - 2;
             for (int i = 0; i < n; i++)
             {
-                var it = _items[i];
+                var it = items[i];
                 double bounce = 0;
                 if (it.BounceStart >= 0)
                 {
@@ -765,8 +775,11 @@ namespace McBar.Dock
             item.Removing = true;
             if (poof)
             {
-                item.PoofStart = _clock.Elapsed.TotalSeconds;
-                item.PoofUp = Math.Max(0, _pressPoint.Y - _dragPos.Y);
+                // Como en macOS: el ícono desaparece en una nubecita donde se soltó.
+                double up = Math.Max(0, _pressPoint.Y - _dragPos.Y);
+                double size = Math.Max(item.LayoutSize, BaseSize);
+                Puff(item.LayoutLeft + item.LayoutSize / 2, IconBottom - up - item.LayoutSize / 2, size);
+                item.View.Visibility = Visibility.Hidden;
             }
             SavePins();
             EnsureAnimating();
@@ -810,6 +823,45 @@ namespace McBar.Dock
                 .Select(i => new PinnedApp { Name = i.Name, Target = i.Target! })
                 .ToList();
             SettingsStore.NotifyPinsChanged(this);
+        }
+
+        /// <summary>Nubecita de humo (animación de "quitar del Dock"). Se borra sola al terminar.</summary>
+        private void Puff(double cx, double cy, double size)
+        {
+            var rnd = new Random();
+            var layer = new Canvas { IsHitTestVisible = false };
+            Panel.SetZIndex(layer, 2000);
+            Stage.Children.Add(layer);
+            var dur = TimeSpan.FromMilliseconds(520);
+            var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+            const int count = 10;
+            for (int i = 0; i < count; i++)
+            {
+                double r = size * (0.2 + rnd.NextDouble() * 0.14);
+                var brush = new RadialGradientBrush(Color.FromArgb(235, 250, 250, 252), Color.FromArgb(0, 230, 230, 235));
+                var e = new System.Windows.Shapes.Ellipse { Width = r * 2, Height = r * 2, Fill = brush, RenderTransformOrigin = new Point(0.5, 0.5) };
+                Canvas.SetLeft(e, cx - r);
+                Canvas.SetTop(e, cy - r);
+                var scale = new ScaleTransform(0.35, 0.35);
+                var move = new TranslateTransform();
+                var group = new TransformGroup();
+                group.Children.Add(scale);
+                group.Children.Add(move);
+                e.RenderTransform = group;
+                layer.Children.Add(e);
+
+                double angle = i * 2 * Math.PI / count + rnd.NextDouble() * 0.5;
+                double dist = size * (0.35 + rnd.NextDouble() * 0.35);
+                var grow = new System.Windows.Media.Animation.DoubleAnimation(0.35, 1.5 + rnd.NextDouble() * 0.4, dur) { EasingFunction = ease };
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
+                move.BeginAnimation(TranslateTransform.XProperty, new System.Windows.Media.Animation.DoubleAnimation(0, Math.Cos(angle) * dist, dur) { EasingFunction = ease });
+                move.BeginAnimation(TranslateTransform.YProperty, new System.Windows.Media.Animation.DoubleAnimation(0, Math.Sin(angle) * dist - size * 0.2, dur) { EasingFunction = ease });
+                e.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0.95, 0, dur) { BeginTime = TimeSpan.FromMilliseconds(60) });
+            }
+            var cleanup = new DispatcherTimer { Interval = dur + TimeSpan.FromMilliseconds(120) };
+            cleanup.Tick += (_, _) => { cleanup.Stop(); Stage.Children.Remove(layer); };
+            cleanup.Start();
         }
 
         // ================== Menús ==================

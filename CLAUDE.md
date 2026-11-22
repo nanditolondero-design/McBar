@@ -45,6 +45,8 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `WorkArea` (no AppBar): el área de trabajo de cada monitor la fija McBar. Siempre llamar `App.UpdateWorkAreas()` si cambia algo que ocupa espacio, y `WorkArea.Reset()` al salir.
 - `TrayHost`: nuestra ventana se llama `Shell_TrayWnd`. Todo lo que no sea bandeja (mensajes de AppBar) se reenvía al Explorador; `Taskbar.ExplorerTray()` saltea la nuestra. Ignorar `TaskbarCreated` propio (`IsOwnBroadcastRecent`).
 - Menús y popups del Dock/barra: siempre `PopupGuard.Attach(...)`.
+- El bucle de animación del Dock trabaja sobre una copia de `_items` por cuadro y está protegido con try/catch: nunca dejar que un error se repita en cada cuadro.
+- No enganchar eventos de Windows que se disparen con cada movimiento del mouse (LOCATIONCHANGE global, etc.): usar el vigilante.
 - Cosas de pantalla por monitor: recibir `MonitorInfo`; las medidas en píxeles se convierten con `App.Scale` (escala del sistema).
 - `Taskbar`: guarda el estado original en settings (`TaskbarModified`, `OriginalTaskbarState`) antes de tocar nada. `--restaurar` lo devuelve.
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).

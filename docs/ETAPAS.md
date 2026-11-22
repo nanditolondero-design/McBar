@@ -30,6 +30,9 @@ Pedidos de Andrés después de probar la 0.1:
 - Eventos elegidos: música y videos, volumen y brillo, batería y carga, notificaciones.
 - Notificaciones: primero intenta el lector oficial de Windows; si Windows no lo permite (pasa con apps no instaladas como paquete), lee el cartelito de la notificación con la accesibilidad de Windows. En Preferencias se ve cuál está usando.
 
+## Versión 0.3.1 (22/11/2026) — arreglos de rendimiento y errores
+Reportado por Andrés: app lenta, sin animación al soltar para quitar, barra superior que se oculta, Launchpad con páginas vacías, barra de Windows que aparece sola. Ver CHANGELOG.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.

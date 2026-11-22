@@ -85,6 +85,14 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] Llega un mensaje de WhatsApp/mail: se muestra en la isla. (Anotar qué dice Preferencias en "Notificaciones:".)
 - [ ] Volver a "Barra de menú": vuelve la barra normal.
 
+### Versión 0.3.1
+- [ ] La app responde rápido (Dock, barra y menús) aun con WhatsApp, antivirus, Steam, etc. abiertos.
+- [ ] `%AppData%\McBar\mcbar.log` no tiene errores "Index was out of range".
+- [ ] Soltar un ícono arrastrado hacia arriba: nubecita de humo.
+- [ ] Con una ventana maximizada (Chrome, Explorador) la barra superior sigue visible.
+- [ ] La barra de Windows no aparece sola (si asoma, desaparece en menos de un segundo).
+- [ ] Launchpad: se ven las apps en la primera página y en las siguientes (rueda del mouse o puntitos).
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

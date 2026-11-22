@@ -1,7 +1,11 @@
 // McBar — Creado por Andrés Londero
-// Launchpad: todas las apps instaladas en páginas, con fondo desenfocado, búsqueda y animaciones.
+// Launchpad (como el de macOS): todas las apps instaladas en páginas de 7 × 5, fondo desenfocado,
+// búsqueda arriba, puntitos de página abajo y animaciones al abrir y al pasar de página.
 // Rueda del mouse o flechas: cambiar de página. Esc o clic en el fondo: cerrar. Enter: abrir la primera.
 // Clic derecho en una app: "Agregar al Dock".
+//
+// 0.3.1: se dibuja SOLO la página visible (antes había una tira con todas las páginas que en algunas
+// PCs quedaba vacía). Los íconos son tarjetas simples, sin efectos pesados.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,12 +22,14 @@ namespace McBar.Panels
 {
     internal sealed class LaunchpadWindow : Window
     {
-        private const int Cols = 7, Rows = 5;
+        private const int Cols = 7, Rows = 5, PerPage = Cols * Rows;
+        private static readonly Brush HoverBrush = Frozen(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF));
+        private static readonly Brush LabelBrush = Frozen(Colors.White);
+
         private readonly Grid _root = new Grid();
         private readonly Grid _content = new Grid();
         private readonly ScaleTransform _zoom = new ScaleTransform(1.08, 1.08);
-        private readonly StackPanel _strip = new StackPanel { Orientation = Orientation.Horizontal };
-        private readonly TranslateTransform _stripShift = new TranslateTransform();
+        private readonly Grid _pageHost = new Grid { ClipToBounds = true, Margin = new Thickness(70, 0, 70, 0) };
         private readonly StackPanel _dots = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         private readonly TextBox _search = new TextBox();
         private readonly TextBlock _placeholder = new TextBlock();
@@ -32,14 +38,12 @@ namespace McBar.Panels
 
         private List<CatalogApp> _all = new List<CatalogApp>();
         private List<CatalogApp> _shown = new List<CatalogApp>();
+        private UIElement? _currentPage;
         private int _page, _pageCount = 1;
-        private double _pageWidth;
         private DateTime _lastWheel = DateTime.MinValue;
-        private bool _closing;
+        private bool _closing, _loaded;
 
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
-
-        private bool _loaded;
 
         public LaunchpadWindow(MonitorInfo monitor)
         {
@@ -66,11 +70,9 @@ namespace McBar.Panels
             _content.RowDefinitions.Add(new RowDefinition());
             _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(90) });
 
-            // Búsqueda
+            // Búsqueda (píldora arriba al centro)
             var searchHost = new Grid { Width = 260, Height = 32, VerticalAlignment = VerticalAlignment.Center };
             _search.SetResourceReference(StyleProperty, "McTextBox");
-            _search.Background = new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF));
-            _search.BorderBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
             _search.Foreground = Brushes.White;
             _search.CaretBrush = Brushes.White;
             _search.VerticalContentAlignment = VerticalAlignment.Center;
@@ -84,20 +86,11 @@ namespace McBar.Panels
             searchHost.Children.Add(_placeholder);
             _content.Children.Add(searchHost);
 
-            // Páginas
-            var viewport = new Grid { ClipToBounds = true, Margin = new Thickness(60, 0, 60, 0) };
-            _strip.RenderTransform = _stripShift;
-
-            _strip.HorizontalAlignment = HorizontalAlignment.Left;
-            viewport.Children.Add(_strip);
-            viewport.SizeChanged += (_, _) => { _pageWidth = viewport.ActualWidth; Rebuild(); };
-            Grid.SetRow(viewport, 1);
-            _content.Children.Add(viewport);
-
+            Grid.SetRow(_pageHost, 1);
+            _content.Children.Add(_pageHost);
             Grid.SetRow(_dots, 2);
             _dots.VerticalAlignment = VerticalAlignment.Center;
             _content.Children.Add(_dots);
-
             Content = _root;
 
             SourceInitialized += (_, _) =>
@@ -117,12 +110,13 @@ namespace McBar.Panels
             {
                 _search.Focus();
                 if (AppCatalog.Cached != null) { _all = AppCatalog.Cached.ToList(); Filter(); }
-                else Rebuild();
+                else ShowPage(0, 0);
                 var fresh = await AppCatalog.LoadAsync();
                 _loaded = true;
                 if (_closing) return;
+                int keep = _page;
                 _all = fresh;
-                Filter();
+                Filter(keep);
             };
         }
 
@@ -148,7 +142,7 @@ namespace McBar.Panels
             _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
         }
 
-        private static bool IsInside<T>(DependencyObject d) where T : DependencyObject
+        private static bool IsInside<T>(DependencyObject? d) where T : DependencyObject
         {
             while (d != null)
             {
@@ -158,38 +152,63 @@ namespace McBar.Panels
             return false;
         }
 
-        private void Filter()
+        private void Filter(int keepPage = 0)
         {
             var q = _search.Text.Trim();
             _shown = q.Length == 0 ? _all : _all.Where(a => a.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase)).ToList();
-            _page = 0;
-            Rebuild();
+            _pageCount = Math.Max(1, (int)Math.Ceiling(_shown.Count / (double)PerPage));
+            BuildDots();
+            ShowPage(Math.Clamp(q.Length == 0 ? keepPage : 0, 0, _pageCount - 1), 0);
         }
 
-        private void Rebuild()
+        /// <summary>Muestra una página. <paramref name="direction"/>: 1 = viene de la derecha, -1 = de la izquierda, 0 = sin animación.</summary>
+        private void ShowPage(int page, int direction)
         {
-            if (_pageWidth <= 0) return;
-            _strip.Children.Clear();
-            _waiting.Clear();
-            int perPage = Cols * Rows;
-            _pageCount = Math.Max(1, (int)Math.Ceiling(_shown.Count / (double)perPage));
-            for (int p = 0; p < _pageCount; p++)
-            {
-                var grid = new UniformGrid { Columns = Cols, Rows = Rows, Width = _pageWidth, VerticalAlignment = VerticalAlignment.Top };
-                // Sombra suave en los nombres (como en macOS) y caché en la tarjeta de video: el paso de página queda fluido.
-                grid.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 6, ShadowDepth = 1, Opacity = 0.5, Color = Colors.Black };
-                grid.CacheMode = new BitmapCache();
-                foreach (var app in _shown.Skip(p * perPage).Take(perPage)) grid.Children.Add(Tile(app));
-                _strip.Children.Add(grid);
-            }
+            _page = Math.Clamp(page, 0, _pageCount - 1);
+            UIElement next;
             if (_shown.Count == 0)
             {
-                var none = new TextBlock { Text = _loaded || _search.Text.Length > 0 ? "No se encontraron apps" : "Cargando apps…", Foreground = Brushes.White, FontSize = 18, Width = _pageWidth, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 80, 0, 0) };
-                _strip.Children.Clear();
-                _strip.Children.Add(none);
+                next = new TextBlock
+                {
+                    Text = _loaded || _search.Text.Length > 0 ? "No se encontraron apps" : "Cargando apps…",
+                    Foreground = LabelBrush, FontSize = 18, TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 80, 0, 0)
+                };
             }
-            BuildDots();
-            GoTo(Math.Min(_page, _pageCount - 1), false);
+            else
+            {
+                var grid = new UniformGrid { Columns = Cols, Rows = Rows };
+                foreach (var app in _shown.Skip(_page * PerPage).Take(PerPage)) grid.Children.Add(Tile(app));
+                next = grid;
+            }
+
+            var old = _currentPage;
+            _currentPage = next;
+            _pageHost.Children.Add(next);
+            double w = Math.Max(1, _pageHost.ActualWidth > 0 ? _pageHost.ActualWidth : Width - 140);
+
+            if (old != null)
+            {
+                if (direction == 0) _pageHost.Children.Remove(old);
+                else
+                {
+                    var tOld = new TranslateTransform();
+                    old.RenderTransform = tOld;
+                    var outAnim = new DoubleAnimation(0, -direction * w * 0.35, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+                    outAnim.Completed += (_, _) => _pageHost.Children.Remove(old);
+                    tOld.BeginAnimation(TranslateTransform.XProperty, outAnim);
+                    old.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(220)));
+                    old.IsHitTestVisible = false;
+                }
+            }
+            if (direction != 0)
+            {
+                var tNew = new TranslateTransform();
+                next.RenderTransform = tNew;
+                tNew.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(direction * w * 0.35, 0, TimeSpan.FromMilliseconds(340)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                next.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)));
+            }
+            UpdateDots();
         }
 
         private UIElement Tile(CatalogApp app)
@@ -199,7 +218,7 @@ namespace McBar.Panels
             var label = new TextBlock
             {
                 Text = app.Name,
-                Foreground = Brushes.White,
+                Foreground = LabelBrush,
                 FontSize = 12.5,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
@@ -209,15 +228,26 @@ namespace McBar.Panels
             var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             sp.Children.Add(img);
             sp.Children.Add(label);
-            var b = new Button { Content = sp, Padding = new Thickness(10, 8, 10, 8), Foreground = Brushes.White, ToolTip = app.Name, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-            b.SetResourceReference(StyleProperty, "McFlatButton");
-            b.Click += (_, _) => { Launcher.Launch(app.Target); CloseAnimated(); };
+            var card = new Border
+            {
+                Child = sp,
+                Padding = new Thickness(12, 8, 12, 8),
+                CornerRadius = new CornerRadius(16),
+                Background = Brushes.Transparent,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = app.Name,
+                Cursor = Cursors.Hand
+            };
+            card.MouseEnter += (_, _) => card.Background = HoverBrush;
+            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
+            card.MouseLeftButtonUp += (_, e) => { e.Handled = true; Launcher.Launch(app.Target); CloseAnimated(); };
 
             var cm = new ContextMenu();
             var add = new MenuItem { Header = "Agregar al Dock" };
             add.Click += (_, _) => App.Dock?.PinTarget(app.Name, app.Target);
             cm.Items.Add(add);
-            b.ContextMenu = cm;
+            card.ContextMenu = cm;
 
             if (_icons.TryGetValue(app.Target, out var cached)) img.Source = cached;
             else
@@ -235,7 +265,7 @@ namespace McBar.Panels
                 }
                 list.Add(img);
             }
-            return b;
+            return card;
         }
 
         private void BuildDots()
@@ -245,35 +275,30 @@ namespace McBar.Panels
             for (int i = 0; i < _pageCount; i++)
             {
                 int p = i;
-                var dot = new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(5), Background = Brushes.White };
-                var b = new Button { Content = dot, Padding = new Thickness(2) };
-                b.SetResourceReference(StyleProperty, "McFlatButton");
-                b.Click += (_, _) => GoTo(p, true);
-                _dots.Children.Add(b);
+                var dot = new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(7), Background = LabelBrush, Cursor = Cursors.Hand };
+                var hit = new Border { Child = dot, Background = Brushes.Transparent };
+                hit.MouseLeftButtonUp += (_, e) => { e.Handled = true; if (p != _page) ShowPage(p, p > _page ? 1 : -1); };
+                _dots.Children.Add(hit);
             }
         }
 
-        private void GoTo(int page, bool animate)
+        private void UpdateDots()
         {
-            _page = Math.Clamp(page, 0, _pageCount - 1);
-            double x = -_page * _pageWidth;
-            if (animate)
-                _stripShift.BeginAnimation(TranslateTransform.XProperty,
-                    new DoubleAnimation(x, TimeSpan.FromMilliseconds(380)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } });
-            else
-            {
-                _stripShift.BeginAnimation(TranslateTransform.XProperty, null);
-                _stripShift.X = x;
-            }
             for (int i = 0; i < _dots.Children.Count; i++)
-                if (_dots.Children[i] is Button b && b.Content is Border d) d.Opacity = i == _page ? 1 : 0.35;
+                if (_dots.Children[i] is Border b && b.Child is Border d) d.Opacity = i == _page ? 1 : 0.35;
+        }
+
+        private void Turn(int delta)
+        {
+            int target = Math.Clamp(_page + delta, 0, _pageCount - 1);
+            if (target != _page) ShowPage(target, delta > 0 ? 1 : -1);
         }
 
         private void OnWheel(object sender, MouseWheelEventArgs e)
         {
-            if ((DateTime.Now - _lastWheel).TotalMilliseconds < 300) return;
+            if ((DateTime.Now - _lastWheel).TotalMilliseconds < 320) return;
             _lastWheel = DateTime.Now;
-            GoTo(_page + (e.Delta < 0 ? 1 : -1), true);
+            Turn(e.Delta < 0 ? 1 : -1);
         }
 
         private void OnKey(object sender, KeyEventArgs e)
@@ -289,15 +314,13 @@ namespace McBar.Panels
                     if (first != null) { Launcher.Launch(first.Target); CloseAnimated(); }
                     e.Handled = true;
                     break;
-                case Key.PageDown:
-                    GoTo(_page + 1, true); e.Handled = true; break;
-                case Key.PageUp:
-                    GoTo(_page - 1, true); e.Handled = true; break;
-                case Key.Right when _search.Text.Length == 0:
-                    GoTo(_page + 1, true); e.Handled = true; break;
-                case Key.Left when _search.Text.Length == 0:
-                    GoTo(_page - 1, true); e.Handled = true; break;
+                case Key.PageDown: Turn(1); e.Handled = true; break;
+                case Key.PageUp: Turn(-1); e.Handled = true; break;
+                case Key.Right when _search.Text.Length == 0: Turn(1); e.Handled = true; break;
+                case Key.Left when _search.Text.Length == 0: Turn(-1); e.Handled = true; break;
             }
         }
+
+        private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
     }
 }
