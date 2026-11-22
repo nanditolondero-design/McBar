@@ -112,6 +112,31 @@ Marcar en Windows 10 y en Windows 11, con escala 100 % y 125/150 %.
 - [ ] Activar "Ocultar y mostrar el Dock automáticamente": las ventanas maximizadas se acomodan una sola vez y quedan quietas.
 - [ ] Revisar `mcbar.log`: si aparece "El Explorador sigue cambiando el área de trabajo" o "Windows no aceptó poner su barra en ocultar automáticamente", avisar.
 
+### Versión 0.4.0
+Dock (arreglo del video):
+- [ ] Pasar el mouse de punta a punta por el Dock: los íconos agrandados se ven enteros (arriba y a los costados), igual que la Papelera y el Launchpad en las puntas.
+- [ ] La etiqueta con el nombre se ve completa.
+- [ ] Al sacar el mouse, vuelve a poder hacerse clic en las ventanas de arriba del Dock.
+- [ ] Abrir el Bloc de notas (sin fijar), arrastrar su ícono hacia arriba: dice "Cerrar app"; al soltar, nubecita y se cierra. Con texto sin guardar: pregunta y el ícono vuelve.
+- [ ] Una app fijada arrastrada afuera solo se quita del Dock (no se cierra).
+Isla:
+- [ ] Clic en Wi-Fi, en volumen y en batería: cada uno abre su propio cajón (no el Centro de control).
+- [ ] Botón del Centro de control: el cajón se ve completo (sonido, brillo, música) y con las esquinas de abajo redondeadas.
+Notificaciones:
+- [ ] Mandarse un mensaje de WhatsApp: aparece en la isla y queda en el cajón de notificaciones (clic en la hora) agrupado por app.
+- [ ] Con barra de menú: el reloj muestra el puntito azul y el panel tiene las notificaciones arriba de los widgets, sin hueco vacío abajo.
+- [ ] Win+N abre las notificaciones de McBar y Win+A el Centro de control; al soltar Windows no se abre el menú Inicio.
+- [ ] Con "Ocultar los avisos de Windows": el cartelito de Windows desaparece enseguida y la notificación igual queda en McBar.
+- [ ] En Preferencias → Notificaciones se ve qué método usa (lector oficial o accesibilidad).
+Launchpad:
+- [ ] Preferencias → Launchpad → Transparencia en 100: se ve el escritorio casi limpio; en 0: bien oscuro. Desenfoque apagado: sin desenfoque.
+- [ ] El buscador no queda tapado por la isla.
+- [ ] Arrastrar Word sobre Excel: se crea "Carpeta" con las dos. Arrastrar PowerPoint sobre la carpeta: se agrega.
+- [ ] Clic en la carpeta: se abre; cambiar el nombre y apretar Enter; cerrar y volver a abrir el Launchpad: sigue igual.
+- [ ] Arrastrar una app fuera del recuadro de la carpeta: sale. Al vaciarla, la carpeta desaparece.
+- [ ] Clic derecho en una app: Agregar a carpeta / Nueva carpeta / Sacar de la carpeta. En una carpeta: Renombrar / Deshacer carpeta.
+- [ ] Buscar una app que está dentro de una carpeta: aparece.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.

@@ -56,4 +56,8 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).
 - `WindowTracker`: el delegado del hook debe quedar referenciado en un campo (si no, el GC lo borra y la app se cae).
 - Ventanas del Dock y la barra: `WS_EX_NOACTIVATE`, así la app activa no pierde el foco y los menús Archivo/Edición le mandan los atajos a ella.
+- Dock: mientras el mouse está encima, la forma (`UpdateShape`) es una zona amplia y FIJA; no volver a recalcularla al tamaño justo en cada cuadro (Windows aplica la región antes de dibujar y los íconos se ven cortados).
+- Isla: la ventana mide 680 de alto para que entren los cajones; la forma limita los clics a la píldora. Cajón nuevo → `IslandWindow.BuildDrawer` + `DrawerKind`.
+- `KeyboardHook` (Win+N / Win+A) corre en su propio hilo: el gancho tiene que contestar rápido, todo lo demás se manda al hilo de la interfaz.
+- Carpetas del Launchpad: toda la lógica en `Core/LaunchpadLayout.cs` (con pruebas); la ventana solo dibuja y guarda con `SettingsStore.Save()`.
 - La ampliación usa posiciones "sin ampliar" para calcular tamaños (`Core/Magnifier.cs`); no cambiar a posiciones reales porque tiembla.

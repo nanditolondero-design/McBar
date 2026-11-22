@@ -24,13 +24,13 @@ namespace McBar.Core
         private static Dispatcher? _ui;
         private static VolumeWatcher? _volume;
         private static ManagementEventWatcher? _brightness;
-        private static NotificationWatcher? _notifications;
+        private static Action<NotificationEntry>? _onNotification;
         private static bool _running;
         private static BatteryState _lastBattery;
         private static Microsoft.Win32.PowerModeChangedEventHandler? _powerHandler;
 
         public static MediaWatcher? Media { get; private set; }
-        public static string NotificationMode => _notifications?.Mode ?? "Apagado";
+        public static string NotificationMode => NotificationCenter.Mode;
 
         /// <summary>Algo para mostrar un momento en la isla (en el hilo de la interfaz).</summary>
         public static event Action<Activity>? Raised;
@@ -86,9 +86,13 @@ namespace McBar.Core
 
             if (s.IslandNotifications)
             {
-                _notifications = new NotificationWatcher();
-                _notifications.Notified += n => Raised?.Invoke(new Activity { Kind = ActivityKind.Notification, Notification = n });
-                _notifications.Start();
+                // Las notificaciones las junta el centro de notificaciones (funciona con barra o con isla).
+                _onNotification = e => Raised?.Invoke(new Activity
+                {
+                    Kind = ActivityKind.Notification,
+                    Notification = new NotificationInfo { App = e.App, Title = e.Title, Body = e.Body, Icon = e.Icon }
+                });
+                NotificationCenter.Added += _onNotification;
             }
         }
 
@@ -99,16 +103,14 @@ namespace McBar.Core
             try { _volume?.Dispose(); } catch { }
             try { _brightness?.Stop(); _brightness?.Dispose(); } catch { }
             try { Media?.Dispose(); } catch { }
-            try { _notifications?.Dispose(); } catch { }
+            if (_onNotification != null) NotificationCenter.Added -= _onNotification;
             if (_powerHandler != null) Microsoft.Win32.SystemEvents.PowerModeChanged -= _powerHandler;
-            _volume = null; _brightness = null; Media = null; _notifications = null; _powerHandler = null;
+            _volume = null; _brightness = null; Media = null; _onNotification = null; _powerHandler = null;
             MediaChanged?.Invoke();
         }
 
         public static void Restart() { Stop(); Start(); }
 
-        /// <summary>WindowTracker avisa cada ventana nueva (para leer los cartelitos de notificación).</summary>
-        public static void OnWindowShown(IntPtr hwnd, string cls) => _notifications?.OnWindowShown(hwnd, cls);
 
         private static void Post(Activity a) => _ui?.BeginInvoke(new Action(() => Raised?.Invoke(a)));
 

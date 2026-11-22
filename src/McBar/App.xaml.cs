@@ -138,6 +138,8 @@ namespace McBar
                 again.Start();
             }));
 
+            if (s.OwnNotifications) NotificationCenter.Start();
+            if (s.OwnShortcuts) KeyboardHook.Start();
             StartWeather();
             StartWatchdog();
             ScheduleTrim(6);
@@ -392,6 +394,8 @@ namespace McBar
                 _lastOwnTray = s.UseOwnTray;
             }
             if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
+            if (s.OwnNotifications) NotificationCenter.Start(); else NotificationCenter.Stop();
+            if (s.OwnShortcuts) KeyboardHook.Start(); else KeyboardHook.Stop();
             if (IslandKey(s) != _lastIslandKey)
             {
                 _lastIslandKey = IslandKey(s);
@@ -437,7 +441,7 @@ namespace McBar
         {
             // Con la isla dinámica, el Centro de control se despliega como un cajón desde la isla.
             var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
-            if (isl != null && isl.IsVisible) { isl.ToggleDrawer(); return; }
+            if (isl != null && isl.IsVisible) { isl.ToggleDrawer(IslandWindow.DrawerKind.ControlCenter); return; }
             if (_controlCenter != null && _controlCenter.IsVisible && !_controlCenter.IsClosing) { _controlCenter.CloseAnimated(); return; }
             if (_controlCenter != null && RecentlyClosed(_controlCenter.ClosedAt)) return;
             _widgets?.CloseAnimated();
@@ -445,7 +449,26 @@ namespace McBar
             _controlCenter.ShowBelowMenuBar(MonitorOrPrimary(monitor));
         }
 
+        /// <summary>
+        /// Reloj / Win+N: centro de notificaciones. Con la isla se despliega como cajón desde la píldora;
+        /// con la barra de menú es el panel de la derecha (notificaciones + widgets).
+        /// </summary>
         public static void ToggleWidgets(MonitorInfo? monitor = null)
+        {
+            var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
+            if (isl != null && isl.IsVisible) { isl.ToggleDrawer(IslandWindow.DrawerKind.Notifications); return; }
+            OpenWidgetsPanel(monitor);
+        }
+
+        /// <summary>Cajón propio de cada ícono de la isla (Wi-Fi, sonido, batería).</summary>
+        public static void ToggleIslandDrawer(MonitorInfo? monitor, IslandWindow.DrawerKind kind)
+        {
+            var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
+            if (isl != null && isl.IsVisible) isl.ToggleDrawer(kind);
+            else ToggleControlCenter(monitor);
+        }
+
+        public static void OpenWidgetsPanel(MonitorInfo? monitor = null)
         {
             if (_widgets != null && _widgets.IsVisible && !_widgets.IsClosing) { _widgets.CloseAnimated(); return; }
             if (_widgets != null && RecentlyClosed(_widgets.ClosedAt)) return;
@@ -454,7 +477,16 @@ namespace McBar
             _widgets = new WidgetsWindow();
             double top = TopInsetDip(m);
             double bottom = m.Work.Bottom / Scale - 8;
-            _widgets.ShowBelowMenuBar(m, Math.Max(300, bottom - top));
+            // 0.4.0: el panel mide lo que su contenido (antes ocupaba todo el alto y quedaba un hueco vacío)
+            _widgets.MaxHeight = Math.Max(300, bottom - top);
+            _widgets.ShowBelowMenuBar(m);
+        }
+
+        /// <summary>Monitor de la ventana con foco (para los atajos de teclado).</summary>
+        public static MonitorInfo? ActiveMonitor()
+        {
+            var fg = Win32.GetForegroundWindow();
+            return fg != IntPtr.Zero ? Monitors.FromWindow(fg) : null;
         }
 
         public static void OpenSettings()
@@ -500,6 +532,8 @@ namespace McBar
             foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }
             foreach (var isl in Islands) { try { isl.Teardown(); } catch { } }
             try { ActivityHub.Stop(); } catch { }
+            try { NotificationCenter.Stop(); } catch { }
+            try { KeyboardHook.Stop(); } catch { }
             try { TrayHost.Current?.Dispose(); } catch { }
             try { Hook?.Dispose(); } catch { }
             try { Fullscreen?.Dispose(); } catch { }

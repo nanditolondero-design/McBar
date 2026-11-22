@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.3)
+## Qué incluye (versión 0.4)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -19,7 +19,7 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - **Estilos**: Clásico, Flotante (separado del borde, con sombra) o Ancho completo.
 - Fondo con **desenfoque real**; el fondo puede quedar quieto (por defecto) o estirarse como en macOS.
 - Lado derecho configurable: sacá o agregá Papelera, Descargas, carpetas y archivos (arrastrándolos o con clic derecho → Agregar al Dock).
-- Arrastrar un ícono hacia arriba muestra "Quitar del Dock" y al soltarlo desaparece con una nubecita.
+- Arrastrar un ícono hacia arriba muestra "Quitar del Dock" y al soltarlo desaparece con una nubecita. Si es una app abierta sin fijar, muestra "Cerrar app" y al soltarla se cierra.
 - Las ventanas se achican **hacia su ícono del Dock** al minimizar y vuelven desde ahí.
 - **Varios monitores**: barra de menú y Dock en cada uno (se puede limitar al principal).
 
@@ -38,9 +38,11 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 
 **Centro de control**: Wi-Fi, Bluetooth, modo avión, modo oscuro (cambia Windows de verdad), concentración, brillo (notebooks) y sonido.
 
+**Notificaciones propias** (0.4): McBar junta las notificaciones de Windows en su propio centro, agrupadas por app. Con la isla se abre como cajón desde la píldora; con la barra, tocando el reloj (arriba de los widgets). Win+N y Win+A abren las de McBar en vez de los paneles de Windows. Opcional: ocultar el cartelito de Windows.
+
 **Widgets** (tocando el reloj): calendario, clima (Open-Meteo, sin clave), batería, procesador y memoria, notas.
 
-**Launchpad** (como el de macOS): todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda, fondo desenfocado y animación. Clic derecho → Agregar al Dock.
+**Launchpad** (como el de macOS): todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda, fondo desenfocado (transparencia regulable) y animación. **Carpetas**: arrastrá una app sobre otra. Clic derecho → Agregar al Dock, carpetas.
 
 **Preferencias**: tamaño y ampliación del Dock, ocultación automática, tema claro/oscuro/automático, ocultar o no la barra de Windows, iniciar con Windows, ciudad del clima y qué widgets mostrar.
 

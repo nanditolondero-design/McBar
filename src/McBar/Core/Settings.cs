@@ -14,6 +14,14 @@ namespace McBar.Core
         public string Target { get; set; } = "";
     }
 
+    public sealed class LaunchpadFolder
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Name { get; set; } = "Carpeta";
+        /// <summary>Apps de la carpeta (el mismo "Target" del catálogo: shell:AppsFolder\...).</summary>
+        public List<string> Targets { get; set; } = new List<string>();
+    }
+
     public sealed class AppSettings
     {
         // Dock
@@ -67,6 +75,19 @@ namespace McBar.Core
         public bool IslandVolume { get; set; } = true;
         public bool IslandBattery { get; set; } = true;
         public bool IslandNotifications { get; set; } = true;
+
+        // Centro de notificaciones propio
+        public bool OwnNotifications { get; set; } = true;
+        /// <summary>Esconder el cartelito de notificación de Windows (McBar lo muestra a su manera). Experimental.</summary>
+        public bool HideWindowsToasts { get; set; } = true;
+        /// <summary>Win+N abre el centro de notificaciones de McBar y Win+A su Centro de control.</summary>
+        public bool OwnShortcuts { get; set; } = true;
+
+        // Launchpad
+        /// <summary>0 = fondo bien oscuro, 100 = fondo totalmente transparente.</summary>
+        public int LaunchpadTransparency { get; set; } = 50;
+        public bool LaunchpadBlur { get; set; } = true;
+        public List<LaunchpadFolder> LaunchpadFolders { get; set; } = new List<LaunchpadFolder>();
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -172,6 +193,9 @@ namespace McBar.Core
             s.TrayHiddenIds ??= new List<string>();
             if (s.DockStyle != "floating" && s.DockStyle != "full") s.DockStyle = "classic";
             if (s.TopBarMode != "island") s.TopBarMode = "menubar";
+            s.LaunchpadTransparency = Math.Clamp(s.LaunchpadTransparency, 0, 100);
+            s.LaunchpadFolders ??= new List<LaunchpadFolder>();
+            s.LaunchpadFolders.RemoveAll(f => f == null || f.Targets == null || f.Targets.Count == 0);
             if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
             if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";
             s.WeatherCity ??= "";

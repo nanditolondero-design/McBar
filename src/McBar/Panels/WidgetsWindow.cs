@@ -38,6 +38,8 @@ namespace McBar.Panels
             head.Children.Add(Text(date.ToString("d 'de' MMMM", Es), 24, true));
             stack.Children.Add(head);
 
+            // Centro de notificaciones propio (reemplaza el panel lateral de Windows)
+            if (s.OwnNotifications) stack.Children.Add(Tile(new NotificationListView()));
             if (s.WidgetCalendar) stack.Children.Add(Tile(BuildCalendarHost()));
             if (s.WidgetWeather) stack.Children.Add(Tile(BuildWeather()));
             var battery = SystemInfo.Battery();

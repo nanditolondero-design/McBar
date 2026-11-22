@@ -59,7 +59,7 @@ namespace McBar.Core
             {
                 _mgr = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
                 _mgr.CurrentSessionChanged += (_, _) => _ui.BeginInvoke(new Action(Attach));
-                _ui.BeginInvoke(new Action(Attach));
+                _ = _ui.BeginInvoke(new Action(Attach)); // descartado a propósito (evita el aviso CS4014)
             }
             catch (Exception ex) { Log.Write("Multimedia: " + ex.Message); }
         }

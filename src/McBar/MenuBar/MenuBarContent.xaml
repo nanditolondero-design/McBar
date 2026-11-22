@@ -73,7 +73,11 @@
                     </Grid>
                 </Button>
                 <Button x:Name="ClockButton" Style="{StaticResource McFlatButton}" Padding="10,0">
-                    <TextBlock x:Name="ClockText" FontSize="13"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ClockText" FontSize="13" VerticalAlignment="Center"/>
+                        <Ellipse x:Name="ClockBadge" Width="7" Height="7" Margin="6,0,0,0" VerticalAlignment="Center"
+                                 Fill="{DynamicResource Mc.Accent}" Visibility="Collapsed"/>
+                    </StackPanel>
                 </Button>
             </StackPanel>
     </Grid>

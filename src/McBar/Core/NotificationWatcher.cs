@@ -120,36 +120,55 @@ namespace McBar.Core
             _lastToast = DateTime.Now;
             Task.Run(async () =>
             {
-                await Task.Delay(450); // dejar que se dibuje el contenido
-                try
+                // Leer lo antes posible (cada 100 ms, hasta ~1 s) para poder esconder el cartelito de Windows enseguida.
+                var texts = new List<string>();
+                for (int attempt = 0; attempt < 9 && texts.Count == 0; attempt++)
                 {
-                    var el = AutomationElement.FromHandle(hwnd);
-                    var texts = el.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text))
-                        .Cast<AutomationElement>()
-                        .Select(e => e.Current.Name?.Trim() ?? "")
-                        .Where(t => t.Length > 0)
-                        .Distinct()
-                        .Take(4)
-                        .ToList();
-                    if (texts.Count == 0)
-                    {
-                        var name = el.Current.Name?.Trim();
-                        if (!string.IsNullOrEmpty(name)) texts.Add(name);
-                    }
-                    if (texts.Count == 0) return;
-                    var all = string.Join("|", texts);
-                    if (all == _lastText) return;
-                    _lastText = all;
-                    var ni = new NotificationInfo
-                    {
-                        App = texts.Count > 2 ? texts[0] : "",
-                        Title = texts.Count > 2 ? texts[1] : texts[0],
-                        Body = string.Join(" ", texts.Skip(texts.Count > 2 ? 2 : 1))
-                    };
-                    _ = _ui.BeginInvoke(new Action(() => Notified?.Invoke(ni)));
+                    await Task.Delay(attempt == 0 ? 120 : 100);
+                    try { texts = ReadTexts(AutomationElement.FromHandle(hwnd)); } catch { }
                 }
-                catch (Exception ex) { Log.Write("Notificaciones (pantalla): " + ex.Message); }
+                if (texts.Count == 0) return;
+                if (SettingsStore.Current.HideWindowsToasts) HideToast(hwnd);
+                var all = string.Join("|", texts);
+                if (all == _lastText) return;
+                _lastText = all;
+                var ni = new NotificationInfo
+                {
+                    App = texts.Count > 2 ? texts[0] : "",
+                    Title = texts.Count > 2 ? texts[1] : texts[0],
+                    Body = string.Join(" ", texts.Skip(texts.Count > 2 ? 2 : 1))
+                };
+                _ = _ui.BeginInvoke(new Action(() => Notified?.Invoke(ni)));
             });
+        }
+
+        private static List<string> ReadTexts(AutomationElement el)
+        {
+            var texts = el.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text))
+                .Cast<AutomationElement>()
+                .Select(e => e.Current.Name?.Trim() ?? "")
+                .Where(t => t.Length > 0)
+                .Distinct()
+                .Take(4)
+                .ToList();
+            if (texts.Count == 0)
+            {
+                var name = el.Current.Name?.Trim();
+                if (!string.IsNullOrEmpty(name)) texts.Add(name);
+            }
+            return texts;
+        }
+
+        /// <summary>Esconde el cartelito de Windows (McBar ya lo muestra a su manera). Experimental.</summary>
+        private static void HideToast(IntPtr hwnd)
+        {
+            try
+            {
+                Native.Win32.SetWindowPos(hwnd, IntPtr.Zero, -32000, -32000, 0, 0,
+                    Native.Win32.SWP_NOSIZE | Native.Win32.SWP_NOZORDER | Native.Win32.SWP_NOACTIVATE);
+                Native.Win32.ShowWindow(hwnd, Native.Win32.SW_HIDE);
+            }
+            catch { }
         }
 
         private static string ProcessName(IntPtr hwnd)

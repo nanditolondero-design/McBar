@@ -1,5 +1,24 @@
 # Cambios
 
+## 0.4.0 — 22/11/2026
+Pedidos de Andrés: fondo del Launchpad más transparente, carpetas, y dejar de usar el panel lateral de notificaciones de Windows. Más los errores vistos en su video del 22/11 (15:06).
+
+**Nuevo**
+- **Centro de notificaciones propio**: las notificaciones de Windows se guardan en McBar (hasta 60, agrupadas por app, con "hace 5 min"). Con la isla se abre como cajón desde la píldora (clic en la hora, o en la píldora si hay sin leer: aparece un globito con la cantidad). Con la barra de menú, el reloj muestra un puntito azul y abre el panel de la derecha con las notificaciones arriba de los widgets.
+- **Win+N y Win+A** abren el centro de notificaciones y el Centro de control de McBar en vez de los paneles de Windows (Preferencias → Notificaciones; se puede apagar).
+- **Ocultar los avisos de Windows** (experimental): el cartelito de Windows se esconde apenas McBar lo leyó.
+- **Launchpad**: transparencia del fondo regulable (0–100) y desenfoque que se puede apagar (Preferencias → Launchpad).
+- **Carpetas en el Launchpad**: arrastrar una app sobre otra crea una carpeta; sobre una carpeta, la agrega. Clic abre la carpeta con el nombre editable; arrastrar una app fuera del recuadro la saca. Clic derecho: Agregar a carpeta, Nueva carpeta, Sacar de la carpeta, Renombrar, Deshacer carpeta. La búsqueda encuentra también las apps de adentro de las carpetas. Se guardan en settings.json.
+- **Arrastrar para cerrar**: una app abierta que no está fijada en el Dock se puede arrastrar hacia arriba; aparece "Cerrar app" y al soltarla se cierra con la nubecita (se les pide cerrar a sus ventanas, como "Salir"). Si la app pregunta algo (por ejemplo, guardar cambios) y no se cierra, su ícono vuelve a aparecer.
+- **Cada ícono de la isla abre lo suyo**: Wi-Fi, sonido y batería despliegan su propio cajón (antes los tres abrían el Centro de control).
+
+**Arreglos (video del 22/11)**
+- **Dock: íconos agrandados cortados** arriba y a los costados. La forma de la ventana se recalculaba cuadro a cuadro y Windows la aplicaba antes de dibujar el contenido nuevo. Ahora, mientras el mouse está encima, la zona es amplia y fija; vuelve a ser solo la barra cuando todo queda quieto. Además hay más lugar arriba para la etiqueta con el nombre.
+- **Cajón de la isla cortado y con esquinas cuadradas**: la ventana de la isla medía 300 de alto y el Centro de control no entraba. Ahora mide lo necesario y el cajón se vuelve a medir cuando termina de armarse.
+- **Panel de widgets con un hueco vacío abajo**: ahora mide lo que su contenido.
+- **Launchpad**: el buscador quedaba debajo de la isla; ahora está más abajo.
+- Avisos de compilación en MediaWatcher.cs (llamada sin await) resueltos.
+
 ## 0.3.3 — 22/11/2026
 - **Animaciones lentas**: el Dock y la isla ahora son ventanas comunes, aceleradas por la tarjeta de video, con fondo transparente (vidrio de DWM) y forma recortada. Antes eran ventanas "en capas", que Windows copia enteras en cada cuadro de animación. Fuera de la forma (barra, íconos, píldora) los clics pasan a las ventanas de atrás. Si en alguna PC se ven con fondo negro: Preferencias → "Animaciones rápidas" apagado vuelve al modo anterior.
 - **Ventanas "locas" con la ocultación automática**: McBar y el Explorador se peleaban por el área de trabajo y cada corrección reacomodaba todas las ventanas maximizadas. Ahora se espera 1,5 s antes de revisar, se revisa cada ~10 s y, si el Explorador la cambia 3 veces en 30 s, McBar deja de corregirla por 3 minutos (queda anotado en el registro).

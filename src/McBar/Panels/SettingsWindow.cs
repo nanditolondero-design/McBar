@@ -100,6 +100,24 @@ namespace McBar.Panels
             isl.Children.Add(mode);
             root.Children.Add(Group(isl));
 
+            // ---------- Notificaciones (0.4.0) ----------
+            root.Children.Add(Header("Notificaciones"));
+            var nt = new StackPanel();
+            nt.Children.Add(Switch("Centro de notificaciones propio (en la píldora y en la barra)", s.OwnNotifications, v => s.OwnNotifications = v));
+            nt.Children.Add(Switch("Usar Win+N y Win+A de McBar (en lugar de los paneles de Windows)", s.OwnShortcuts, v => s.OwnShortcuts = v));
+            nt.Children.Add(Switch("Ocultar los avisos de Windows (experimental)", s.HideWindowsToasts, v => s.HideWindowsToasts = v));
+            root.Children.Add(Group(nt));
+
+            // ---------- Launchpad (0.4.0) ----------
+            root.Children.Add(Header("Launchpad"));
+            var lp = new StackPanel();
+            lp.Children.Add(SliderSetting("Transparencia del fondo", 0, 100, s.LaunchpadTransparency, v => s.LaunchpadTransparency = (int)v));
+            lp.Children.Add(Switch("Desenfoque del fondo", s.LaunchpadBlur, v => s.LaunchpadBlur = v));
+            var tip = new TextBlock { Text = "Carpetas: arrastrá una app sobre otra. Clic derecho para más opciones.", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
+            tip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            lp.Children.Add(tip);
+            root.Children.Add(Group(lp));
+
             // ---------- Bandeja ----------
             root.Children.Add(Header("Bandeja del sistema"));
             var tray = new StackPanel();

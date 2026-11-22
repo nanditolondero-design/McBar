@@ -27,7 +27,7 @@ namespace McBar.Dock
     {
         private const double Pad = 7;            // espacio vertical entre íconos y borde de la barra
         private const double BarPadX = 9;        // espacio a los costados de la barra
-        private const double LabelSpace = 46;    // lugar arriba para la etiqueta con el nombre
+        private const double LabelSpace = 58;    // lugar arriba para la etiqueta con el nombre
         private const double SeparatorWidth = 14;
         private const double PullOutDistance = 50; // cuánto hay que arrastrar hacia arriba para quitar
         private const string TrashParsingName = "::{645FF040-5081-101B-9F08-00AA002F954E}";
@@ -455,7 +455,14 @@ namespace McBar.Dock
         }
 
         private bool IsPulledOut(DockItem it) =>
-            _dragging && it == _pressItem && it.Removable && _pressPoint.Y - _dragPos.Y > PullOutDistance;
+            _dragging && it == _pressItem && (it.Removable || ClosesOnDrag(it)) && _pressPoint.Y - _dragPos.Y > PullOutDistance;
+
+        /// <summary>
+        /// 0.4.0 (pedido de Andrés): una app abierta que NO está fijada se puede arrastrar fuera del Dock
+        /// y al soltarla se cierra (se les pide cerrar a sus ventanas, como "Salir").
+        /// </summary>
+        private static bool ClosesOnDrag(DockItem it) =>
+            it.Kind == DockItemKind.App && !it.IsPinned && !it.IsStack && it.IsRunning;
 
         /// <summary>Un cuadro de animación. Devuelve true si algo se sigue moviendo.</summary>
         private bool Step(double dt, double now)
@@ -586,7 +593,7 @@ namespace McBar.Dock
             // etiqueta: nombre al pasar el mouse, o "Quitar del Dock" al arrastrar afuera
             DockItem? labelFor = null;
             string? labelText = null;
-            if (_pressItem != null && IsPulledOut(_pressItem)) { labelFor = _pressItem; labelText = "Quitar del Dock"; }
+            if (_pressItem != null && IsPulledOut(_pressItem)) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; }
             else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
             { labelFor = _hoverItem; labelText = _hoverItem.Name; }
 
@@ -605,7 +612,8 @@ namespace McBar.Dock
             }
             else Label.Visibility = Visibility.Collapsed;
 
-            UpdateShape(barLeft, barW, hy, zl, zr, zt);
+            bool active = mouse != null || moving || labelFor != null || _dragging || _menuOpen;
+            UpdateShape(barLeft, barW, hy, zl, zr, zt, active);
 
             return moving;
         }
@@ -613,15 +621,32 @@ namespace McBar.Dock
         /// <summary>
         /// Forma de la ventana rápida: la barra (redondeada) + la zona de los íconos agrandados/etiqueta +
         /// la franja de abajo si se oculta sola. Fuera de esa forma los clics pasan a las ventanas de atrás.
+        ///
+        /// 0.4.0: mientras el mouse está encima (o algo se mueve) la zona extra es AMPLIA y FIJA: todo el
+        /// ancho que pueden ocupar los íconos agrandados y toda la altura hasta la etiqueta. Antes se
+        /// recalculaba cuadro a cuadro al tamaño justo y, como Windows aplica la forma un cuadro antes de que
+        /// se dibuje el contenido nuevo, los íconos agrandados aparecían cortados arriba y a los costados.
+        /// Recién cuando todo queda quieto y el mouse se fue, la forma vuelve a ser solo la barra.
         /// </summary>
-        private void UpdateShape(double barLeft, double barW, double hy, double zl, double zr, double zt)
+        private void UpdateShape(double barLeft, double barW, double hy, double zl, double zr, double zt, bool active)
         {
             if (!_fast || _hwnd == IntPtr.Zero || _puffActive > 0) return;
             double sc = App.Scale;
             int R(double v) => (int)Math.Round(v * sc);
             double barTop = BarTop + hy;
             var extra = new List<(int x, int y, int w, int h)>();
-            if (zr > zl && zt < barTop - 0.5)
+            if (active)
+            {
+                // margen generoso: lo que más puede crecer la fila hacia cada lado + la etiqueta
+                double grow = (MaxSize - BaseSize) * 3 + 60;
+                // (no depende de dónde están los íconos en este cuadro, así no cambia mientras se mueven)
+                double l = Math.Max(0, barLeft - grow);
+                double r = Math.Min(ActualWidth, barLeft + barW + grow);
+                double t = Math.Max(0, barTop - (MaxSize - BaseSize) - BaseSize * 0.6 - LabelSpace);
+                if (zr > zl) { l = Math.Max(0, Math.Min(l, zl - 4)); r = Math.Min(ActualWidth, Math.Max(r, zr + 4)); t = Math.Max(0, Math.Min(t, zt + hy - 4)); }
+                extra.Add((R(l), R(t), R(r - l), R(barTop - t) + 6));
+            }
+            else if (zr > zl && zt < barTop - 0.5)
                 extra.Add((R(zl), R(zt + hy) - 2, R(zr - zl) + 1, R(barTop - zt) + 6));
             if (S.DockAutoHide)
                 extra.Add((0, R(ActualHeight) - R(3) - 1, R(ActualWidth), R(3) + 2));
@@ -684,7 +709,8 @@ namespace McBar.Dock
 
             if (wasDragging)
             {
-                if (pulledOut) RemoveFromDock(item, poof: true);
+                if (pulledOut && ClosesOnDrag(item)) CloseByDrag(item);
+                else if (pulledOut) RemoveFromDock(item, poof: true);
                 else SavePins();
             }
             else if (HitItem(e.GetPosition(Stage)) == item)
@@ -696,7 +722,30 @@ namespace McBar.Dock
         }
 
         private static bool CanDrag(DockItem item) =>
-            item.Kind != DockItemKind.Separator && (item.IsStack || (item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad)));
+            item.Kind != DockItemKind.Separator && (item.IsStack || ClosesOnDrag(item) || (item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad)));
+
+        /// <summary>Cierra la app soltada fuera del Dock: nubecita y se les pide cerrar a todas sus ventanas.</summary>
+        private void CloseByDrag(DockItem item)
+        {
+            double up = Math.Max(0, _pressPoint.Y - _dragPos.Y);
+            double size = Math.Max(item.LayoutSize, BaseSize);
+            Puff(item.LayoutLeft + item.LayoutSize / 2, IconBottom - up - item.LayoutSize / 2, size);
+            item.View.Visibility = Visibility.Hidden;
+            foreach (var w in item.Windows.ToArray())
+            {
+                try { WindowOps.Close(w.Hwnd); } catch { }
+            }
+            // Si la app no se cierra (por ejemplo pregunta "¿Guardar cambios?"), el ícono vuelve a aparecer.
+            var back = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+            back.Tick += (_, _) =>
+            {
+                back.Stop();
+                if (_items.Contains(item) && !item.Removing) item.View.Visibility = Visibility.Visible;
+                EnsureAnimating();
+            };
+            back.Start();
+            EnsureAnimating();
+        }
 
         private void ReorderWhileDragging(Point p)
         {

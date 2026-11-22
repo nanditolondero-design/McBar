@@ -81,6 +81,19 @@
 - `ControlCenterWindow`, `WidgetsWindow`, `LaunchpadWindow`, `SettingsWindow`, `McDialog`.
 - Se crean al abrir y se cierran del todo; luego `App.ScheduleTrim()` libera memoria.
 
+## Notificaciones propias (0.4.0)
+- `Core/NotificationWatcher`: fuente (plan A: lector oficial `UserNotificationListener`; plan B: lee el cartelito de Windows con UI Automation cuando `WindowTracker` avisa que apareció).
+- `Core/NotificationCenter`: lista en memoria (máx. 60), sin leer, agrupado por app (`Grouped`) y tiempo relativo (`Ago`), con pruebas. Avisa `Changed`/`Added`; `ActivityHub` usa `Added` para la isla.
+- `Panels/NotificationListView`: la lista (se usa en el cajón de la isla y arriba del panel de widgets).
+- `Native/KeyboardHook`: gancho de teclado de bajo nivel en su hilo; Win+N → `App.ToggleWidgets`, Win+A → `App.ToggleControlCenter`; manda la tecla vacía 0xE8 para que no se abra Inicio.
+
+## Cajones de la isla
+`IslandWindow.ToggleDrawer(DrawerKind)`: Centro de control, Notificaciones, Wi-Fi, Sonido, Batería. `BuildDrawer` arma el contenido; se mide dos veces (al pedirlo y ya cargado) para que no quede cortado.
+
+## Launchpad y carpetas (0.4.0)
+- `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
+- `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
+
 ## Íconos (`Core/IconLoader.cs`)
 - Hilo de fondo STA con su propio Dispatcher (bucle de mensajes), que necesitan los objetos COM del Shell. `IShellItemImageFactory` sirve para .exe, .lnk, carpetas, archivos y `shell:AppsFolder\<id>`.
 - Caché chico para el Dock (tope 120); el Launchpad usa su propio caché que se descarta al cerrar.

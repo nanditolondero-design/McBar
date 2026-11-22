@@ -46,6 +46,11 @@ namespace McBar.MenuBar
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
         private enum State { Compact, Expanded, Activity, Media, Drawer }
+        public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery }
+        private DrawerKind _drawerKind;
+        private readonly Border _badge = new Border { CornerRadius = new CornerRadius(9), MinWidth = 18, Height = 18, Padding = new Thickness(5, 0, 5, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
+        private readonly TextBlock _badgeText = new TextBlock { Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        private Action? _onNotifications;
 
         private readonly MonitorInfo _monitor;
         private readonly MenuBarContent _content;
@@ -108,7 +113,7 @@ namespace McBar.MenuBar
             ResizeMode = ResizeMode.NoResize;
             Title = "McBar Isla";
             Width = Math.Min(monitor.Bounds.Width / App.Scale, 1120);
-            Height = 300;
+            Height = 680; // alto de sobra para los cajones (fuera de la píldora los clics pasan igual)
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             FontSize = 13;
 
@@ -191,7 +196,9 @@ namespace McBar.MenuBar
             _compact.MouseLeftButtonUp += (_, e) =>
             {
                 _expandTimer.Stop();
-                if (ActivityHub.Media?.Current != null) GoMedia(); else GoExpanded();
+                if (ActivityHub.Media?.Current != null) GoMedia();
+                else if (NotificationCenter.UnreadCount > 0) ToggleDrawer(DrawerKind.Notifications);
+                else GoExpanded();
                 e.Handled = true;
             };
 
@@ -199,6 +206,8 @@ namespace McBar.MenuBar
             _onMedia = OnMediaChanged;
             ActivityHub.Raised += _onActivity;
             ActivityHub.MediaChanged += _onMedia;
+            _onNotifications = () => Dispatcher.BeginInvoke(new Action(UpdateCompact));
+            NotificationCenter.Changed += _onNotifications;
 
             SourceInitialized += (_, _) =>
             {
@@ -323,6 +332,7 @@ namespace McBar.MenuBar
             try { _backdrop.Close(); } catch { }
             ActivityHub.Raised -= _onActivity;
             ActivityHub.MediaChanged -= _onMedia;
+            if (_onNotifications != null) NotificationCenter.Changed -= _onNotifications;
             _expandTimer.Stop(); _collapseTimer.Stop(); _activityTimer.Stop(); _clockTimer.Stop(); _progressTimer.Stop();
             _eqStory?.Stop(this);
             _content.Teardown();
@@ -397,22 +407,117 @@ namespace McBar.MenuBar
 
         // ================== Cajón (Centro de control) ==================
 
-        /// <summary>Despliega (o pliega) el Centro de control como un cajón desde la isla.</summary>
-        public void ToggleDrawer()
+        /// <summary>Despliega (o pliega) un cajón desde la isla: Centro de control o notificaciones.</summary>
+        public void ToggleDrawer(DrawerKind kind)
         {
-            if (_state == State.Drawer) { GoExpanded(); return; }
+            if (_state == State.Drawer && _drawerKind == kind) { GoExpanded(); return; }
             _expandTimer.Stop();
             _collapseTimer.Stop();
+            _drawerKind = kind;
             UpdateMiniMedia();
-            _drawer.Child = new McBar.Panels.ControlCenterContent(() => GoCompact()) { Width = 330, HorizontalAlignment = HorizontalAlignment.Center };
+            _drawer.Child = BuildDrawer(kind);
             _drawer.Visibility = Visibility.Visible;
             _state = State.Drawer;
             ShowLayer(_expanded);
             _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), 380);
-            double h = _expanded.DesiredSize.Height + 22;
+            double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), (kind == DrawerKind.Notifications ? 410 : 380));
+            double h = Math.Min(Height - TopMargin - 8, _expanded.DesiredSize.Height + 22);
             AnimateSize(w, h);
             UpdateEqualizer();
+            // Algunas partes (deslizadores, música) se arman al cargarse: se vuelve a medir ya dibujado
+            // para que el cajón no quede cortado abajo (error visto en el video de la 0.3.3).
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_state != State.Drawer || _drawerKind != kind) return;
+                _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                double h2 = Math.Min(Height - TopMargin - 8, _expanded.DesiredSize.Height + 22);
+                if (Math.Abs(h2 - h) > 2) AnimateSize(w, h2);
+            }), DispatcherPriority.Loaded);
+        }
+
+        /// <summary>Contenido de cada cajón: cada ícono de la isla abre el suyo.</summary>
+        private FrameworkElement BuildDrawer(DrawerKind kind)
+        {
+            switch (kind)
+            {
+                case DrawerKind.ControlCenter:
+                    return new McBar.Panels.ControlCenterContent(() => GoCompact()) { Width = 330, HorizontalAlignment = HorizontalAlignment.Center };
+
+                case DrawerKind.Notifications:
+                {
+                    var sp = new StackPanel { Width = 380 };
+                    sp.Children.Add(new ScrollViewer
+                    {
+                        Content = new McBar.Panels.NotificationListView(20),
+                        MaxHeight = 380,
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+                    });
+                    var widgets = new Button { Content = "Ver widgets  ›", Margin = new Thickness(0, 6, 0, 2), HorizontalAlignment = HorizontalAlignment.Center };
+                    widgets.SetResourceReference(StyleProperty, "McButton");
+                    widgets.Click += (_, _) => { GoCompact(); App.OpenWidgetsPanel(_monitor); };
+                    sp.Children.Add(widgets);
+                    return sp;
+                }
+
+                case DrawerKind.Wifi:
+                {
+                    var (net, name) = SystemInfo.Network();
+                    var sp = DrawerStack("Wi-Fi");
+                    sp.Children.Add(McBar.Panels.PanelWindow.Text(net switch
+                    {
+                        NetKind.Wifi => $"Wi-Fi: conectado ({name})",
+                        NetKind.Ethernet => $"Ethernet: conectado ({name})",
+                        NetKind.Other => $"Conectado ({name})",
+                        _ => "Sin conexión"
+                    }, 12, dim: true));
+                    sp.Children.Add(DrawerButton("Mostrar redes disponibles", () => Launcher.Open("ms-availablenetworks:")));
+                    sp.Children.Add(DrawerButton("Configuración de red…", () => Launcher.Open("ms-settings:network")));
+                    return sp;
+                }
+
+                case DrawerKind.Sound:
+                {
+                    var sp = DrawerStack("Sonido");
+                    var vol = CoreAudio.GetVolume();
+                    if (vol != null)
+                    {
+                        var slider = McBar.Panels.PanelWindow.McSlider(0, 100, vol.Value * 100);
+                        slider.Width = 280;
+                        slider.ValueChanged += (_, e) => CoreAudio.SetVolume((float)(e.NewValue / 100.0));
+                        sp.Children.Add(slider);
+                    }
+                    sp.Children.Add(DrawerButton("Configuración de sonido…", () => Launcher.Open("ms-settings:sound")));
+                    return sp;
+                }
+
+                default: // Batería
+                {
+                    var b = SystemInfo.Battery();
+                    var sp = DrawerStack("Batería");
+                    sp.Children.Add(McBar.Panels.PanelWindow.Text($"Batería: {b.Percent} %", 12, dim: true));
+                    sp.Children.Add(McBar.Panels.PanelWindow.Text(b.Charging ? "Conectada a la corriente" : "Usando la batería", 12, dim: true));
+                    sp.Children.Add(DrawerButton("Configuración de batería…", () => Launcher.Open("ms-settings:batterysaver")));
+                    return sp;
+                }
+            }
+        }
+
+        private static StackPanel DrawerStack(string title)
+        {
+            var sp = new StackPanel { Width = 300, Margin = new Thickness(0, 4, 0, 6), HorizontalAlignment = HorizontalAlignment.Center };
+            var t = McBar.Panels.PanelWindow.Text(title, 13, bold: true);
+            t.Margin = new Thickness(2, 0, 0, 8);
+            sp.Children.Add(t);
+            return sp;
+        }
+
+        private Button DrawerButton(string text, Action action)
+        {
+            var bt = new Button { Content = text, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+            bt.SetResourceReference(StyleProperty, "McButton");
+            bt.Click += (_, _) => { GoCompact(); action(); };
+            return bt;
         }
 
         private void CloseDrawerContent()
@@ -591,6 +696,13 @@ namespace McBar.MenuBar
             _compactBattery.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x45, 0x3A));
             _compactBattery.VerticalAlignment = VerticalAlignment.Center;
             right.Children.Add(_compactBattery);
+            _badge.SetResourceReference(Border.BackgroundProperty, "Mc.Accent");
+            _badge.Child = _badgeText;
+            var rightRow = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            rightRow.Children.Add(right);
+            rightRow.Children.Add(_badge);
+            right = new Grid();
+            right.Children.Add(rightRow);
             Grid.SetColumn(right, 2);
             _compact.Children.Add(right);
         }
@@ -612,6 +724,9 @@ namespace McBar.MenuBar
             bool low = b.HasBattery && !b.Charging && b.Percent <= 20;
             bool media = ActivityHub.Media?.Current != null;
             _compactBattery.Text = low && !media ? $"{b.Percent} %" : "";
+            int unread = NotificationCenter.UnreadCount;
+            _badge.Visibility = unread > 0 ? Visibility.Visible : Visibility.Collapsed;
+            _badgeText.Text = unread > 9 ? "9+" : unread.ToString();
         }
 
         private void UpdateEqualizer()

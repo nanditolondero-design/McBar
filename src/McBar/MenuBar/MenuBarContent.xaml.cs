@@ -33,7 +33,7 @@ namespace McBar.MenuBar
         private readonly WeatherIcon _weatherIcon = new WeatherIcon { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
 
         // manejadores guardados para poder desconectarlos al cerrar (si cambian los monitores)
-        private readonly Action _onSettings, _onTray;
+        private readonly Action _onSettings, _onTray, _onNotif;
         private readonly Action<IntPtr> _onForeground;
         private readonly Action<WeatherData> _onWeather;
         private readonly NetworkAddressChangedEventHandler _onNetwork;
@@ -64,9 +64,9 @@ namespace McBar.MenuBar
             HelpButton.Click += (_, _) => OpenMenu(HelpButton, BuildHelpMenu());
             TrayButton.Click += (_, _) => { if (TrayHost.Current != null) ShowTrayOverflow(); else Taskbar.ShowTemporarily(); };
             WeatherButton.Click += (_, _) => App.ToggleWidgets(_monitor);
-            WifiButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else OpenMenu(WifiButton, BuildNetworkMenu()); };
-            BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
-            VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleControlCenter(_monitor); else ShowVolumePopup(); };
+            WifiButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Wifi); else OpenMenu(WifiButton, BuildNetworkMenu()); };
+            BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Battery); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
+            VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Sound); else ShowVolumePopup(); };
             SearchButton.Click += (_, _) => App.ToggleLaunchpad(_monitor);
             ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
             ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
@@ -83,12 +83,22 @@ namespace McBar.MenuBar
             NetworkChange.NetworkAddressChanged += _onNetwork;
             Microsoft.Win32.SystemEvents.PowerModeChanged += _onPower;
             App.TrayChanged += _onTray;
+            _onNotif = () => Dispatcher.BeginInvoke(new Action(UpdateClockBadge));
+            NotificationCenter.Changed += _onNotif;
 
             UpdateClock();
             RefreshStatus();
             BuildTray();
             UpdateWeather(null);
             ScheduleClock();
+        }
+
+        /// <summary>Puntito en el reloj cuando hay notificaciones sin leer.</summary>
+        private void UpdateClockBadge()
+        {
+            int unread = NotificationCenter.UnreadCount;
+            ClockBadge.Visibility = unread > 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClockButton.ToolTip = unread > 0 ? $"{unread} notificación(es) sin leer" : "Notificaciones y widgets";
         }
 
         // ================== Diseño ==================
@@ -128,6 +138,7 @@ namespace McBar.MenuBar
             NetworkChange.NetworkAddressChanged -= _onNetwork;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= _onPower;
             App.TrayChanged -= _onTray;
+            NotificationCenter.Changed -= _onNotif;
         }
 
         // ================== Bandeja propia ==================
