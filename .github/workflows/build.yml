@@ -1,6 +1,7 @@
 # McBar — Creado por Andrés Londero
 # Al subir mc.zip a la rama main: lo descomprime, sube los archivos al repo, borra mc.zip,
 # corre las pruebas y compila McBar.exe (un solo archivo, no necesita instalar .NET).
+# 1.9.2: además arma McBar-Store.msix (edición Microsoft Store) para subir al Partner Center.
 name: Compilar McBar
 
 on:
@@ -60,3 +61,38 @@ jobs:
         with:
           name: McBar-win-x64
           path: publish/McBar.exe
+
+      # ---------- 1.9.2: edición Microsoft Store (MSIX) ----------
+      - name: Compilar la edición Store
+        run: >
+          dotnet publish src/McBar/McBar.csproj -c Release -r win-x64 --self-contained true
+          -p:McBarStore=true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishReadyToRun=true -o store-pkg --nologo
+
+      - name: Armar McBar-Store.msix
+        shell: pwsh
+        run: |
+          # versión del .csproj (1.9.2 → 1.9.2.0: la Store pide el último número en 0)
+          [xml]$proj = Get-Content src/McBar/McBar.csproj
+          $ver = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          $ver = "$ver.0"
+          Copy-Item packaging/store/Assets store-pkg/Assets -Recurse -Force
+          (Get-Content packaging/store/AppxManifest.xml -Raw).Replace('__VERSION__', $ver) | Set-Content store-pkg/AppxManifest.xml -Encoding utf8
+          Remove-Item store-pkg/*.pdb -ErrorAction SilentlyContinue
+          $kit = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" | Sort-Object FullName | Select-Object -Last 1
+          if (-not $kit) { Write-Error "No se encontró makeappx.exe"; exit 1 }
+          $bin = Split-Path $kit.FullName
+          # índice de recursos (para los íconos en distintos tamaños)
+          & "$bin\makepri.exe" createconfig /cf priconfig.xml /dq es-ES /o
+          & "$bin\makepri.exe" new /pr store-pkg /cf priconfig.xml /of store-pkg\resources.pri /o
+          if ($LASTEXITCODE -ne 0) { Write-Host "makepri falló: se arma el paquete sin índice de recursos"; Remove-Item store-pkg\resources.pri -ErrorAction SilentlyContinue }
+          & $kit.FullName pack /d store-pkg /p McBar-Store.msix /o
+          if ($LASTEXITCODE -ne 0) { Write-Error "makeappx falló"; exit 1 }
+          Write-Host "Listo: McBar-Store.msix versión $ver"
+
+      - name: Guardar McBar-Store.msix
+        uses: actions/upload-artifact@v4
+        with:
+          name: McBar-Store-msix
+          path: McBar-Store.msix
+
