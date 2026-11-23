@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.3
+- [ ] Win+Tab: el fondo es el fondo de pantalla difuminado y oscuro (no negro), con las miniaturas y los escritorios arriba.
+- [ ] Maximizar una ventana con una ventanita chica abierta encima (por ejemplo un chat sin maximizar): el Dock se esconde y la ventana llega hasta abajo. Probarlo varias veces seguidas.
+
 ### Versión 1.9.2 (edición Store)
 - [ ] En GitHub Actions aparecen dos archivos: McBar-win-x64 (el .exe de siempre) y McBar-Store-msix.
 - [ ] El .exe de siempre se comporta igual que antes (instalador, "Instalar McBar…" al probar).

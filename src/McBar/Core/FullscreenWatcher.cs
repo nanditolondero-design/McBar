@@ -48,24 +48,36 @@ namespace McBar.Core
         {
             var monitors = Monitors.All();
             var decided = new HashSet<string>();
+            var decidedMax = new HashSet<string>(); // 1.9.3: "maximizada" se decide aparte
             var now = new HashSet<string>();
             var max = new HashSet<string>();
             Win32.EnumWindows((h, _) =>
             {
-                if (decided.Count >= monitors.Count) return false; // ya están todos resueltos
+                if (decided.Count >= monitors.Count && decidedMax.Count >= monitors.Count) return false; // ya están todos resueltos
                 if (!IsCandidate(h)) return true;
                 var m = Monitors.FromWindow(h);
-                if (m == null || decided.Contains(m.Device)) return true;
+                if (m == null) return true;
                 if (!Win32.GetWindowRect(h, out var r)) return true;
                 var rect = new PxRect(r.left, r.top, r.right, r.bottom);
+                bool zoomed = Win32.IsZoomed(h);
+                bool large = IsLarge(rect, m.Bounds);
+                // 1.9.3: para "hay una ventana maximizada" deciden solo las ventanas GRANDES: antes una ventanita
+                // común por encima (un chat, un aviso, un diálogo) decidía y el Dock / la isla no se escondían.
+                if (!decidedMax.Contains(m.Device) && (zoomed || large))
+                {
+                    decidedMax.Add(m.Device);
+                    if (zoomed) max.Add(m.Device);
+                }
+                if (decided.Contains(m.Device)) return true;
                 // 0.4.3: una ventanita "siempre visible" (aviso, superposición de un programa, reproductor
                 // mini) que está por encima de un video NO decide: se sigue mirando la de abajo.
-                if ((Win32.GetExStyle(h) & Win32.WS_EX_TOPMOST) != 0 && !IsLarge(rect, m.Bounds)) return true;
+                if ((Win32.GetExStyle(h) & Win32.WS_EX_TOPMOST) != 0 && !large) return true;
                 decided.Add(m.Device);
-                bool zoomed = Win32.IsZoomed(h);
                 if (IsCovering(rect, m.Bounds) && IsFullscreenStyle(zoomed, Win32.GetStyle(h)))
+                {
                     now.Add(m.Device);
-                else if (zoomed) max.Add(m.Device); // 1.6.1
+                    max.Remove(m.Device); // pantalla completa manda
+                }
                 return true;
             }, IntPtr.Zero);
 

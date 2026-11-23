@@ -306,7 +306,15 @@ namespace McBar.Panels
             WindowOps.PlaceOnMonitor(this, m, 0, 0, m.Bounds.Width / sc, m.Bounds.Height / sc); // 1.5.0
             _thumbs = new ThumbHost(this);
 
-            var root = new Grid { Background = new SolidColorBrush(Color.FromArgb(0x8C, 0x08, 0x08, 0x0C)) };
+            // 1.9.3: fondo = el fondo de pantalla difuminado y oscurecido (como macOS). Antes era un desenfoque de
+            // Windows que en muchas PCs no andaba y quedaba todo negro.
+            var root = new Grid { Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x10, 0x10, 0x14)) };
+            var wall = WinUi.WallpaperBrush();
+            if (wall != null)
+            {
+                root.Children.Add(new Border { Background = wall, IsHitTestVisible = false });
+                root.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(0x70, 0x08, 0x08, 0x0C)), IsHitTestVisible = false });
+            }
             root.Children.Add(_canvas);
             Content = root;
             root.MouseLeftButtonUp += (_, _) => CloseAnimated();
@@ -402,7 +410,7 @@ namespace McBar.Panels
                 _cells.Add((cell, hwnd));
                 _thumbs.Add(box, hwnd);
             }
-            SourceInitialized += (_, _) => { WindowOps.MakeTool(this); WindowOps.MakeGlass(this); WindowOps.EnableBlur(this, Color.FromArgb(0x30, 0, 0, 0)); };
+            SourceInitialized += (_, _) => { WindowOps.MakeTool(this); WindowOps.MakeGlass(this); /* 1.9.3: sin EnableBlur (ver el fondo) */ };
             Loaded += (_, _) =>
             {
                 WindowOps.Activate(new WindowInteropHelper(this).Handle);

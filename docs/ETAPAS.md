@@ -214,3 +214,6 @@ Pedido: "cuando arranca Windows primero se ve la barra de Windows y después car
 ## 1.9.2 (23/11/2026) — Edición Microsoft Store
 Publicación gratis en la Store: paquete MSIX (Microsoft lo firma). `-p:McBarStore=true` define `STORE`; `Core/Edition` (`IsStore`, `StartupTaskId`, `StoreAlias`). Sin instalador propio en esa edición; `SystemInfo.SetStartWithWindows` usa `StartupTask`; `HangWatch` se reabre por el alias. `packaging/store/AppxManifest.xml` (identidad del Partner Center, `runFullTrust`, `unvirtualizedResources` con las claves de HKCU que usa McBar, tarea de inicio, alias) y `packaging/store/Assets`. El workflow arma `McBar-Store.msix` con makepri + makeappx.
 
+## 1.9.3 (23/11/2026)
+Revisión con capturas: Win+Tab se veía negro y el Dock a veces no se escondía con una ventana maximizada. `MissionControlWindow`: fondo = `WinUi.WallpaperBrush()` (320 px estirado, queda difuminado) + capa oscura, sin `EnableBlur`. `FullscreenWatcher.Check`: "maximizada" se decide con la primera ventana GRANDE (o maximizada) de cada monitor (`decidedMax`), aparte de la pantalla completa.
+

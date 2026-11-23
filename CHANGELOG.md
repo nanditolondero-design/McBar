@@ -1,5 +1,10 @@
 # Cambios
 
+## 1.9.3 — 23/11/2026
+- **Vista de todas las ventanas (Win+Tab) sin fondo negro**: ahora el fondo es el fondo de pantalla difuminado y oscurecido. El desenfoque de Windows que usaba antes en muchas PCs no funcionaba y quedaba todo negro.
+- **El Dock (y la isla) se esconden de verdad con una ventana maximizada**: para decidir si hay una ventana maximizada ahora solo cuentan las ventanas grandes; antes una ventanita común por encima (un chat, un aviso, un diálogo) hacía que el Dock quedara fijo y la ventana maximizada dejara el lugar libre abajo.
+- Herramienta `tools/store/gen_arte.py`: logo en alta resolución e imágenes de la ficha de la Store.
+
 ## 1.9.2 — 23/11/2026
 - **Edición Microsoft Store**: el mismo código se compila también como paquete MSIX (`McBar-Store.msix`, lo arma el workflow) para publicar gratis en la Store (Microsoft firma el paquete). Igual a la de siempre salvo: no tiene instalador propio ni "Instalar McBar…" (instala y actualiza la Store); "Abrir McBar al iniciar Windows" usa la tarea de inicio del paquete; los ajustes quedan en la carpeta del paquete. Ver `packaging/store` y `docs/DESARROLLO.md`.
 - La guía de desarrollo pasó a `docs/DESARROLLO.md`.
