@@ -73,7 +73,7 @@ namespace McBar.Core
             if (ev == Win32.EVENT_SYSTEM_FOREGROUND || ev == Win32.EVENT_SYSTEM_MINIMIZEEND)
             {
                 NoteForeground(hwnd);
-                if (!_cache.ContainsKey(hwnd)) _debounce.Start();
+                if (!_cache.TryGetValue(hwnd, out var fg) || IsUnidentifiedUwp(fg)) _debounce.Start(); // 1.6.1
                 return;
             }
 
@@ -81,7 +81,8 @@ namespace McBar.Core
             // (algunas apps se muestran sin título y se lo ponen después).
             if (ev == Win32.EVENT_OBJECT_NAMECHANGE)
             {
-                if (_cache.ContainsKey(hwnd) || !Win32.IsWindowVisible(hwnd)) return;
+                // 1.6.1: salvo que sea un marco de la Tienda sin reconocer (se vuelve a probar)
+                if ((_cache.TryGetValue(hwnd, out var known) && !IsUnidentifiedUwp(known)) || !Win32.IsWindowVisible(hwnd)) return;
             }
 
             // Solo nos interesan ventanas de primer nivel
@@ -115,8 +116,13 @@ namespace McBar.Core
             ForegroundChanged?.Invoke(hwnd);
         }
 
+        /// <summary>Marco de una app de la Tienda que todavía no se sabe de qué app es.</summary>
+        public static bool IsUnidentifiedUwp(TrackedWindow w) =>
+            w.PrimaryKey.StartsWith("hwnd:", StringComparison.Ordinal) && w.ExePath.EndsWith("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase);
+
         public void Refresh()
         {
+            bool identified = false;
             var list = new List<TrackedWindow>();
             var seen = new HashSet<IntPtr>();
             Win32.EnumWindows((h, _) =>
@@ -129,6 +135,14 @@ namespace McBar.Core
                         tw = Describe(h);
                         if (tw != null) _cache[h] = tw;
                     }
+                    else if (IsUnidentifiedUwp(tw))
+                    {
+                        // 1.6.1: apps de la Tienda (como Configuración) que al principio no se pudieron reconocer:
+                        // se vuelve a probar. Antes quedaban como una app desconocida sin ícono y el ícono fijo
+                        // "desaparecía" (quedaba un lugar vacío en el Dock).
+                        var again = Describe(h);
+                        if (again != null && !IsUnidentifiedUwp(again)) { again.LastActivated = tw.LastActivated; _cache[h] = tw = again; identified = true; }
+                    }
                     if (tw != null) list.Add(tw);
                 }
                 return true;
@@ -140,7 +154,7 @@ namespace McBar.Core
             foreach (var k in dead) _cache.Remove(k);
             if (_exeByPid.Count > 400) _exeByPid.Clear();
 
-            if (!SameWindows(list, Windows))
+            if (identified || !SameWindows(list, Windows))
             {
                 Windows = list;
                 WindowsChanged?.Invoke();
@@ -185,7 +199,9 @@ namespace McBar.Core
             // Apps de la Store: la ventana real es de ApplicationFrameHost; la app está en una ventana hija.
             if (exe.EndsWith("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase))
             {
-                var aumid = UwpAumid(h, pid);
+                // 1.6.1: si la app todavía no "entró" en su marco (recién abierta o minimizada), se usa el
+                // identificador que Windows le pone al marco (el mismo que usa la barra de tareas).
+                var aumid = UwpAumid(h, pid) ?? ShellCom.GetWindowAppId(h);
                 if (!string.IsNullOrEmpty(aumid))
                 {
                     primary = AppIdentity.AumidKey(aumid);

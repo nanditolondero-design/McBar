@@ -115,6 +115,10 @@ namespace McBar.MenuBar
         private ActivityKind? _activityKind;
         private IntPtr _hwnd;
         private bool _fullscreen, _wantVisible;
+        // 1.6.1: en pantalla completa queda una manijita; al pasar el mouse la píldora "se asoma"
+        private PeekHandle? _handle;
+        private bool _peek;
+        private readonly DispatcherTimer _peekHide = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
 
         public MonitorInfo Monitor => _monitor;
         public int ReservePx => _wantVisible && SettingsStore.Current.IslandReserveSpace
@@ -204,13 +208,16 @@ namespace McBar.MenuBar
             _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _progressTimer.Tick += (_, _) => UpdateProgress();
 
+            _peekHide.Tick += (_, _) => PeekOut();
             _pill.MouseEnter += (_, _) =>
             {
+                _peekHide.Stop();
                 _collapseTimer.Stop();
                 if (_state == State.Compact) _expandTimer.Start();
             };
             _pill.MouseLeave += (_, _) =>
             {
+                if (_fullscreen && _peek) _peekHide.Start(); // 1.6.1: se vuelve a esconder
                 _expandTimer.Stop();
                 if (_state == State.Expanded || _state == State.Media || _state == State.Drawer) _collapseTimer.Start();
             };
@@ -350,7 +357,7 @@ namespace McBar.MenuBar
                 if (!_fullscreen) Show();
                 ApplyGeometry();
             }
-            else { Hide(); _backdrop.Hide(); }
+            else { Hide(); _backdrop.Hide(); _handle?.Hide(); }
         }
 
         public void ApplyGeometry()
@@ -369,13 +376,54 @@ namespace McBar.MenuBar
 
         public void SetFullscreen(bool fullscreen)
         {
+            if (_fullscreen == fullscreen && (fullscreen || IsVisible || !_wantVisible)) return;
             _fullscreen = fullscreen;
-            if (!_wantVisible) return;
-            if (fullscreen) { Hide(); _backdrop.Hide(); } else { Show(); ApplyGeometry(); }
+            _peek = false;
+            _peekHide.Stop();
+            if (!_wantVisible) { _handle?.Hide(); return; }
+            if (fullscreen) { Hide(); _backdrop.Hide(); ShowHandle(); }
+            else { _handle?.Hide(); Show(); ApplyGeometry(); }
+        }
+
+        private void ShowHandle()
+        {
+            if (_handle == null)
+            {
+                _handle = new PeekHandle(_monitor);
+                _handle.Peek += PeekIn;
+            }
+            _handle.ShowOnTop();
+        }
+
+        /// <summary>El mouse llegó a la manijita: la píldora vuelve mientras el mouse esté encima.</summary>
+        private void PeekIn()
+        {
+            if (!_fullscreen || _peek) return;
+            _peek = true;
+            _handle?.Hide();
+            Show();
+            ApplyGeometry();
+            _peekHide.Stop();
+            _peekHide.Start(); // si el mouse no entra a la píldora, se vuelve a esconder
+        }
+
+        private void PeekOut()
+        {
+            _peekHide.Stop();
+            if (!_fullscreen || !_peek) return;
+            if (_pill.IsMouseOver || PopupGuard.AnyOpen) { _peekHide.Start(); return; }
+            _peek = false;
+            if (_state != State.Compact) GoCompact();
+            Hide();
+            _backdrop.Hide();
+            ShowHandle();
         }
 
         public void Teardown()
         {
+            _peekHide.Stop();
+            try { _handle?.Close(); } catch { }
+            _handle = null;
             SettingsStore.Changed -= _onSettings;
             ThemeManager.ThemeChanged -= ApplyAppearance;
             try { _backdrop.Close(); } catch { }
@@ -779,6 +827,14 @@ namespace McBar.MenuBar
             right.Children.Add(_compactBattery);
             _badge.SetResourceReference(Border.BackgroundProperty, "Mc.Accent");
             _badge.Child = _badgeText;
+            // 1.6.1: tocar el globito de avisos muestra las notificaciones en un panel debajo, SIN agrandar la píldora
+            _badge.Cursor = Cursors.Hand;
+            _badge.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                _expandTimer.Stop();
+                App.OpenWidgetsPanel(_monitor, centered: true);
+            };
             var rightRow = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             rightRow.Children.Add(right);
             rightRow.Children.Add(_micDot);

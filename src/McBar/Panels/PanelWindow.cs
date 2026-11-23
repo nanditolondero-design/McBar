@@ -76,11 +76,12 @@ namespace McBar.Panels
         }
 
         /// <summary>Muestra el panel debajo de la barra de menú del monitor indicado, pegado a la derecha.</summary>
-        public void ShowBelowMenuBar(MonitorInfo monitor, double? height = null)
+        public void ShowBelowMenuBar(MonitorInfo monitor, double? height = null, bool centered = false)
         {
             double sc = monitor.Scale;
             double top = App.TopInsetDip(monitor) - monitor.Bounds.Top / sc;
-            WindowOps.PlaceOnMonitor(this, monitor, monitor.Bounds.Width / sc - Width - 8, top); // 1.5.0
+            double left = centered ? (monitor.Bounds.Width / sc - Width) / 2 : monitor.Bounds.Width / sc - Width - 8; // 1.6.1: centrado = debajo de la píldora
+            WindowOps.PlaceOnMonitor(this, monitor, left, top); // 1.5.0
             if (height != null) Height = height.Value; else SizeToContent = SizeToContent.Height;
             Show();
             Activate();
@@ -89,7 +90,7 @@ namespace McBar.Panels
             // 1.6.0: entrada con resorte (crece desde la esquina de arriba a la derecha con un rebote chiquito)
             BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
             if (_slideFromRight) PanelLook.SpringIn(Card, new Point(1, 0), fromY: 0, fromScale: 0.97, fromX: 50);
-            else PanelLook.SpringIn(Card, new Point(0.85, 0));
+            else PanelLook.SpringIn(Card, new Point(centered ? 0.5 : 0.85, 0));
         }
 
         public void CloseAnimated()

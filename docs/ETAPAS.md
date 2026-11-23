@@ -143,3 +143,7 @@ Sigue: 1.6.0 gráficos (animaciones tipo resorte, vidrio nativo de Windows 11, s
 
 ## 1.6.0 (23/11/2026) — gráficos
 Andrés aprobó la vista previa ("Me gusta la vista previa de la 1.6.0, hacela así"). `Panels/PanelLook` (curva `Spring`, `Highlight`, `SpringIn`) y `PanelShadow` (ventana aparte, que no recibe clics, recortada para que la sombra solo se vea afuera del panel, debajo de él en el orden de ventanas). Mc.GlassBg más transparente, radio 18 en paneles y 14 en tarjetas, menús con sombra en capa aparte y brillo, buscador con sombra separada, Launchpad con resorte.
+
+## 1.6.1 (23/11/2026) — pedidos de Andrés
+Ícono propio (`AppSettings.CustomIcons`, `DockWindow.ChooseIcon/ResetIcon/IconMenu`, `IconLoader.FromImageFile`), fijar arrastrando (`ReorderWhileDragging` deja mover apps abiertas sin fijar entre las fijas y `PinHere`), `LaunchpadLayout.LeavesGrid` (zonas más grandes), `KeepBarsOnTop` no sube el Dock con el Launchpad abierto, `MenuBar/PeekHandle` (manijita en pantalla completa, `IslandWindow.PeekIn/PeekOut`), globito → `App.OpenWidgetsPanel(monitor, centered: true)`, `GlassTransparency` (`ThemeManager.ScaleAlpha` sobre los fondos del tema Vidrio), sin `BackdropBlur` (Sanitize lo apaga). Pruebas en `Stage19Tests`.
+Interpretación: "en el Launchpad el Dock queda siempre a la vista" se tomó como problema (el Dock aparecía encima del Launchpad); si quería lo contrario (Dock visible como en macOS), se cambia en `KeepBarsOnTop`.

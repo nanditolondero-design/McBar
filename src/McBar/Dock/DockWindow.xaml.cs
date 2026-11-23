@@ -363,6 +363,13 @@ namespace McBar.Dock
         private void LoadIcon(DockItem it)
         {
             int px = _lastIconSize > 0 ? _lastIconSize : IconPixelSize();
+            // 1.6.1: ícono elegido por el usuario (clic derecho → Ícono → Cambiar ícono…)
+            var key = IconKey(it);
+            if (key != null && S.CustomIcons.TryGetValue(key, out var custom) && File.Exists(custom))
+            {
+                var own = IconLoader.FromImageFile(custom, px);
+                if (own != null) { it.View.SetIcon(own); return; }
+            }
             switch (it.Kind)
             {
                 case DockItemKind.Launchpad:
@@ -412,7 +419,9 @@ namespace McBar.Dock
         /// <summary>Reparte las ventanas abiertas entre los íconos fijados y agrega/quita apps abiertas sin fijar.</summary>
         private void SyncWindows()
         {
-            IEnumerable<TrackedWindow> all = App.Tracker.Windows;
+            // 1.6.1: los marcos de apps de la Tienda que todavía no se reconocieron no se muestran (eran un
+            // ícono vacío); aparecen en cuanto se sabe qué app son.
+            IEnumerable<TrackedWindow> all = App.Tracker.Windows.Where(w => !WindowTracker.IsUnidentifiedUwp(w));
             if (S.DockAppsPerMonitor && App.Docks.Count > 1)
                 all = all.Where(w => Monitors.FromWindow(w.Hwnd)?.Device == _monitor.Device);
             var windows = all.ToList();
@@ -862,6 +871,7 @@ namespace McBar.Dock
                 {
                     if (pulledOut && ClosesOnDrag(item)) CloseByDrag(item);
                     else if (pulledOut) RemoveFromDock(item, poof: true);
+                    else if (item.Kind == DockItemKind.App && !item.IsPinned && _items.IndexOf(item) < PinnedEnd) PinHere(item); // 1.6.1
                     else SavePins();
                 }
                 finally { _suppressPuff = false; }
@@ -909,6 +919,8 @@ namespace McBar.Dock
             int sep = SeparatorIndex;
             int lo, hi; // sección donde se puede mover: [lo, hi)
             if (item.IsStack) { lo = sep + 1; hi = _items.Count; }
+            // 1.6.1: una app abierta SIN fijar también se puede llevar entre las fijas (al soltarla, queda fijada)
+            else if (item.Kind == DockItemKind.App && !item.IsPinned) { lo = 0; hi = sep >= 0 ? sep : _items.Count; }
             else { lo = 0; hi = PinnedEnd; }
             if (from < lo || from >= hi) return;
 
@@ -1016,6 +1028,61 @@ namespace McBar.Dock
             _items.Insert(Math.Min(idx, _items.Count), item);
             SavePins();
             EnsureAnimating();
+        }
+
+        /// <summary>1.6.1: fija una app abierta en el lugar donde se la soltó (entre las apps fijas).</summary>
+        private void PinHere(DockItem item)
+        {
+            int at = _items.IndexOf(item);
+            Pin(item);
+            if (!item.IsPinned) return;
+            _items.Remove(item);
+            _items.Insert(Math.Clamp(at, 0, _items.Count), item);
+            SavePins();
+        }
+
+        // ================== Ícono propio (1.6.1) ==================
+
+        /// <summary>Clave del ícono propio: el destino fijado, el Launchpad o el .exe de una app abierta.</summary>
+        private static string? IconKey(DockItem it) =>
+            it.Kind == DockItemKind.Launchpad ? AppIdentity.Launchpad : it.Target ?? it.Windows.FirstOrDefault()?.ExePath;
+
+        private void ChooseIcon(DockItem item)
+        {
+            var key = IconKey(item);
+            if (key == null) return;
+            var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Elegir ícono para " + item.Name, Filter = "Imágenes|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp|Todos los archivos|*.*" };
+            if (dlg.ShowDialog() != true) return;
+            try
+            {
+                // se guarda una copia en %AppData%\McBar\iconos-propios (así sigue andando si se mueve el original)
+                var dir = Path.Combine(SettingsStore.Folder, "iconos-propios");
+                Directory.CreateDirectory(dir);
+                var dest = Path.Combine(dir, MacIcons.SafeFileName(item.Name) + "-" + Math.Abs(key.GetHashCode()).ToString("x") + Path.GetExtension(dlg.FileName));
+                File.Copy(dlg.FileName, dest, true);
+                S.CustomIcons[key] = dest;
+                SettingsStore.Save();
+                LoadIcon(item);
+                SettingsStore.NotifyPinsChanged(this);
+            }
+            catch (Exception ex) { Log.Write("Ícono propio: " + ex.Message); McDialog.Info("No se pudo usar esa imagen", ex.Message); }
+        }
+
+        private void ResetIcon(DockItem item)
+        {
+            var key = IconKey(item);
+            if (key == null || !S.CustomIcons.Remove(key)) return;
+            SettingsStore.Save();
+            LoadIcon(item);
+        }
+
+        private MenuItem IconMenu(DockItem item)
+        {
+            var key = IconKey(item);
+            var m = new MenuItem { Header = "Ícono" };
+            m.Items.Add(Mi("Cambiar ícono…", () => ChooseIcon(item), key != null));
+            m.Items.Add(Mi("Volver al ícono original", () => ResetIcon(item), key != null && S.CustomIcons.ContainsKey(key)));
+            return m;
         }
 
         /// <summary>Quita un elemento del Dock. Si es una app abierta, sigue visible como app abierta sin fijar.</summary>
@@ -1197,6 +1264,7 @@ namespace McBar.Dock
                     break;
                 case DockItemKind.Launchpad:
                     cm.Items.Add(Mi("Abrir", () => App.ToggleLaunchpad(_monitor)));
+                    cm.Items.Add(IconMenu(item)); // 1.6.1
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
@@ -1219,6 +1287,7 @@ namespace McBar.Dock
                     var path = item.Windows.FirstOrDefault()?.ExePath;
                     if (string.IsNullOrEmpty(path) && item.Target != null && File.Exists(item.Target)) path = item.Target;
                     if (!string.IsNullOrEmpty(path)) options.Items.Add(Mi("Mostrar en el Explorador", () => Launcher.ShowInExplorer(path!)));
+                    options.Items.Add(IconMenu(item)); // 1.6.1
                     cm.Items.Add(options);
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi(item.IsRunning ? "Nueva ventana" : "Abrir", () => LaunchNew(item)));

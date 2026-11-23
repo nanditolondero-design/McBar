@@ -26,6 +26,13 @@ namespace McBar.Core
 
     public static class LaunchpadLayout
     {
+        /// <summary>
+        /// 1.6.1: ¿la app arrastrada salió de la grilla? (abajo 160, arriba 100, costados 70). Entonces el
+        /// Launchpad se cierra para soltarla en el Dock o en el escritorio. Pura, se prueba.
+        /// </summary>
+        public static bool LeavesGrid(double x, double y, double width, double height) =>
+            y > height - 160 || y < 100 || x < 70 || x > width - 70;
+
         public const string DefaultName = "Carpeta";
 
         public static string FolderKey(LaunchpadFolder f) => "folder:" + f.Id;

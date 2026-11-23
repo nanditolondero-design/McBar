@@ -461,7 +461,9 @@ namespace McBar
         {
             const uint flags = Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE;
             if (PopupGuard.AnyOpen) return; // 1.3.1: con un menú abierto, no subir la isla por encima de él
-            foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
+            // 1.6.1: con el Launchpad abierto, el Dock no se sube encima de él (antes aparecía por arriba a los pocos segundos)
+            bool lp = _launchpad != null && _launchpad.IsVisible;
+            foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(lp ? Enumerable.Empty<Window>() : Docks))
             {
                 if (!w.IsVisible) continue;
                 var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
@@ -506,6 +508,12 @@ namespace McBar
                 _lastOwnTray = s.UseOwnTray;
             }
             if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
+            if (s.GlassTransparency != _lastGlass) // 1.6.1: rearmar el tema Vidrio con la transparencia nueva
+            {
+                bool first = _lastGlass < 0;
+                _lastGlass = s.GlassTransparency;
+                if (!first && s.Theme == "glass") ThemeManager.Apply();
+            }
             if (s.IconPackPath != _lastIconPack || s.IconShape != _lastIconShape)
             {
                 _lastIconPack = s.IconPackPath;
@@ -587,6 +595,7 @@ namespace McBar
         private static WeatherWindow? _weather;
         private static string? _lastIconPack;
         private static string? _lastIconShape;
+        private static int _lastGlass = -1;
 
         /// <summary>Widget del clima propio (barra de menú).</summary>
         public static void ToggleWeather(MonitorInfo? monitor = null)
@@ -607,7 +616,10 @@ namespace McBar
             else ToggleControlCenter(monitor);
         }
 
-        public static void OpenWidgetsPanel(MonitorInfo? monitor = null)
+        public static void OpenWidgetsPanel(MonitorInfo? monitor = null) => OpenWidgetsPanel(monitor, false);
+
+        /// <summary>1.6.1: <paramref name="centered"/> = debajo de la píldora (al tocar el globito de avisos).</summary>
+        public static void OpenWidgetsPanel(MonitorInfo? monitor, bool centered)
         {
             if (_widgets != null && _widgets.IsVisible && !_widgets.IsClosing) { _widgets.CloseAnimated(); return; }
             if (_widgets != null && RecentlyClosed(_widgets.ClosedAt)) return;
@@ -618,7 +630,7 @@ namespace McBar
             double bottom = m.Work.Bottom / m.Scale - 8;
             // 0.4.0: el panel mide lo que su contenido (antes ocupaba todo el alto y quedaba un hueco vacío)
             _widgets.MaxHeight = Math.Max(300, bottom - top);
-            _widgets.ShowBelowMenuBar(m);
+            _widgets.ShowBelowMenuBar(m, centered: centered);
         }
 
         /// <summary>Monitor de la ventana con foco (para los atajos de teclado).</summary>

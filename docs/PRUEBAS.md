@@ -240,6 +240,17 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.6.1
+- [ ] Clic derecho en el Launchpad del Dock → Ícono → Cambiar ícono… → elegir un .png: cambia al toque y queda al reiniciar. "Volver al ícono original" lo deshace. Lo mismo con una app (Opciones → Ícono).
+- [ ] Abrir una app que no está fijada; arrastrar su ícono hasta el medio de las fijas y soltar: queda fijada en ese lugar (sigue después de cerrarla).
+- [ ] Launchpad: arrastrar una app hacia abajo (o arriba, o a un costado): el Launchpad se cierra; soltar en el Dock → se fija; soltar en el escritorio → acceso directo.
+- [ ] Con el Launchpad abierto 10 segundos, el Dock no aparece por encima.
+- [ ] Video en pantalla completa (YouTube F): la píldora desaparece y queda una rayita arriba al centro. Mouse a la rayita → vuelve la píldora; sacar el mouse → se esconde de nuevo.
+- [ ] Con avisos sin leer: tocar el globito con el número → se abre el panel de notificaciones debajo, la píldora no se agranda.
+- [ ] Tema Vidrio → Preferencias → General → Transparencia del vidrio: mover la barra y ver que cambian Dock, barra y paneles.
+- [ ] Preferencias → Dock: ya no está "Desenfoque detrás del Dock".
+- [ ] Abrir Configuración, Calculadora y Fotos desde el Dock: el ícono fijo sigue ahí con su puntito de abierta, sin lugares vacíos al lado. Minimizar y restaurar: igual.
+
 ### Versión 1.6.0
 - [ ] Centro de control, Widgets, Wi-Fi/Bluetooth/Sonido (con la barra de menú): aparecen con un rebote chiquito, se ve el fondo difuminado a través, sombra grande y suave alrededor (no un recuadro oscuro) y una línea de brillo arriba. Al cerrar, la sombra se va junto con el panel.
 - [ ] Buscador (Win+S): aparece con rebote; escribir rápido no traba.

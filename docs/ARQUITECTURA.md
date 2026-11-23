@@ -94,6 +94,11 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Pedidos 1.6.1
+- Ícono propio: `AppSettings.CustomIcons` (destino o "mcbar:launchpad" → imagen copiada en `iconos-propios`); `DockWindow.LoadIcon` lo mira primero (`IconLoader.FromImageFile`).
+- Isla en pantalla completa: `SetFullscreen(true)` esconde la píldora y muestra `PeekHandle`; `PeekIn` (mouse en la manijita) la muestra; `PeekOut` (700 ms después de salir el mouse) la vuelve a esconder.
+- Tema Vidrio: `ThemeManager.ApplyGlassTransparency` cambia la opacidad de `GlassBackgrounds` según `GlassTransparency` (50 = original). `App.OnSettingsChanged` rearma el tema cuando cambia.
+
 ## Aspecto de los paneles (1.6.0)
 `Panels/PanelLook`: `Radius` (18), `Spring` (BackEase 0.32), `Highlight()` (borde con brillo arriba, encima del contenido) y `SpringIn()` (escala 0.94 → 1 y baja 14, 460 ms). `PanelShadow.Attach(window)`: ventana transparente detrás del panel con un rectángulo redondeado con `DropShadowEffect` en `BitmapCache`, recortado (`CombinedGeometry.Exclude`) para que no oscurezca el vidrio; sigue al panel (posición, tamaño, opacidad) y se cierra con él. `PanelWindow` los usa a todos.
 

@@ -161,6 +161,32 @@ namespace McBar.Core
             finally { Win32.DeleteObject(hbmp); }
         }
 
+        /// <summary>1.6.1: carga una imagen suelta (.png, .jpg, .ico…) como ícono, del tamaño pedido. Null si falla.</summary>
+        public static ImageSource? FromImageFile(string path, int sizePx)
+        {
+            try
+            {
+                if (path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dec = BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.IgnoreImageCache, BitmapCacheOption.OnLoad);
+                    BitmapFrame? best = null;
+                    foreach (var f in dec.Frames) if (best == null || f.PixelWidth > best.PixelWidth) best = f;
+                    best?.Freeze();
+                    return best;
+                }
+                var bi = new BitmapImage();
+                bi.BeginInit();
+                bi.UriSource = new Uri(path);
+                bi.CacheOption = BitmapCacheOption.OnLoad;
+                bi.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bi.DecodePixelWidth = Math.Max(16, sizePx);
+                bi.EndInit();
+                bi.Freeze();
+                return bi;
+            }
+            catch (Exception ex) { Log.Write("Ícono propio: " + ex.Message); return null; }
+        }
+
         /// <summary>Ícono que la propia ventana informa (último recurso). Llamar en el hilo de interfaz.</summary>
         public static ImageSource? FromWindow(IntPtr hwnd)
         {

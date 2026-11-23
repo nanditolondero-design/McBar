@@ -168,6 +168,10 @@ namespace McBar.Core
         /// <summary>Mes ("2026-11") y búsquedas usadas en ese mes. 1.4.0.</summary>
         public string MacIconsMonth { get; set; } = "";
         public int MacIconsUsed { get; set; }
+        /// <summary>Transparencia del tema Vidrio: 0 = casi opaco, 50 = como venía, 100 = casi invisible. 1.6.1.</summary>
+        public int GlassTransparency { get; set; } = 50;
+        /// <summary>Íconos elegidos por el usuario para el Dock: destino (o "mcbar:launchpad") → imagen. 1.6.1.</summary>
+        public Dictionary<string, string> CustomIcons { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         /// <summary>Forma de los íconos de apps: "none" (los originales) o "mac" (squircle de macOS). 1.3.2.</summary>
         public string IconShape { get; set; } = "none";
         /// <summary>Atajos de mosaico Ctrl+Alt+flechas. 1.0.0.</summary>
@@ -331,6 +335,9 @@ namespace McBar.Core
             s.PortablePath ??= "";
             s.PortableVersion ??= "";
             if (s.IconShape != "mac") s.IconShape = "none";
+            s.CustomIcons = new Dictionary<string, string>(s.CustomIcons ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
+            s.GlassTransparency = Math.Clamp(s.GlassTransparency, 0, 100);
+            s.BackdropBlur = false; // 1.6.1: la opción se quitó (rompía el Dock)
             s.MacIconsKey ??= "";
             s.MacIconsMonth ??= "";
             s.MacIconsMonthlyLimit = Math.Clamp(s.MacIconsMonthlyLimit, 1, 100000);

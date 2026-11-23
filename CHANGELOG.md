@@ -1,5 +1,16 @@
 # Cambios
 
+## 1.6.1 — 23/11/2026 (pedidos de Andrés)
+- **Cambiar el ícono del Launchpad** (y de cualquier app del Dock): clic derecho → Ícono → "Cambiar ícono…" (.png, .ico, .jpg…). Se guarda una copia en `%AppData%\McBar\iconos-propios`. "Volver al ícono original" lo deshace.
+- **Pasar una app abierta a las fijas del Dock arrastrándola**: una app abierta sin fijar se puede llevar entre las fijas; al soltarla ahí queda fijada en ese lugar.
+- **Launchpad → Dock o escritorio**: la zona para "salir" del Launchpad es más grande (abajo donde están los puntitos y el Dock, arriba la búsqueda y los costados): apenas se lleva la app ahí, el Launchpad se cierra y se la suelta en el Dock o en el escritorio.
+- **Con el Launchpad abierto el Dock ya no aparece por encima** (antes McBar lo volvía a subir a los pocos segundos).
+- **Píldora en pantalla completa**: se esconde pero deja una rayita arriba al centro; al pasar el mouse por la rayita la píldora vuelve, y al sacar el mouse se vuelve a esconder.
+- **Avisos sin abrir la píldora**: tocar el globito con el número abre las notificaciones en un panel debajo, sin agrandar la píldora.
+- **Transparencia del vidrio**: Preferencias → General → "Transparencia del vidrio" (con el tema Vidrio): 0 casi opaco, 50 como venía, 100 casi invisible. Cambia paneles, Dock, barra, tarjetas y etiquetas.
+- **Apps de la Tienda que "desaparecían" del Dock al abrirlas** (como Configuración): al abrirse, su ventana todavía no dice de qué app es y McBar la tomaba como una app desconocida sin ícono (quedaba un lugar vacío y el ícono fijo no mostraba que estaba abierta). Ahora usa también el identificador que Windows le pone a la ventana, vuelve a probar hasta reconocerla y mientras tanto no la muestra.
+- Se quitó **"Desenfoque detrás del Dock"** (rompía el Dock); queda siempre apagado, también para quien lo tenía prendido.
+
 ## 1.6.0 — 23/11/2026 (etapa: gráficos, como la vista previa aprobada)
 - **Paneles con aspecto de macOS** (Centro de control, Widgets, Clima, Wi-Fi, Bluetooth, Sonido): vidrio más transparente (se ve más el fondo difuminado), esquinas más redondeadas (18), **sombra grande y suave** debajo y un **brillo fino arriba** en el borde.
 - **Animación con resorte**: los paneles, el buscador y el Launchpad aparecen con un rebote chiquito, todos con la misma curva.

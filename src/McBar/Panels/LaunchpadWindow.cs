@@ -740,7 +740,9 @@ namespace McBar.Panels
                 if (app == null || _droppedOutside || !Win32.GetCursorPos(out var pt)) return;
                 var local = PointFromScreen(new Point(pt.x, pt.y)); // 1.5.0: bien con cualquier escala
                 double x = local.X, y = local.Y;
-                if (y > ActualHeight - 120 || x < 30 || x > ActualWidth - 30)
+                // 1.6.1: zonas más grandes (abajo, donde están los puntitos y el Dock; arriba, la búsqueda; y los
+                // costados): apenas se lleva la app ahí, el Launchpad se cierra y se la puede soltar en el Dock o el escritorio
+                if (LaunchpadLayout.LeavesGrid(x, y, ActualWidth, ActualHeight))
                 {
                     // fuera de la grilla: se esconde el Launchpad para soltar en el Dock o el escritorio
                     _droppedOutside = true;

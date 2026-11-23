@@ -72,7 +72,7 @@ namespace McBar.Panels
             dock.Children.Add(Segment("Estilo", new[] { ("classic", "Clásico"), ("floating", "Flotante"), ("full", "Ancho completo"), ("taskbar", "Barra"), ("icons", "Solo íconos") },
                 s.DockStyle, v => { s.DockStyle = v; Changed(); }));
             dock.Children.Add(Switch("El fondo se estira al ampliar (como macOS)", s.DockBackgroundStretch, v => s.DockBackgroundStretch = v));
-            dock.Children.Add(Switch("Desenfoque detrás del Dock (con desenfoque el fondo no se estira)", s.BackdropBlur, v => s.BackdropBlur = v));
+            // 1.6.1: se quitó "Desenfoque detrás del Dock" (rompía el Dock); queda siempre apagado
             dock.Children.Add(Switch("Animaciones rápidas (apagar solo si el Dock o la isla se ven con fondo negro)", s.FastWindows, v => s.FastWindows = v));
             dock.Children.Add(Switch("Cada Dock muestra solo las apps abiertas en su monitor", s.DockAppsPerMonitor, v => s.DockAppsPerMonitor = v));
             dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
@@ -183,6 +183,8 @@ namespace McBar.Panels
             gen.Children.Add(Switch("Ocultar la barra de tareas de Windows", s.HideWindowsTaskbar, v => s.HideWindowsTaskbar = v));
             gen.Children.Add(Switch("Abrir McBar al iniciar Windows", s.StartWithWindows, v => s.StartWithWindows = v));
             gen.Children.Add(ThemeSelector(s));
+            // 1.6.1: cuánto se transparenta el tema Vidrio (paneles, Dock, barra)
+            gen.Children.Add(SliderSetting("Transparencia del vidrio", 0, 100, s.GlassTransparency, v => s.GlassTransparency = (int)v));
             root.Children.Add(Group(gen));
 
             // ---------- Widgets ----------
