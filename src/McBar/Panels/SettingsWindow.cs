@@ -560,8 +560,8 @@ namespace McBar.Panels
             sp.Children.Add(BoxTitle("Apariencia"));
             sp.Children.Add(Tip("Todo es opcional. Cursores y sonidos se pueden volver a los de antes apagando la opción."));
             sp.Children.Add(Switch("Modo oscuro automático según la hora (Windows y las apps)", s.AutoDarkMode, v => s.AutoDarkMode = v));
-            sp.Children.Add(SliderSetting("Oscuro desde las", 0, 23, s.AutoDarkFrom, v => s.AutoDarkFrom = (int)v, 1));
-            sp.Children.Add(SliderSetting("Claro desde las", 0, 23, s.AutoLightFrom, v => s.AutoLightFrom = (int)v, 1));
+            sp.Children.Add(SliderSetting("Oscuro desde las", 0, 23, s.AutoDarkFrom, v => s.AutoDarkFrom = (int)v, 1, h => h + ":00")); // 1.8.5: "19:00"
+            sp.Children.Add(SliderSetting("Claro desde las", 0, 23, s.AutoLightFrom, v => s.AutoLightFrom = (int)v, 1, h => h + ":00"));
             sp.Children.Add(Switch("Cursores estilo Mac", s.MacCursors, v => s.MacCursors = v));
             sp.Children.Add(Switch("Sacudir el mouse para encontrarlo (el puntero se agranda)", s.ShakeToFind, v => s.ShakeToFind = v));
             sp.Children.Add(Switch("Sonidos del sistema estilo Mac", s.MacSounds, v => s.MacSounds = v));
@@ -832,20 +832,21 @@ namespace McBar.Panels
             return sp;
         }
 
-        private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set, double tick = 2)
+        private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set, double tick = 2, Func<int, string>? format = null)
         {
             var g = new Grid { Margin = new Thickness(0, 6, 0, 6) };
             // 0.4.3: la columna del nombre se adapta al texto (antes era fija y cortaba "Transparencia del fondo")
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition());
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
-            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, MinWidth = 150, MaxWidth = 260, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(format == null ? 44 : 52) });
+            var label = new TextBlock { Text = text, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, MinWidth = 150, MaxWidth = 260, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) }; // 1.8.5: mismo tamaño que los interruptores
             label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
-            var val = new TextBlock { Text = ((int)value).ToString(), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+            format ??= v => v.ToString();
+            var val = new TextBlock { Text = format((int)value), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
             val.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             var s = new Slider { Minimum = min, Maximum = max, Value = value, IsSnapToTickEnabled = true, TickFrequency = tick };
             s.SetResourceReference(StyleProperty, "McSlider");
-            s.ValueChanged += (_, e) => { val.Text = ((int)e.NewValue).ToString(); set(e.NewValue); Changed(); };
+            s.ValueChanged += (_, e) => { val.Text = format((int)e.NewValue); set(e.NewValue); Changed(); };
             Grid.SetColumn(s, 1);
             Grid.SetColumn(val, 2);
             g.Children.Add(label);
@@ -892,7 +893,7 @@ namespace McBar.Panels
             var g = new Grid { Margin = new Thickness(0, 6, 0, 4) };
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) }; // 1.8.1: sin cortarse
+            var label = new TextBlock { Text = text, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) }; // 1.8.1: sin cortarse; 1.8.5: mismo tamaño
             label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             g.Children.Add(label);
             var seg = new StackPanel { Orientation = Orientation.Horizontal };

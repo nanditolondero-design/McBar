@@ -190,3 +190,6 @@ Andrés: "el menú de config (Preferencias) debería ser como el glass del iPhon
 ## 1.8.4 (23/11/2026)
 Andrés: "cuando elijo un icns para el ícono del Launchpad no cambia en el Dock". `DockWindow.ChooseIcon` prueba la imagen con `IconLoader.FromImageFile` antes de guardarla y avisa si no se puede. `Icns.UnRle` + `Icns.DecodeOld` (RLE + máscara, ARGB) cuando el archivo no trae PNG; `Icns.Describe` para el registro. Pruebas en Stage22Tests.
 
+## 1.8.5 (23/11/2026)
+Andrés mandó dos .icns de Launchpad que "la app no lee" (ambos: PNG en ic07…ic14, uno con bloque eXIf), "faltan palabras" en Preferencias y "el slider del glass debe hacer lo mismo con la píldora". `Icns.DecodePng` (copia propia, IgnoreColorProfile, PngBitmapDecoder de respaldo, otros tamaños). `IslandWindow.ApplyAppearance`: vidrio con `ThemeManager.ScaleAlpha(…, GlassTransparency)` y `_backdrop` (desenfoque) siempre con estilo Vidrio, también en la ventana rápida. `SettingsWindow.SliderSetting(…, format)` y letra 13 en SliderSetting/Segment.
+

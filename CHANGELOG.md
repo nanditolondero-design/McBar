@@ -1,5 +1,10 @@
 # Cambios
 
+## 1.8.5 — 23/11/2026 (pedidos de Andrés)
+- **Píldora de vidrio de verdad**: con Isla dinámica → Estilo → Vidrio, la píldora vuelve a tener el fondo difuminado detrás (desde la 1.6.1 dependía de "Desenfoque detrás del Dock", que se sacó, y había quedado sin efecto). Y **"Transparencia del vidrio" también la cambia**, igual que a Preferencias, paneles y Dock.
+- **.icns de macOS** (los dos Launchpad que mandó Andrés tienen PNG adentro, del formato moderno): el PNG ahora se copia aparte y se abre ignorando perfiles de color y metadatos; si Windows igual no puede, se prueba con el decodificador de PNG directo y con los otros tamaños del archivo. El registro anota el motivo.
+- Preferencias: los nombres de las barras y de los selectores ("Apariencia", "Transparencia del vidrio", "Oscuro desde las"…) ahora tienen el mismo tamaño de letra que los interruptores, y las horas se ven como "19:00".
+
 ## 1.8.4 — 23/11/2026 (arreglo)
 - **Ícono .icns que "no cambiaba"** (Andrés, con el Launchpad): si McBar no podía leer el archivo, dejaba el ícono de siempre sin avisar. Ahora prueba el archivo al elegirlo y, si no se puede, avisa con un cartel y no lo guarda.
 - Los .icns viejos ahora también se leen: colores comprimidos con su máscara (it32/ih32/il32/is32 + t8mk/h8mk/l8mk/s8mk) y ARGB (ic04/ic05). Lo único que no se puede leer es JPEG 2000 (Windows no lo trae); el registro anota qué tipos trae el archivo.

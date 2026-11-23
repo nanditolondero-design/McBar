@@ -154,6 +154,33 @@ namespace McBar.Core
             return src;
         }
 
+        /// <summary>1.8.5: decodifica un PNG (de memoria) de la forma más tolerante posible. Null si no se puede.</summary>
+        private static BitmapSource? DecodePng(byte[] png, int decodeWidth)
+        {
+            try
+            {
+                var bi = new BitmapImage();
+                bi.BeginInit();
+                bi.StreamSource = new MemoryStream(png);
+                bi.CacheOption = BitmapCacheOption.OnLoad;
+                bi.CreateOptions = BitmapCreateOptions.IgnoreImageCache | BitmapCreateOptions.IgnoreColorProfile;
+                if (decodeWidth > 0) bi.DecodePixelWidth = decodeWidth;
+                bi.EndInit();
+                bi.Freeze();
+                return bi;
+            }
+            catch (Exception ex) { Log.Write("Ícono .icns (PNG): " + ex.Message); }
+            try
+            {
+                var dec = new PngBitmapDecoder(new MemoryStream(png), BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                var f = dec.Frames[0];
+                var copy = new WriteableBitmap(f); // copia propia de los píxeles (sin metadatos)
+                copy.Freeze();
+                return copy;
+            }
+            catch (Exception ex) { Log.Write("Ícono .icns (PNG directo): " + ex.Message); return null; }
+        }
+
         /// <summary>Tipos de entrada que trae el archivo (para el registro cuando no se puede leer).</summary>
         public static string Describe(byte[] data) => string.Join(", ", Entries(data).ConvertAll(e => e.type));
 
@@ -170,15 +197,23 @@ namespace McBar.Core
                     if (old == null) Log.Write("Ícono .icns sin imágenes legibles (" + Describe(data) + "): " + path);
                     return old;
                 }
-                var bi = new BitmapImage();
-                bi.BeginInit();
-                bi.StreamSource = new MemoryStream(data, pick.Value.offset, pick.Value.length, false);
-                bi.CacheOption = BitmapCacheOption.OnLoad;
-                bi.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                if (PngWidth(data, pick.Value.offset) > sizePx * 1.5) bi.DecodePixelWidth = Math.Max(16, sizePx);
-                bi.EndInit();
-                bi.Freeze();
-                return bi;
+                // 1.8.5: el PNG se copia a su propio arreglo (sin "corrimiento" dentro del archivo) y se decodifica
+                // ignorando los metadatos (algunos .icns traen un bloque eXIf que a Windows no le gusta); si igual
+                // falla, se prueba con el decodificador de PNG directo y, si no, con otro tamaño del mismo archivo.
+                var png = new byte[pick.Value.length];
+                Buffer.BlockCopy(data, pick.Value.offset, png, 0, png.Length);
+                var img = DecodePng(png, PngWidth(data, pick.Value.offset) > sizePx * 1.5 ? Math.Max(16, sizePx) : 0);
+                if (img != null) return img;
+                foreach (var (_, off, len) in Entries(data))
+                {
+                    if (off == pick.Value.offset || !IsPng(data, off, len)) continue;
+                    var other = new byte[len];
+                    Buffer.BlockCopy(data, off, other, 0, len);
+                    img = DecodePng(other, 0);
+                    if (img != null) return img;
+                }
+                Log.Write("Ícono .icns: Windows no pudo abrir los PNG de " + path + " (" + Describe(data) + ")");
+                return DecodeOld(data);
             }
             catch (Exception ex) { Log.Write("Ícono .icns: " + ex.Message); return null; }
         }

@@ -277,7 +277,9 @@ namespace McBar.MenuBar
                 case "glass":
                     // 0.4.1: vidrio dibujado por McBar (el desenfoque de Windows pintaba toda la ventana:
                     // se veía un cuadrado oscuro gigante alrededor de la píldora).
-                    bg = new LinearGradientBrush(Color.FromArgb(0xC0, 0x3A, 0x3A, 0x40), Color.FromArgb(0xC8, 0x1C, 0x1C, 0x20), 90);
+                    // 1.8.5: la "Transparencia del vidrio" (Preferencias → General) también cambia la píldora de vidrio
+                    int tr = s.GlassTransparency;
+                    bg = new LinearGradientBrush(Color.FromArgb(ThemeManager.ScaleAlpha(0xA0, tr), 0x3A, 0x3A, 0x40), Color.FromArgb(ThemeManager.ScaleAlpha(0xB0, tr), 0x1C, 0x1C, 0x20), 90);
                     break;
                 case "accent":
                     var a = Application.Current.TryFindResource("Mc.Accent") is SolidColorBrush ab ? ab.Color : Color.FromRgb(0x0A, 0x84, 0xFF);
@@ -294,19 +296,14 @@ namespace McBar.MenuBar
             _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, CompactHeight - 12, CompactHeight - 12), 6, 6);
             UpdateCompact();
 
-            bool glassBlur = style == "glass" && s.BackdropBlur;
-            if (_fast)
-            {
-                // En la ventana rápida el desenfoque va en la propia isla (la forma lo recorta a la píldora).
-                _backdrop.Hide();
-                if (_hwnd != IntPtr.Zero)
-                {
-                    // Nunca desenfoque de Windows en la ventana rápida: Windows lo aplica a TODA la ventana
-                    // (no respeta la forma) y se veía un cuadrado oscuro enorme.
-                    WindowOps.DisableBlur(this);
-                }
-            }
-            else if (glassBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
+            // 1.8.5: la píldora de vidrio SIEMPRE tiene el desenfoque de atrás (antes dependía de "Desenfoque detrás
+            // del Dock", que se sacó en la 1.6.1, y el vidrio había quedado sin efecto). Va en una ventanita aparte
+            // con la forma de la píldora (_backdrop), también en la ventana rápida.
+            bool glassBlur = style == "glass";
+            // Nunca desenfoque de Windows en la propia ventana rápida: Windows lo aplica a TODA la ventana
+            // (no respeta la forma) y se veía un cuadrado oscuro enorme.
+            if (_fast && _hwnd != IntPtr.Zero) WindowOps.DisableBlur(this);
+            if (glassBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
             else _backdrop.Hide();
         }
 
@@ -340,7 +337,7 @@ namespace McBar.MenuBar
 
         private void PlaceBackdrop()
         {
-            if (_fast || SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
+            if (SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
             double sc = _monitor.Scale;
             int w = (int)Math.Round(_pill.ActualWidth * sc), h = (int)Math.Round(_pill.ActualHeight * sc);
             int x = _winLeftPx + (_winWidthPx - w) / 2, y = _winTopPx + (int)Math.Round(TopMargin * sc);

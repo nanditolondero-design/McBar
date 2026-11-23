@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.5
+- [ ] Isla dinámica → Estilo → Vidrio: la píldora deja ver el fondo difuminado. General → Transparencia del vidrio de 0 a 100: la píldora pasa de casi opaca a muy transparente. En pantalla completa no queda ningún recuadro difuminado suelto.
+- [ ] Cambiar el ícono del Launchpad por los .icns de Launchpad que mandó Andrés: cambia.
+- [ ] Estilo Mac → Oscuro/Claro desde las: se ve "19:00" / "7:00"; los nombres de las barras con la misma letra que los interruptores.
+
 ### Versión 1.8.4
 - [ ] Clic derecho en el Launchpad del Dock → Ícono → Cambiar ícono… → un .icns moderno: cambia al toque. Uno viejo (Mac OS X 10.5/10.6): también cambia (más chico). Uno que no se pueda leer: aparece «No se pudo leer ese ícono» y queda el de antes.
 
