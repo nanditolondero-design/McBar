@@ -9,7 +9,7 @@
 - Pruebas xUnit de la lógica, workflow de GitHub, documentación.
 
 ## Etapa 2 — versión 0.2 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
-Pedidos de Andrés después de probar la 0.1:
+Pedidos  después de probar la 0.1:
 - Espacio de la barra de Windows (franja negra) → área de trabajo propia por monitor.
 - Varios monitores → barra y Dock por monitor.
 - "Al minimizar la barra deja de funcionar" → detección propia de pantalla completa.
@@ -26,12 +26,12 @@ Pedidos de Andrés después de probar la 0.1:
 - Systray propio → TrayHost (Shell_TrayWnd propio + reenvío al Explorador).
 
 ## Etapa 3 — versión 0.3 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
-- Isla dinámica como opción en Preferencias (elegido por Andrés), con todo lo de la barra adentro.
+- Isla dinámica como opción en Preferencias, con todo lo de la barra adentro.
 - Eventos elegidos: música y videos, volumen y brillo, batería y carga, notificaciones.
 - Notificaciones: primero intenta el lector oficial de Windows; si Windows no lo permite (pasa con apps no instaladas como paquete), lee el cartelito de la notificación con la accesibilidad de Windows. En Preferencias se ve cuál está usando.
 
 ## Versión 0.3.1 (22/11/2026) — arreglos de rendimiento y errores
-Reportado por Andrés: app lenta, sin animación al soltar para quitar, barra superior que se oculta, Launchpad con páginas vacías, barra de Windows que aparece sola. Ver CHANGELOG.
+Reportado por Pedido: app lenta, sin animación al soltar para quitar, barra superior que se oculta, Launchpad con páginas vacías, barra de Windows que aparece sola. Ver CHANGELOG.
 
 ## Versión 0.3.2 (22/11/2026)
 Isla: cajón del Centro de control, apariencia configurable, reloj grande; sin íconos de bandeja de Windows; revisión de varios monitores; esquinas del desenfoque del Dock; barra de Windows al vaciar la papelera. Ver CHANGELOG.
@@ -40,7 +40,7 @@ Isla: cajón del Centro de control, apariencia configurable, reloj grande; sin �
 Ventanas rápidas (vidrio de DWM + región) para el Dock y la isla; arreglo de las ventanas "locas" con la ocultación automática. Ver CHANGELOG.
 
 ## Etapa 4 — versión 0.4.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
-Pedido de Andrés: fondo del Launchpad más transparente, carpetas o grupos de íconos, y un centro de notificaciones propio (adaptado a la píldora y a la barra) en lugar del panel lateral de Windows.
+Pedido de Pedido: fondo del Launchpad más transparente, carpetas o grupos de íconos, y un centro de notificaciones propio (adaptado a la píldora y a la barra) en lugar del panel lateral de Windows.
 - Centro de notificaciones propio (`Core/NotificationCenter.cs`, `Panels/NotificationListView.cs`): cajón desde la píldora o panel del reloj.
 - Atajos Win+N / Win+A propios (`Native/KeyboardHook.cs`).
 - Launchpad: transparencia 0–100, desenfoque opcional y carpetas (`Core/LaunchpadLayout.cs`).
@@ -61,7 +61,7 @@ Launchpad: selección múltiple, carpetas ocultables y movibles, orden propio, d
 Isla en un solo renglón (logo a la derecha) cuando no hay app activa.
 
 ## Etapa 5 — versión 0.5.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
-Pedido de Andrés: "un instalador copado, lindo" e integrarse mejor a Windows tapando todo lo posible. Plan acordado:
+Pedido de Pedido: "un instalador copado, lindo" e integrarse mejor a Windows tapando todo lo posible. Plan acordado:
 1. **0.5.0 — Instalador y arranque** (hecho): instalador propio, Aplicaciones instaladas, desinstalador, actualizar, arranque sin parpadeo.
 2. **0.6.0 — Inicio, buscador y avisos**: tecla Windows → Launchpad, buscador tipo Spotlight (apps, archivos, calculadora), carteles de volumen/brillo en la isla.
 3. **0.7.0 — Wi-Fi, Bluetooth y sonido propios**.
@@ -81,7 +81,7 @@ Vista previa de ventanas en el Dock, Alt+Tab estilo Cmd+Tab y Win+Tab tipo Missi
 
 ## Etapa 9 — versión 0.9.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
 Plan acordado después de la 0.8.0 ("hacé todo en etapas"):
-1. **0.9.0 — Estabilidad** (hecho): informe y recuperación ante errores, Windows lo reabre, consumo en el registro y en Preferencias. La actualización automática se descartó: Andrés no la quiere.
+1. **0.9.0 — Estabilidad** (hecho): informe y recuperación ante errores, Windows lo reabre, consumo en el registro y en Preferencias. La actualización automática se descartó: el usuario no la quiere.
 2. **1.0.0 — Más cosas de Mac**: esquinas activas, ventanas en mosaico, escritorios en Win+Tab, Quick Look.
 3. **1.1.0 — Widgets**: en el escritorio, calendario Google/Outlook, recordatorios.
 4. **1.2.0 — Isla más viva**: temporizador/cronómetro, micrófono/cámara en uso, descargas. ✅
@@ -117,20 +117,20 @@ Arreglos: `Typography` (está en `System.Windows.Documents`) en el temporizador 
 Límites: el modo juego no se guarda (al reiniciar McBar arranca apagado, salvo que el perfil en uso lo tenga); el fondo cambia en todos los monitores a la vez (Windows usa una sola imagen).
 
 ## 1.3.1 (22/11/2026) — arreglos después de probar la 1.3.0
-Andrés reportó que McBar se traba (el Dock deja de aparecer y la píldora queda quieta) y que no apareció el instalador. El registro no tenía errores (una trabada no deja error), así que se agregó `Core/HangWatch`: anota qué tarea de la interfaz no termina y reinicia McBar a los 20 s. El instalador no salía porque esa ruta estaba guardada como "probar sin instalar"; ahora solo se saltea para la misma versión (`PortableVersion`). Pendiente: con el registro de la próxima trabada, arreglar la causa.
-También: la isla reservaba una franja de lado a lado arriba (Andrés: "la píldora ocupa todo el lugar, las ventanas no se estiran del todo"). `IslandReserveSpace` pasa a false por defecto y `Migrate` (CurrentLook 2) lo apaga una vez a los que ya lo tenían.
+reportó que McBar se traba (el Dock deja de aparecer y la píldora queda quieta) y que no apareció el instalador. El registro no tenía errores (una trabada no deja error), así que se agregó `Core/HangWatch`: anota qué tarea de la interfaz no termina y reinicia McBar a los 20 s. El instalador no salía porque esa ruta estaba guardada como "probar sin instalar"; ahora solo se saltea para la misma versión (`PortableVersion`). Pendiente: con el registro de la próxima trabada, arreglar la causa.
+También: la isla reservaba una franja de lado a lado arriba (pedido: "la píldora ocupa todo el lugar, las ventanas no se estiran del todo"). `IslandReserveSpace` pasa a false por defecto y `Migrate` (CurrentLook 2) lo apaga una vez a los que ya lo tenían.
 
-Vista previa de minimizadas (Andrés: "no cargan siempre o tardan mucho"): `DwmQueryThumbnailSourceSize` de una ventana minimizada da el tamaño del botón minimizado, así que se usa `Win32.NormalSize` (GetWindowPlacement); ícono de la app detrás de la miniatura; reintentos de `Sync`; 400 ms y cambio inmediato entre íconos (`App.DockPreviewOpen`).
-Píldora sobre menús (Andrés: "la píldora tapa el menú", "los botones de minutos quedan cortados"): `PopupGuard` sube cada menú/popup a lo más alto al abrirse; `KeepBarsOnTop` no actúa con un menú abierto; `App.KeepBelowTopBar(Window)` para Preferencias; `TimerView` en dos renglones.
+Vista previa de minimizadas (pedido: "no cargan siempre o tardan mucho"): `DwmQueryThumbnailSourceSize` de una ventana minimizada da el tamaño del botón minimizado, así que se usa `Win32.NormalSize` (GetWindowPlacement); ícono de la app detrás de la miniatura; reintentos de `Sync`; 400 ms y cambio inmediato entre íconos (`App.DockPreviewOpen`).
+Píldora sobre menús (Pedido: "la píldora tapa el menú", "los botones de minutos quedan cortados"): `PopupGuard` sube cada menú/popup a lo más alto al abrirse; `KeepBarsOnTop` no actúa con un menú abierto; `App.KeepBelowTopBar(Window)` para Preferencias; `TimerView` en dos renglones.
 
 ## 1.3.2 (22/11/2026) — íconos con forma de Mac
-Pedido de Andrés: "¿no se puede hacer que solo le dé forma de ícono de Mac?". `Core/IconShaper` (en el hilo del Shell, con RenderTargetBitmap): superelipse n=5 al 90 % del cuadro; si el ícono llena su cuadro (`IsFullBleed`: cubre ≥85 %, bordes y esquinas opacos) se recorta, si no va al 66 % sobre una placa con degradé claro del color dominante (`Dominant`, `Mix`). `IconLoader.Request(..., appShape: true)` desde el Dock (apps), Launchpad y Alt+Tab/vista previa; clave de caché con "|mac". Ajuste `IconShape` ("none"/"mac"). Pruebas en `Stage15Tests`.
+Pedido de Pedido: "¿no se puede hacer que solo le dé forma de ícono de Mac?". `Core/IconShaper` (en el hilo del Shell, con RenderTargetBitmap): superelipse n=5 al 90 % del cuadro; si el ícono llena su cuadro (`IsFullBleed`: cubre ≥85 %, bordes y esquinas opacos) se recorta, si no va al 66 % sobre una placa con degradé claro del color dominante (`Dominant`, `Mix`). `IconLoader.Request(..., appShape: true)` desde el Dock (apps), Launchpad y Alt+Tab/vista previa; clave de caché con "|mac". Ajuste `IconShape` ("none"/"mac"). Pruebas en `Stage15Tests`.
 
 ## 1.4.0 (23/11/2026) — íconos de macOSicons para las apps instaladas
-Pedido de Andrés: "que no vengan los íconos sino que la app lea las apps instaladas y baje los íconos sola para cada app". API de macOSicons (POST https://api.macosicons.com/api/v1/search con `x-api-key`, respuesta `hits[]` con `appName`, `lowResPngUrl`, `credit`, `creditUrl`, `downloads`). Plan gratis: 50 búsquedas por mes; los términos piden conservar el crédito del autor y permiten uso personal. `Core/MacIcons` (índice `indice.json`, `creditos.txt`), `Native/Dpapi` (clave cifrada), `App.StartMacIcons` (automático: a los 2 min y cada 6 h) y `MacIconsBox` en Preferencias → Dock. Pruebas en `Stage16Tests`.
+Pedido de Pedido: "que no vengan los íconos sino que la app lea las apps instaladas y baje los íconos sola para cada app". API de macOSicons (POST https://api.macosicons.com/api/v1/search con `x-api-key`, respuesta `hits[]` con `appName`, `lowResPngUrl`, `credit`, `creditUrl`, `downloads`). Plan gratis: 50 búsquedas por mes; los términos piden conservar el crédito del autor y permiten uso personal. `Core/MacIcons` (índice `indice.json`, `creditos.txt`), `Native/Dpapi` (clave cifrada), `App.StartMacIcons` (automático: a los 2 min y cada 6 h) y `MacIconsBox` en Preferencias → Dock. Pruebas en `Stage16Tests`.
 Ideas para después: elegir otro ícono para una app (clic derecho en el Launchpad), leer .svg/.icns/.zip en los paquetes.
 
-## 1.4.1 (23/11/2026) — arreglos pedidos por Andrés (sus mensajes se perdieron y los resumió)
+## 1.4.1 (23/11/2026) — arreglos pedidos por (sus mensajes se perdieron y los resumió)
 - "El estilo de la barra, píldora y Dock no cambiaba": `SettingsStore.NotifyChanged` avisa a cada suscriptor con su propio try/catch (si uno fallaba, los siguientes no se enteraban); el tema Vidrio ya no fuerza el estilo de la isla.
 - "La animación de borrado se queda corta": `Dock/DragGhost` (ventana transparente que no recibe clics) sigue al mouse por toda la pantalla; `DockWindow.OutsideDock` (puro) también cuenta los costados.
 - "Arrastrando del Launchpad al Dock oculto queda a mitad de camino": `DragEnter`/`DragOver` muestran el Dock (`_hidden = false`) y `DragLeave`/`Drop` lo vuelven a esconder.
@@ -138,27 +138,27 @@ Ideas para después: elegir otro ícono para una app (clic derecho en el Launchp
 - Pregunta: barras de título estilo macOS en todas las ventanas → ver respuesta en el chat (no se hizo: requiere meterse en otros programas).
 
 ## 1.5.0 (23/11/2026) — rendimiento
-Andrés tiene 2 monitores con escalas distintas, así que la escala por monitor fue lo primero. Manifest `PerMonitorV2`; `MonitorInfo.Scale` (GetDpiForMonitor); Dock, barra e isla usan `_monitor.Scale` y se reacomodan en `DpiChanged`; los paneles se ubican con `WindowOps.PlaceOnMonitor` (píxeles reales). Además: sin `TrimWorkingSet`; Launchpad sin `DropShadowEffect` (sombra = copia del texto) y con `BitmapCache` durante las animaciones; caché de íconos de 400 con salida del más viejo; forma fija de la isla durante la animación; `Core/Perf` en Diagnóstico. Pruebas en `Stage18Tests`.
-Sigue: 1.6.0 gráficos (animaciones tipo resorte, vidrio nativo de Windows 11, sombras y bordes de panel, tipografía) — primero se le muestra a Andrés cómo quedaría.
+tiene 2 monitores con escalas distintas, así que la escala por monitor fue lo primero. Manifest `PerMonitorV2`; `MonitorInfo.Scale` (GetDpiForMonitor); Dock, barra e isla usan `_monitor.Scale` y se reacomodan en `DpiChanged`; los paneles se ubican con `WindowOps.PlaceOnMonitor` (píxeles reales). Además: sin `TrimWorkingSet`; Launchpad sin `DropShadowEffect` (sombra = copia del texto) y con `BitmapCache` durante las animaciones; caché de íconos de 400 con salida del más viejo; forma fija de la isla durante la animación; `Core/Perf` en Diagnóstico. Pruebas en `Stage18Tests`.
+Sigue: 1.6.0 gráficos (animaciones tipo resorte, vidrio nativo de Windows 11, sombras y bordes de panel, tipografía) — primero se le muestra a cómo quedaría.
 
 ## 1.6.0 (23/11/2026) — gráficos
-Andrés aprobó la vista previa ("Me gusta la vista previa de la 1.6.0, hacela así"). `Panels/PanelLook` (curva `Spring`, `Highlight`, `SpringIn`) y `PanelShadow` (ventana aparte, que no recibe clics, recortada para que la sombra solo se vea afuera del panel, debajo de él en el orden de ventanas). Mc.GlassBg más transparente, radio 18 en paneles y 14 en tarjetas, menús con sombra en capa aparte y brillo, buscador con sombra separada, Launchpad con resorte.
+aprobó la vista previa ("Me gusta la vista previa de la 1.6.0, hacela así"). `Panels/PanelLook` (curva `Spring`, `Highlight`, `SpringIn`) y `PanelShadow` (ventana aparte, que no recibe clics, recortada para que la sombra solo se vea afuera del panel, debajo de él en el orden de ventanas). Mc.GlassBg más transparente, radio 18 en paneles y 14 en tarjetas, menús con sombra en capa aparte y brillo, buscador con sombra separada, Launchpad con resorte.
 
-## 1.6.1 (23/11/2026) — pedidos de Andrés
+## 1.6.1 (23/11/2026) — pedidos 
 Ícono propio (`AppSettings.CustomIcons`, `DockWindow.ChooseIcon/ResetIcon/IconMenu`, `IconLoader.FromImageFile`), fijar arrastrando (`ReorderWhileDragging` deja mover apps abiertas sin fijar entre las fijas y `PinHere`), `LaunchpadLayout.LeavesGrid` (zonas más grandes), `KeepBarsOnTop` no sube el Dock con el Launchpad abierto, `MenuBar/PeekHandle` (manijita en pantalla completa, `IslandWindow.PeekIn/PeekOut`), globito → `App.OpenWidgetsPanel(monitor, centered: true)`, `GlassTransparency` (`ThemeManager.ScaleAlpha` sobre los fondos del tema Vidrio), sin `BackdropBlur` (Sanitize lo apaga). Pruebas en `Stage19Tests`.
 Interpretación: "en el Launchpad el Dock queda siempre a la vista" se tomó como problema; era al revés (ver 1.6.2).
 
 ## 1.6.2 (23/11/2026)
-Andrés: "el Dock y la píldora deben mostrarse siempre en el Launchpad" y "cuando minimizo una ventana me sigue mostrando las opciones de la ventana". `DockWindow.ShowOverLaunchpad` (sube el Dock y no se oculta solo), `App.LaunchpadBars` (Docks + `ApplyFullscreen` sin esconder la isla del monitor del Launchpad + `KeepBarsOnTop`), `LaunchpadWindow(monitor, dockHeight)` (fila extra del alto del Dock), `App.CloseLaunchpad` al tocar el Dock. `WindowTracker.Minimized` (EVENT_SYSTEM_MINIMIZESTART) → `MenuBarContent.UpdateAppName` a los 120 y 450 ms.
+Pedido: "el Dock y la píldora deben mostrarse siempre en el Launchpad" y "cuando minimizo una ventana me sigue mostrando las opciones de la ventana". `DockWindow.ShowOverLaunchpad` (sube el Dock y no se oculta solo), `App.LaunchpadBars` (Docks + `ApplyFullscreen` sin esconder la isla del monitor del Launchpad + `KeepBarsOnTop`), `LaunchpadWindow(monitor, dockHeight)` (fila extra del alto del Dock), `App.CloseLaunchpad` al tocar el Dock. `WindowTracker.Minimized` (EVENT_SYSTEM_MINIMIZESTART) → `MenuBarContent.UpdateAppName` a los 120 y 450 ms.
 
 ## 1.6.3 (23/11/2026)
-Andrés: "sigue pasando lo mismo, tengo que hacer foco en el escritorio". `MenuBarContent`: temporizador `_appCheck` (400 ms, solo mientras hay menús de app a la vista) que llama a `UpdateAppName`; `HasActiveApp` mira `GetForegroundWindow` (ninguna, minimizada, escritorio o barra de Windows = sin app; las de McBar no cuentan).
+Pedido: "sigue pasando lo mismo, tengo que hacer foco en el escritorio". `MenuBarContent`: temporizador `_appCheck` (400 ms, solo mientras hay menús de app a la vista) que llama a `UpdateAppName`; `HasActiveApp` mira `GetForegroundWindow` (ninguna, minimizada, escritorio o barra de Windows = sin app; las de McBar no cuentan).
 
 ## 1.7.0 (23/11/2026)
-Andrés: "¿podrías hacer wallpapers en 4K para la función del fondo según la hora, de cero, basándote en los de la última versión de macOS?" y, por el inicio de sesión de Windows, pidió que McBar cambie también la pantalla de bloqueo y traiga los fondos con un botón. Fondos generados por código (cintas con brillo sobre degradé, 3840×2160, JPEG 95) en `src/McBar/Assets/Fondos`, embebidos en el .exe (`EmbeddedResource`, nombre lógico `McBar.Fondos.<archivo>`). `DynamicWallpaper`: `BundledNames`, `BundledPaths`/`UsesBundled` (puros), `ExtractBundled`, `UseBundled`, `SetLockScreenAsync` (WinRT `LockScreen.SetImageFileAsync`). Ajuste `WallpaperLockScreen` (apagado). Cambiar la disposición del inicio de sesión de Windows NO se hace (requiere tocar archivos del sistema).
+Pedido: "¿podrías hacer wallpapers en 4K para la función del fondo según la hora, de cero, basándote en los de la última versión de macOS?" y, por el inicio de sesión de Windows, pidió que McBar cambie también la pantalla de bloqueo y traiga los fondos con un botón. Fondos generados por código (cintas con brillo sobre degradé, 3840×2160, JPEG 95) en `src/McBar/Assets/Fondos`, embebidos en el .exe (`EmbeddedResource`, nombre lógico `McBar.Fondos.<archivo>`). `DynamicWallpaper`: `BundledNames`, `BundledPaths`/`UsesBundled` (puros), `ExtractBundled`, `UseBundled`, `SetLockScreenAsync` (WinRT `LockScreen.SetImageFileAsync`). Ajuste `WallpaperLockScreen` (apagado). Cambiar la disposición del inicio de sesión de Windows NO se hace (requiere tocar archivos del sistema).
 
 ## 1.8.0 (23/11/2026) — Estilo Mac
-Andrés: "¿qué más podemos hacer para que Windows se vea como macOS?" → propuse 12 ideas y pidió "hacé todo pero que sean opciones, nada fijo". Todo va en Preferencias → Estilo Mac y viene apagado.
+Pedido: "¿qué más podemos hacer para que Windows se vea como macOS?" → propuse 12 ideas y pidió "hacé todo pero que sean opciones, nada fijo". Todo va en Preferencias → Estilo Mac y viene apagado.
 - `Core/MacLook` (coordina; `Bundled` copia recursos del .exe; `RegBackup` guarda y devuelve valores del registro).
 - `Core/MacSystemLook`: `AutoAppearance` (Personalize, WM_SETTINGCHANGE "ImmersiveColorSet"), `MacCursors` (Control Panel\Cursors + SPI_SETCURSORS), `MacSounds` (AppEvents\Schemes + PlaySound).
 - `Core/MacInput`: `MouseHook` (WH_MOUSE_LL en hilo propio), `ShakeDetector` (puro), `ShakeOverlay`, `WallpaperClick` (WindowFromPoint + UI Automation para no actuar sobre íconos → Win+D).
@@ -169,45 +169,48 @@ Andrés: "¿qué más podemos hacer para que Windows se vea como macOS?" → pro
 - Recursos propios generados por código: `tools/estilo-mac/gen_cursores.py`, `gen_sonidos.py` → `Assets/Cursores`, `Assets/Sonidos` (embebidos).
 
 ## 1.8.1 (23/11/2026)
-Andrés: "lo de la ventana minimizada sigue pasando, no hace foco en el escritorio", "la tecla de Windows abre el menú Inicio y el Launchpad", "¿cómo elimino escritorios virtuales?", "pilas del Dock no sé cómo funcionan", "hay palabras que se cortan en las opciones", "poder agregar carpetas al Dock y que se abran en abanico o con otras formas" y "los botones semáforos sacalos, son feos y no van bien".
+Pedido: "lo de la ventana minimizada sigue pasando, no hace foco en el escritorio", "la tecla de Windows abre el menú Inicio y el Launchpad", "¿cómo elimino escritorios virtuales?", "pilas del Dock no sé cómo funcionan", "hay palabras que se cortan en las opciones", "poder agregar carpetas al Dock y que se abran en abanico o con otras formas" y "los botones semáforos sacalos, son feos y no van bien".
 - `KeyboardHook`: la tecla Windows se traga entera (`_winSwallowed`); con otra tecla se inyecta Windows+tecla (`_winInjected`) y al soltar, tecla vacía + Windows arriba. Win+L → `Launcher.Lock`. `WindowOps.Key`: más teclas extendidas.
 - `MenuBarContent.IsAppWindow` (la ventana o su dueña tiene que estar en `Tracker.Windows`); `App.FocusDesktopIfNoApp` al minimizar (Progman).
 - `VirtualDesktops.Remove` + × / menú "Cerrar escritorio" en Win+Tab.
 - `AppSettings.StackStyles` + `StackFan.Effective` + `DockWindow.StackStyleMenu` ("Mostrar como"); botón "Agregar una carpeta al Dock…" en Estilo Mac.
 - `McSwitch` y `Segment`: textos con `TextWrapping`.
-- Andrés: "el dibujo que le hace a los íconos para que parezcan de Mac debería pintarlos de un color distinto para cada ícono". `IconShaper.PlateColors` (tono del color principal, saturación 0,45–0,85, luz 0,84 → 0,66; gris si el ícono es gris) + `ToHsl`/`FromHsl`; `Dominant` da más peso a lo colorido (sat²).
+- Pedido: "el dibujo que le hace a los íconos para que parezcan de Mac debería pintarlos de un color distinto para cada ícono". `IconShaper.PlateColors` (tono del color principal, saturación 0,45–0,85, luz 0,84 → 0,66; gris si el ícono es gris) + `ToHsl`/`FromHsl`; `Dominant` da más peso a lo colorido (sat²).
 - Se sacaron los botones de colores (`Core/TrafficLights`, `Panels/TrafficLightsWindow`, ajustes `TrafficLights*`).
 
 ## 1.8.2 (23/11/2026)
-Andrés: "¿puede usar icns para íconos la app?" → "agregalo". `Core/Icns` (lee las entradas del contenedor, elige el PNG más chico que alcance el tamaño o el más grande; `Entries`/`BestPng` puros, pruebas en Stage22Tests). Lo usan `IconLoader.FromImageFile` (ícono propio) e `IconPack` (`.icns` en `Extensions` y en `Load`). El selector de "Cambiar ícono…" acepta *.icns.
+Pedido: "¿puede usar icns para íconos la app?" → "agregalo". `Core/Icns` (lee las entradas del contenedor, elige el PNG más chico que alcance el tamaño o el más grande; `Entries`/`BestPng` puros, pruebas en Stage22Tests). Lo usan `IconLoader.FromImageFile` (ícono propio) e `IconPack` (`.icns` en `Extensions` y en `Load`). El selector de "Cambiar ícono…" acepta *.icns.
 
 ## 1.8.3 (23/11/2026)
-Andrés: "el menú de config (Preferencias) debería ser como el glass del iPhone", "el efecto glass es nulo", "el menú de configuración de McBar no aparece más" y "poder agregar carpetas de apps en el Dock como en Android".
+Pedido: "el menú de config (Preferencias) debería ser como el glass del iPhone", "el efecto glass es nulo", "el menú de configuración de McBar no aparece más" y "poder agregar carpetas de apps en el Dock como en Android".
 - `Mc.SettingsBg` (Dark/Light opaco, Glass translúcido y en `ThemeManager.GlassBackgrounds`) + `WindowOps.SetGlassBackdrop` (DWMWA_SYSTEMBACKDROP_TYPE = acrílico en Win11 22H2+, `EnableBlur` en Win10). `App.OpenSettings` restaura si está minimizada y avisa si falla.
 - `Core/DockFolders` (Drop, NewWith, TakeOut, Dissolve; puros, Stage23Tests) + `AppSettings.DockFolders`; en `Pinned` va `mcbar:appfolder:<id>`. Dock: `DockItemKind.AppFolder`, `UpdateMerge` (quieta 450 ms en el centro de otra app = carpeta), `LoadFolderIcon` (2×2), `ShowAppFolder`, `AddToFolderMenu`, `McDialog.Prompt` para el nombre.
-- Supuesto (Andrés no eligió): se arman arrastrando (como Android) y además desde el clic derecho.
+- Decisión: se arman arrastrando (como Android) y además desde el clic derecho.
 
 ## 1.8.4 (23/11/2026)
-Andrés: "cuando elijo un icns para el ícono del Launchpad no cambia en el Dock". `DockWindow.ChooseIcon` prueba la imagen con `IconLoader.FromImageFile` antes de guardarla y avisa si no se puede. `Icns.UnRle` + `Icns.DecodeOld` (RLE + máscara, ARGB) cuando el archivo no trae PNG; `Icns.Describe` para el registro. Pruebas en Stage22Tests.
+Pedido: "cuando elijo un icns para el ícono del Launchpad no cambia en el Dock". `DockWindow.ChooseIcon` prueba la imagen con `IconLoader.FromImageFile` antes de guardarla y avisa si no se puede. `Icns.UnRle` + `Icns.DecodeOld` (RLE + máscara, ARGB) cuando el archivo no trae PNG; `Icns.Describe` para el registro. Pruebas en Stage22Tests.
 
 ## 1.8.5 (23/11/2026)
-Andrés mandó dos .icns de Launchpad que "la app no lee" (ambos: PNG en ic07…ic14, uno con bloque eXIf), "faltan palabras" en Preferencias y "el slider del glass debe hacer lo mismo con la píldora". `Icns.DecodePng` (copia propia, IgnoreColorProfile, PngBitmapDecoder de respaldo, otros tamaños). `IslandWindow.ApplyAppearance`: vidrio con `ThemeManager.ScaleAlpha(…, GlassTransparency)` y `_backdrop` (desenfoque) siempre con estilo Vidrio, también en la ventana rápida. `SettingsWindow.SliderSetting(…, format)` y letra 13 en SliderSetting/Segment.
+Se probaron dos .icns de Launchpad que "la app no lee" (ambos: PNG en ic07…ic14, uno con bloque eXIf), "faltan palabras" en Preferencias y "el slider del glass debe hacer lo mismo con la píldora". `Icns.DecodePng` (copia propia, IgnoreColorProfile, PngBitmapDecoder de respaldo, otros tamaños). `IslandWindow.ApplyAppearance`: vidrio con `ThemeManager.ScaleAlpha(…, GlassTransparency)` y `_backdrop` (desenfoque) siempre con estilo Vidrio, también en la ventana rápida. `SettingsWindow.SliderSetting(…, format)` y letra 13 en SliderSetting/Segment.
 
 ## 1.8.6 (23/11/2026)
-Captura de Andrés: con la 1.8.5 la píldora de vidrio tenía un rectángulo claro alrededor (el `_backdrop` con desenfoque de Windows no respeta la región redondeada en Windows 11). `Core/WallpaperGlass`: fondo de pantalla achicado a 96 px (borroso al estirarlo), recorte "Rellenar"/"Expandir" (`VisiblePart`, pura), `DrawingBrush` con Viewport = posición de la píldora en el monitor + tinte según la transparencia. `IslandWindow` ya no muestra `_backdrop`; actualiza el pincel al cambiar de tamaño y cada minuto.
+Revisión: con la 1.8.5 la píldora de vidrio tenía un rectángulo claro alrededor (el `_backdrop` con desenfoque de Windows no respeta la región redondeada en Windows 11). `Core/WallpaperGlass`: fondo de pantalla achicado a 96 px (borroso al estirarlo), recorte "Rellenar"/"Expandir" (`VisiblePart`, pura), `DrawingBrush` con Viewport = posición de la píldora en el monitor + tinte según la transparencia. `IslandWindow` ya no muestra `_backdrop`; actualiza el pincel al cambiar de tamaño y cada minuto.
 
 ## 1.8.7 (23/11/2026)
-Andrés: "¿no hay forma de que sea real la transparencia?" → opciones: (1) transparencia real sin desenfoque, (2) desenfoque real con la composición de Windows 11 (experimental). Eligió la 1. `IslandWindow.GlassTint(transparencia)`: degradé con alfa de `ScaleAlpha` (mínimo 0x30/0x38). `WallpaperGlass` queda sin uso. Pendiente si Andrés lo pide: opción 2 (HostBackdropBrush + recorte redondeado).
+Pedido: "¿no hay forma de que sea real la transparencia?" → opciones: (1) transparencia real sin desenfoque, (2) desenfoque real con la composición de Windows 11 (experimental). Eligió la 1. `IslandWindow.GlassTint(transparencia)`: degradé con alfa de `ScaleAlpha` (mínimo 0x30/0x38). `WallpaperGlass` queda sin uso. Pendiente si lo pide: opción 2 (HostBackdropBrush + recorte redondeado).
 
 ## 1.8.8 (23/11/2026)
-Andrés: "agregar la opción de instalar si estoy probando la app". `App.IsTrying` / `App.InstallNow` (InstallerWindow con `fromRunning`: "Ahora no" / "Seguir probando"; al instalar abre la copia instalada con `--reinicio` y esta se cierra con `SafeCleanup(keepTaskbarHidden: true)`). "Instalar McBar…" en `MenuBarContent.BuildSystemMenu` y en el pie de Preferencias.
+Pedido: "agregar la opción de instalar si estoy probando la app". `App.IsTrying` / `App.InstallNow` (InstallerWindow con `fromRunning`: "Ahora no" / "Seguir probando"; al instalar abre la copia instalada con `--reinicio` y esta se cierra con `SafeCleanup(keepTaskbarHidden: true)`). "Instalar McBar…" en `MenuBarContent.BuildSystemMenu` y en el pie de Preferencias.
 
 ## 1.8.9 (23/11/2026)
-Andrés: "que el Dock se oculte igual que la píldora". `AppSettings.DockHideOnMaximized` (true); `DockWindow.AutoHide` deja de ser estático y suma `_maximizedHere`; `DockWindow.SetMaximized` (desde `App.ApplyFullscreen` con `FullscreenWatcher.MaximizedMonitors`) y, si cambió, `App.UpdateWorkAreas` para soltar o volver a reservar el lugar del Dock.
+Pedido: "que el Dock se oculte igual que la píldora". `AppSettings.DockHideOnMaximized` (true); `DockWindow.AutoHide` deja de ser estático y suma `_maximizedHere`; `DockWindow.SetMaximized` (desde `App.ApplyFullscreen` con `FullscreenWatcher.MaximizedMonitors`) y, si cambió, `App.UpdateWorkAreas` para soltar o volver a reservar el lugar del Dock.
 
 ## 1.9.0 (23/11/2026)
-Captura de Andrés: el panel de widgets con un rectángulo claro detrás y texto que no se lee (el `EnableBlur` de `PanelWindow` en ventana en capas no respeta la región redondeada en Windows 11). `PanelWindow` sin `EnableBlur`; fondo `Mc.PanelCardBg` (Dark/Light casi opaco, Glass vidrio oscuro en `GlassBackgrounds`) y `ThemeManager.MinAlpha` (mínimo 0x5C para ese fondo).
+Revisión: el panel de widgets con un rectángulo claro detrás y texto que no se lee (el `EnableBlur` de `PanelWindow` en ventana en capas no respeta la región redondeada en Windows 11). `PanelWindow` sin `EnableBlur`; fondo `Mc.PanelCardBg` (Dark/Light casi opaco, Glass vidrio oscuro en `GlassBackgrounds`) y `ThemeManager.MinAlpha` (mínimo 0x5C para ese fondo).
 
 ## 1.9.1 (23/11/2026)
-Andrés: "cuando arranca Windows primero se ve la barra de Windows y después carga la app" y "una opción para poner un botón de apagado/reinicio en el Dock como la Papelera". `Taskbar.Hide()` al principio de OnStartup; `Application.SessionEnding` además de `SystemEvents.SessionEnding`; `AppSettings.FastStartup` + `SystemInfo.SetFastStartup` (Explorer\Serialize StartupDelayInMSec/WaitForIdleState = 0, con `RegBackup`, se devuelve al desinstalar). Botón: `AppIdentity.Power` como pila, `DockItemKind.Power`, `DockWindow.PowerIcon` (dibujado) y `ShowPowerMenu`. En su captura de 15:40 "Abrir McBar al iniciar Windows" estaba apagado.
+Pedido: "cuando arranca Windows primero se ve la barra de Windows y después carga la app" y "una opción para poner un botón de apagado/reinicio en el Dock como la Papelera". `Taskbar.Hide()` al principio de OnStartup; `Application.SessionEnding` además de `SystemEvents.SessionEnding`; `AppSettings.FastStartup` + `SystemInfo.SetFastStartup` (Explorer\Serialize StartupDelayInMSec/WaitForIdleState = 0, con `RegBackup`, se devuelve al desinstalar). Botón: `AppIdentity.Power` como pila, `DockItemKind.Power`, `DockWindow.PowerIcon` (dibujado) y `ShowPowerMenu`. En su captura de 15:40 "Abrir McBar al iniciar Windows" estaba apagado.
+
+## 1.9.2 (23/11/2026) — Edición Microsoft Store
+Publicación gratis en la Store: paquete MSIX (Microsoft lo firma). `-p:McBarStore=true` define `STORE`; `Core/Edition` (`IsStore`, `StartupTaskId`, `StoreAlias`). Sin instalador propio en esa edición; `SystemInfo.SetStartWithWindows` usa `StartupTask`; `HangWatch` se reabre por el alias. `packaging/store/AppxManifest.xml` (identidad del Partner Center, `runFullTrust`, `unvirtualizedResources` con las claves de HKCU que usa McBar, tarea de inicio, alias) y `packaging/store/Assets`. El workflow arma `McBar-Store.msix` con makepri + makeappx.
 

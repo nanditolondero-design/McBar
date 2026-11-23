@@ -6,7 +6,7 @@
 //  - Si es un ícono "suelto" (con transparencia alrededor, como casi todos los de Windows), se lo pone al
 //    centro de una placa con esa forma, de un color muy claro sacado del propio ícono (como hace macOS
 //    con los íconos que no siguen su forma).
-//  - 1.8.1 (pedido de Andrés): la placa ya no es casi blanca para todos: toma el COLOR PRINCIPAL de cada
+//  - 1.8.1: la placa ya no es casi blanca para todos: toma el COLOR PRINCIPAL de cada
 //    ícono (con más peso a lo más colorido) en un degradé suave, así cada app queda de un color distinto.
 //    Los íconos grises o en blanco y negro quedan sobre una placa gris clara.
 // Corre en el hilo del Shell (STA), que es donde IconLoader carga los íconos.

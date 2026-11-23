@@ -95,7 +95,7 @@ namespace McBar.Core
         {
             try
             {
-                var exe = Environment.ProcessPath;
+                var exe = Edition.IsStore ? Edition.StoreAlias : Environment.ProcessPath; // 1.9.2: la Store se abre por su alias
                 if (!string.IsNullOrEmpty(exe)) Process.Start(new ProcessStartInfo(exe, "--reinicio") { UseShellExecute = false });
             }
             catch (Exception ex) { Log.Write("No se pudo reabrir McBar: " + ex.Message); }

@@ -95,7 +95,7 @@ namespace McBar
                             || e.Args.Any(a => a.Equals("--reinicio", StringComparison.OrdinalIgnoreCase))
                             || (string.Equals(SettingsStore.Current.PortablePath, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)
                                 && SettingsStore.Current.PortableVersion == Installer.CurrentVersion.ToString(3)); // 1.3.1: una versión nueva vuelve a mostrar el instalador
-            if (!portable && !Installer.IsRunningInstalled && !System.Diagnostics.Debugger.IsAttached)
+            if (!Edition.IsStore && !portable && !Installer.IsRunningInstalled && !System.Diagnostics.Debugger.IsAttached) // 1.9.2: la Store instala sola
             {
                 var decision = Installer.Decide(Installer.CurrentVersion, Installer.InstalledVersion());
                 if (decision == "launchInstalled") { Installer.LaunchInstalled(); Shutdown(); return; }
@@ -986,7 +986,7 @@ namespace McBar
         }
 
         /// <summary>1.8.8: McBar se está probando sin instalar (no corre desde la carpeta instalada).</summary>
-        public static bool IsTrying => !Installer.IsRunningInstalled;
+        public static bool IsTrying => !Edition.IsStore && !Installer.IsRunningInstalled; // 1.9.2: en la Store no
 
         /// <summary>
         /// 1.8.8: instalar desde McBar mientras se lo prueba. Abre el instalador; al terminar abre la copia

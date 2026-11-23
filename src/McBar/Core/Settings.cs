@@ -61,7 +61,7 @@ namespace McBar.Core
 
         /// <summary>
         /// Versión del "aspecto" ya aplicada a estos ajustes (0.4.1): sirve para pasar UNA sola vez a los
-        /// valores nuevos elegidos por Andrés (fondo del Dock que crece, vidrio dibujado por McBar) sin pisar
+        /// valores nuevos elegidos (fondo del Dock que crece, vidrio dibujado por McBar) sin pisar
         /// lo que el usuario cambie después.
         /// </summary>
         public int LookVersion { get; set; }

@@ -635,7 +635,7 @@ namespace McBar.Panels
             sp.Children.Add(Switch("Menús reales de la app en la barra (si la app los tiene)", s.RealAppMenus, v => s.RealAppMenus = v));
             sp.Children.Add(Segment("Pilas del Dock", new[] { ("grid", "Cuadrícula"), ("fan", "Abanico"), ("list", "Lista") },
                 s.StackStyle, v => { s.StackStyle = v; Changed(); }));
-            // 1.8.1: Andrés no sabía cómo se usan las pilas
+            // 1.8.1: explicar cómo se usan las pilas
             sp.Children.Add(Tip("Las pilas son las carpetas del lado derecho del Dock (Descargas, las que agregues). Al tocarlas se abren así. Cada una puede tener su propia forma: clic derecho en la carpeta del Dock → Mostrar como. Para agregar una: arrastrá una carpeta al Dock, o con el botón de acá abajo."));
             var addRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 2) };
             addRow.Children.Add(Btn("Agregar una carpeta al Dock…", () => App.Dock?.AddFolderFromDialog(), new Thickness(0)));

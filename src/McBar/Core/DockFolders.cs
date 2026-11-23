@@ -1,5 +1,5 @@
 // McBar — Creado por Andrés Londero
-// 1.8.3 — Carpetas de apps en el Dock, como en Android (pedido de Andrés):
+// 1.8.3 — Carpetas de apps en el Dock, como en Android:
 //   - Se arma arrastrando una app del Dock y dejándola un momento ENCIMA de otra (o de una carpeta).
 //   - También con clic derecho en una app fija → "Agregar a una carpeta".
 //   - El ícono de la carpeta muestra las primeras 4 apps en chiquito; al tocarla se abre un panel con todas.

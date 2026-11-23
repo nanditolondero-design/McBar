@@ -2,7 +2,7 @@
 // 1.8.0 — Estilo Mac, partes "del sistema" (todas opcionales, apagadas de fábrica):
 //   - AutoAppearance: Windows y las apps en modo oscuro de noche y claro de día (como "Automático" de macOS).
 //     Cambia HKCU\...\Themes\Personalize (AppsUseLightTheme / SystemUsesLightTheme) SOLO al pasar de un
-//     horario al otro, así si Andrés lo cambia a mano en el medio, McBar no lo pisa hasta el próximo cambio.
+//     horario al otro, así si se cambia a mano en el medio, McBar no lo pisa hasta el próximo cambio.
 //   - MacCursors: cursores propios de McBar (Assets/Cursores) en HKCU\Control Panel\Cursors. Antes de
 //     cambiarlos guarda los que había (cursores-anteriores.json) y al apagar la opción los devuelve.
 //   - MacSounds: sonidos propios (Assets/Sonidos) en HKCU\AppEvents\Schemes. Igual: guarda y devuelve

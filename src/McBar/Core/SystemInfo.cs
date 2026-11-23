@@ -156,6 +156,27 @@ namespace McBar.Core
         // ---------- Inicio con Windows ----------
         private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
+        /// <summary>1.9.2: edición Store: prende o apaga la tarea de inicio del paquete.</summary>
+        private static async void StoreStartup(bool enabled)
+        {
+            try
+            {
+                var t = await global::Windows.ApplicationModel.StartupTask.GetAsync(Edition.StartupTaskId);
+                if (enabled)
+                {
+                    if (t.State == global::Windows.ApplicationModel.StartupTaskState.Disabled)
+                    {
+                        var st = await t.RequestEnableAsync();
+                        if (st != global::Windows.ApplicationModel.StartupTaskState.Enabled) Log.Write("Inicio con Windows (Store): quedó " + st);
+                    }
+                    else if (t.State == global::Windows.ApplicationModel.StartupTaskState.DisabledByUser)
+                        Log.Write("Inicio con Windows (Store): apagado por el usuario en Configuración de Windows → Aplicaciones → Inicio");
+                }
+                else if (t.State == global::Windows.ApplicationModel.StartupTaskState.Enabled) t.Disable();
+            }
+            catch (Exception ex) { Log.Write("Inicio con Windows (Store): " + ex.Message); }
+        }
+
         // 1.9.1: Windows espera unos segundos antes de abrir los programas de inicio (para que el escritorio
         // aparezca rápido). Mientras tanto se ve su barra de tareas. Esta clave (del usuario, sin administrador)
         // saca esa espera. Se guarda lo que había (inicio-anterior.json) y se devuelve al apagar la opción.
@@ -180,6 +201,7 @@ namespace McBar.Core
 
         public static void SetStartWithWindows(bool enabled)
         {
+            if (Edition.IsStore) { StoreStartup(enabled); return; } // 1.9.2
             try
             {
                 using var k = Registry.CurrentUser.CreateSubKey(RunKey);

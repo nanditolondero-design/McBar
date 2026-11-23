@@ -1,5 +1,5 @@
 // McBar — Creado por Andrés Londero
-// 1.8.2 — Íconos .icns de macOS (pedido de Andrés). Un .icns es un contenedor: "icns" + largo, y adentro
+// 1.8.2 — Íconos .icns de macOS. Un .icns es un contenedor: "icns" + largo, y adentro
 // varias entradas (tipo de 4 letras + largo + datos) con el mismo ícono en distintos tamaños. En los .icns
 // modernos (macOS 10.7 o después, y los de macosicons.com) esas imágenes son PNG comunes: McBar busca la que
 // mejor le queda al tamaño pedido y la usa como cualquier otro ícono.

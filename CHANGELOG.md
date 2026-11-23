@@ -1,43 +1,47 @@
 # Cambios
 
-## 1.9.1 — 23/11/2026 (pedidos de Andrés)
+## 1.9.2 — 23/11/2026
+- **Edición Microsoft Store**: el mismo código se compila también como paquete MSIX (`McBar-Store.msix`, lo arma el workflow) para publicar gratis en la Store (Microsoft firma el paquete). Igual a la de siempre salvo: no tiene instalador propio ni "Instalar McBar…" (instala y actualiza la Store); "Abrir McBar al iniciar Windows" usa la tarea de inicio del paquete; los ajustes quedan en la carpeta del paquete. Ver `packaging/store` y `docs/DESARROLLO.md`.
+- La guía de desarrollo pasó a `docs/DESARROLLO.md`.
+
+## 1.9.1 — 23/11/2026
 - **Menos barra de Windows al iniciar**: McBar esconde la barra de Windows apenas arranca (antes esperaba a cargar el tema y el seguimiento de ventanas). Nueva opción en General, prendida: **"Abrir sin la espera de Windows al iniciar"**: Windows deja de esperar unos segundos antes de abrir los programas de inicio, así McBar aparece antes (aplica también a los otros programas de inicio; se vuelve a como estaba al apagarla o al desinstalar). Para que todo esto funcione tiene que estar prendido "Abrir McBar al iniciar Windows". Además, al apagar la PC se usa también el aviso de cierre de WPF, para que la barra quede escondida para el próximo inicio.
 - **Botón de apagado en el Dock**, al lado de la Papelera (opcional): Preferencias → Dock → "Botón de apagado en el Dock", o clic derecho en el Dock → Agregar al Dock → Botón de apagado. Al tocarlo: Suspender, Reiniciar…, Apagar…, Bloquear pantalla, Cerrar sesión… (reiniciar, apagar y cerrar sesión piden confirmación).
 
-## 1.9.0 — 23/11/2026 (captura de Andrés del panel de widgets)
+## 1.9.0 — 23/11/2026 (revisión del panel de widgets)
 - **Paneles sin el rectángulo claro**: Notificaciones y widgets, Centro de control, Clima, Wi-Fi, Bluetooth y Sonido usaban el desenfoque de Windows, que en Windows 11 no respeta las esquinas redondeadas: se veía un recuadro claro detrás del panel y el texto blanco casi no se leía. Ahora son transparentes de verdad (como la píldora): con el tema Vidrio, vidrio oscuro que "Transparencia del vidrio" regula, sin bajar de un mínimo para que se lea; con Claro u Oscuro, casi opacos.
 
-## 1.8.9 — 23/11/2026 (pedido de Andrés)
+## 1.8.9 — 23/11/2026
 - **El Dock se esconde igual que la píldora**: con una ventana maximizada en ese monitor, el Dock se esconde (como en ocultación automática) y vuelve al llevar el mouse abajo; la ventana usa toda la pantalla. Al no quedar ventanas maximizadas vuelve a quedar fijo. Preferencias → Dock → **"Esconder el Dock con ventanas maximizadas"** (viene prendido). En pantalla completa ya se escondía.
 
-## 1.8.8 — 23/11/2026 (pedido de Andrés)
+## 1.8.8 — 23/11/2026
 - **Instalar mientras se prueba**: si McBar se está usando "sin instalar", aparece **"Instalar McBar…"** en el menú de McBar (arriba a la izquierda o en la píldora) y como botón abajo en Preferencias. Abre el instalador (con "Ahora no" en vez de "Probar sin instalar"); al terminar, se abre la copia instalada y la de prueba se cierra sola, sin que vuelva a aparecer la barra de Windows. Los ajustes quedan iguales.
 
-## 1.8.7 — 23/11/2026 (elección de Andrés: transparencia real)
+## 1.8.7 — 23/11/2026 (transparencia real)
 - **Píldora de vidrio transparente de verdad**: ahora se ve lo que realmente está detrás (también las ventanas), nítido y sin desenfoque, con un tinte oscuro encima. "Transparencia del vidrio" regula ese tinte (0 casi opaca, 100 casi invisible, con un mínimo para que la hora se siga leyendo). Reemplaza el vidrio pintado con el fondo de pantalla de la 1.8.6.
 
 ## 1.8.6 — 23/11/2026 (arreglo)
 - **Píldora de vidrio sin el rectángulo claro**: el desenfoque de Windows que se agregó en la 1.8.5 no respeta la forma redondeada en Windows 11 y se veía un recuadro alrededor de la píldora. Ahora el vidrio lo pinta McBar: la parte del fondo de pantalla que queda detrás de la píldora, difuminada, con un tinte que cambia con "Transparencia del vidrio" (sin bajar tanto que no se lea la hora). Sigue al fondo si cambia (por ejemplo con el fondo según la hora). Si el fondo es un color liso, queda el degradé de antes.
 
-## 1.8.5 — 23/11/2026 (pedidos de Andrés)
+## 1.8.5 — 23/11/2026
 - **Píldora de vidrio de verdad**: con Isla dinámica → Estilo → Vidrio, la píldora vuelve a tener el fondo difuminado detrás (desde la 1.6.1 dependía de "Desenfoque detrás del Dock", que se sacó, y había quedado sin efecto). Y **"Transparencia del vidrio" también la cambia**, igual que a Preferencias, paneles y Dock.
-- **.icns de macOS** (los dos Launchpad que mandó Andrés tienen PNG adentro, del formato moderno): el PNG ahora se copia aparte y se abre ignorando perfiles de color y metadatos; si Windows igual no puede, se prueba con el decodificador de PNG directo y con los otros tamaños del archivo. El registro anota el motivo.
+- **.icns de macOS** (los dos Launchpad de prueba tienen PNG adentro, del formato moderno): el PNG ahora se copia aparte y se abre ignorando perfiles de color y metadatos; si Windows igual no puede, se prueba con el decodificador de PNG directo y con los otros tamaños del archivo. El registro anota el motivo.
 - Preferencias: los nombres de las barras y de los selectores ("Apariencia", "Transparencia del vidrio", "Oscuro desde las"…) ahora tienen el mismo tamaño de letra que los interruptores, y las horas se ven como "19:00".
 
 ## 1.8.4 — 23/11/2026 (arreglo)
-- **Ícono .icns que "no cambiaba"** (Andrés, con el Launchpad): si McBar no podía leer el archivo, dejaba el ícono de siempre sin avisar. Ahora prueba el archivo al elegirlo y, si no se puede, avisa con un cartel y no lo guarda.
+- **Ícono .icns que "no cambiaba"** (con el Launchpad): si McBar no podía leer el archivo, dejaba el ícono de siempre sin avisar. Ahora prueba el archivo al elegirlo y, si no se puede, avisa con un cartel y no lo guarda.
 - Los .icns viejos ahora también se leen: colores comprimidos con su máscara (it32/ih32/il32/is32 + t8mk/h8mk/l8mk/s8mk) y ARGB (ic04/ic05). Lo único que no se puede leer es JPEG 2000 (Windows no lo trae); el registro anota qué tipos trae el archivo.
 
-## 1.8.3 — 23/11/2026 (pedidos de Andrés)
+## 1.8.3 — 23/11/2026
 - **Preferencias de vidrio** (con el tema Vidrio): la ventana de Preferencias ahora es de vidrio, como el del iPhone: se ve el fondo difuminado a través (acrílico de Windows 11; en Windows 10 el desenfoque de siempre). "Transparencia del vidrio" también la cambia (antes no le hacía nada).
 - **Abrir Preferencias**: si la ventana estaba minimizada o tapada, ahora vuelve al frente (antes parecía que "no abría"). Si algo falla al armarla, avisa con un cartel y lo anota en el registro.
 - **Carpetas de apps en el Dock, como en Android**: arrastrá una app y dejala un momento encima de otra (la de abajo se pone transparente) → al soltar se arma una carpeta en ese lugar. Arrastrar más apps encima las agrega. El ícono muestra las primeras 4 apps; al tocarla se abre un panel con todas (clic abre la app o la trae si ya está abierta). Clic derecho en la carpeta: Cambiar el nombre…, Deshacer la carpeta, Quitar del Dock. Clic derecho en una app de la carpeta: Sacar de la carpeta (si queda una sola, la carpeta se deshace). También: clic derecho en una app fija → Opciones → Agregar a una carpeta.
 
-## 1.8.2 — 23/11/2026 (pedido de Andrés)
+## 1.8.2 — 23/11/2026
 - **Íconos .icns de macOS**: se pueden usar en "Cambiar ícono…" (Dock y Launchpad) y en los paquetes de íconos (una carpeta con .icns funciona igual que con .png). McBar toma de adentro la imagen PNG del tamaño justo. Los .icns muy viejos (Mac OS X 10.6 o antes), que guardan el ícono en otro formato, no se leen y queda el ícono original (se anota en el registro).
 - Compilación: `Core/TrafficLights.cs` y `Panels/TrafficLightsWindow.cs` quedan vacíos (el zip no borra archivos del repo y los viejos usaban ajustes que ya no existen; CS1061).
 
-## 1.8.1 — 23/11/2026 (arreglos y pedidos de Andrés)
+## 1.8.1 — 23/11/2026 (arreglos y pedidos )
 - **La tecla Windows ya no abre Inicio junto con el Launchpad**: McBar ahora no deja que Windows vea la tecla sola (antes usaba un truco que en algunas versiones de Windows 11 ya no alcanza). Los atajos de Windows (Win+E, Win+D, Win+flechas, Win+Mayús+S, Win+V, Win+L…) siguen andando.
 - **Al minimizar, los menús de la ventana se van y el foco pasa al escritorio** (como el Finder en macOS) si no queda otra app. Además la barra solo muestra menús de ventanas de apps de verdad (Windows a veces le daba el foco a una ventana invisible).
 - **Cerrar escritorios virtuales**: en Win+Tab, al pasar el mouse por un escritorio aparece una ×, y con clic derecho "Cerrar escritorio". Sus ventanas pasan al escritorio de al lado.
@@ -46,7 +50,7 @@
 - **Se sacaron los botones de colores** sobre las ventanas (no quedaban bien).
 - **Forma de los íconos "Como en Mac": cada app con su color**. La placa detrás de los íconos sueltos ya no es casi blanca para todos: toma el color principal de cada ícono (degradé suave del mismo tono), así el Dock y el Launchpad quedan de colores. Los íconos grises quedan sobre gris claro.
 
-## 1.8.0 — 23/11/2026 (etapa: Estilo Mac, pedido de Andrés: "todo, pero que sean opciones")
+## 1.8.0 — 23/11/2026 (etapa: Estilo Mac, pedido de Pedido: "todo, pero que sean opciones")
 Pestaña nueva **Preferencias → Estilo Mac**. **Todo es opcional y viene apagado**; cursores y sonidos vuelven a los anteriores al apagar la opción (y al desinstalar McBar).
 - **Modo oscuro automático**: Windows y las apps pasan a oscuro a la noche y a claro de día ("Oscuro desde las" 19 y "Claro desde las" 7, se cambian). Solo cambia al pasar de un horario al otro: si lo cambiás a mano en el medio, McBar no lo pisa.
 - **Cursores estilo Mac**: juego propio de McBar (dibujado por código, no son los de Apple): flecha negra con borde blanco, manito, texto, flechas de tamaño, mover, cruz, prohibido, ayuda y una rueda de colores girando para "esperando". En 32, 48 y 64 px (Windows elige según el tamaño del puntero).
@@ -62,19 +66,19 @@ Pestaña nueva **Preferencias → Estilo Mac**. **Todo es opcional y viene apaga
 - **Pilas del Dock**: Cuadrícula (como venía), **Abanico** (los archivos suben en curva, como macOS) o **Lista**.
 - Los cursores, sonidos y el generador están en `tools/estilo-mac` (para volver a generarlos).
 
-## 1.7.0 — 23/11/2026 (pedido de Andrés: fondos y pantalla de bloqueo)
+## 1.7.0 — 23/11/2026 (pedido de Pedido: fondos y pantalla de bloqueo)
 - **Fondos de McBar "Ondas"**: cuatro fondos originales en 4K (3840×2160), hechos desde cero con inspiración en el estilo abstracto marrón y dorado de la última versión de macOS (no copian el de Apple): mañana (crema y dorado claro), tarde (dorado y ámbar), atardecer (naranja, rosado y bordó) y noche (ciruela casi negro con cintas en bronce). Misma composición en los cuatro, cambia solo la luz.
 - Vienen **dentro de McBar.exe** y se copian a `%AppData%\McBar\fondos` al usarlos. Preferencias → Personalización → Fondo de pantalla según la hora → **"Usar los fondos de McBar"**: los pone en los 4 momentos y prende el cambio según la hora.
 - **"Usar también en la pantalla de bloqueo"** (viene apagado): la misma imagen del momento va a la pantalla de bloqueo de Windows, que también se ve al iniciar sesión si está prendido «Mostrar la imagen de fondo de la pantalla de bloqueo en la pantalla de inicio de sesión». No pide administrador; si Windows lo bloquea (por ejemplo una política de empresa), solo se anota en el registro.
 
 ## 1.6.3 — 23/11/2026
-- **Menús de una ventana minimizada (de nuevo)**: el arreglo de la 1.6.2 dependía de que Windows avisara al minimizar y en la PC de Andrés no alcanzó. Ahora, mientras la barra o la isla muestran los menús de una app, McBar vuelve a mirar cada 0,4 s si esa app sigue elegida, y además mira la ventana que tiene el foco en ese momento: si está minimizada, si nadie tiene el foco, o si es el escritorio o la barra de Windows, los menús se van.
+- **Menús de una ventana minimizada (de nuevo)**: el arreglo de la 1.6.2 dependía de que Windows avisara al minimizar y en la PC de el usuario no alcanzó. Ahora, mientras la barra o la isla muestran los menús de una app, McBar vuelve a mirar cada 0,4 s si esa app sigue elegida, y además mira la ventana que tiene el foco en ese momento: si está minimizada, si nadie tiene el foco, o si es el escritorio o la barra de Windows, los menús se van.
 
 ## 1.6.2 — 23/11/2026
 - **Dock e isla siempre a la vista en el Launchpad** (como en macOS): al abrir el Launchpad, el Dock (aunque esté en ocultación automática) y la isla o la barra quedan encima, la isla aparece aunque haya una ventana maximizada debajo, y el Launchpad deja abajo el lugar del Dock para que no queden íconos tapados. Tocar otra cosa del Dock cierra el Launchpad. (Corrige lo de la 1.6.1, que lo había entendido al revés.)
 - **Al minimizar la app elegida, sus menús desaparecen enseguida** de la barra o la isla (antes quedaban hasta tocar el escritorio).
 
-## 1.6.1 — 23/11/2026 (pedidos de Andrés)
+## 1.6.1 — 23/11/2026
 - **Cambiar el ícono del Launchpad** (y de cualquier app del Dock): clic derecho → Ícono → "Cambiar ícono…" (.png, .ico, .jpg…). Se guarda una copia en `%AppData%\McBar\iconos-propios`. "Volver al ícono original" lo deshace.
 - **Pasar una app abierta a las fijas del Dock arrastrándola**: una app abierta sin fijar se puede llevar entre las fijas; al soltarla ahí queda fijada en ese lugar.
 - **Launchpad → Dock o escritorio**: la zona para "salir" del Launchpad es más grande (abajo donde están los puntitos y el Dock, arriba la búsqueda y los costados): apenas se lleva la app ahí, el Launchpad se cierra y se la suelta en el Dock o en el escritorio.
@@ -166,7 +170,7 @@ Pestaña nueva **Preferencias → Estilo Mac**. **Todo es opcional y viene apaga
 - Al volver a abrirse, avisa en las notificaciones que hubo un error y dónde quedó el informe.
 - Los errores de tareas en segundo plano ya no pueden tirar la app: se anotan en el registro.
 - **Consumo**: cada 10 minutos se anota en `mcbar.log` cuánta memoria, procesador, identificadores y objetos gráficos usa McBar (para encontrar pérdidas de memoria). En vivo en Preferencias → Diagnóstico, junto con la versión y un botón para abrir los informes de errores.
-- La actualización automática se descartó (pedido de Andrés).
+- La actualización automática se descartó.
 
 ## 0.8.0 — 22/11/2026 (etapa 8: ventanas estilo Mac)
 - **Vista previa en el Dock**: dejando el mouse medio segundo sobre una app abierta aparecen miniaturas EN VIVO de sus ventanas (hasta 5) con su título; clic para ir a esa ventana, ✕ para cerrarla. Se puede apagar en Preferencias → Dock.
@@ -205,10 +209,10 @@ Se abren tocando los íconos de la barra o de la isla, o las filas del Centro de
 - **Arranque sin parpadeo**: al apagar o cerrar sesión, si McBar arranca con Windows, la barra de Windows queda oculta (ocultar automático), así al volver a entrar no aparece antes de que McBar abra.
 
 ## 0.4.4 — 22/11/2026
-- **Isla sin app activa en un solo renglón** (pedido de Andrés): cuando no hay ventana elegida, la primera fila quedaba solo con el logo de McBar. Ahora el logo pasa a la derecha, después de la bandeja, el clima, la red, el volumen y el reloj, y todo queda en una sola fila (la isla se achica). Al elegir una app vuelven las dos filas con sus menús.
+- **Isla sin app activa en un solo renglón**: cuando no hay ventana elegida, la primera fila quedaba solo con el logo de McBar. Ahora el logo pasa a la derecha, después de la bandeja, el clima, la red, el volumen y el reloj, y todo queda en una sola fila (la isla se achica). Al elegir una app vuelven las dos filas con sus menús.
 
 ## 0.4.3 — 22/11/2026
-Pedidos de Andrés:
+Pedidos :
 
 **Launchpad**
 - **Seleccionar varias**: Ctrl o Mayús + clic (o clic derecho → Seleccionar). Abajo aparece una barra con Ocultar, Mostrar, Nueva carpeta y Cancelar; el clic derecho sobre una seleccionada ofrece lo mismo y "Agregar a carpeta". Esc cancela.
@@ -236,32 +240,32 @@ Pedidos de Andrés:
 - "Transparencia del fondo" (y otros nombres largos) ya no se cortan en Preferencias: la columna del nombre se adapta al texto.
 
 ## 0.4.2 — 22/11/2026
-Pedidos de Andrés:
+Pedidos :
 - **Ocultar apps del Launchpad**: clic derecho → "Ocultar del Launchpad". Abajo a la derecha aparece "Mostrar apps ocultas (N)": las muestra atenuadas y desde ahí se pueden "Dejar de ocultar". Se guardan en settings.json (`LaunchpadHidden`).
 - **Nuevo modo de barra superior "Gota"** (Preferencias → Barra superior → Tipo): como la isla, pero pegada al borde de arriba, con curvas que la unen al borde como una gota, y del mismo tamaño dinámico (crece con los menús, los avisos y los cajones).
 - **Centro de control con botones enteros**: Wi-Fi, Bluetooth, Modo avión, Modo oscuro, Concentración, Configuración y Preferencias se activan tocando toda la fila (ícono y texto), no solo el circulito. También en el cajón de la isla y la gota.
 - Error de compilación de la 0.4.1 en Preferencias (tipo del contenido de las pestañas) corregido.
 
 ## 0.4.1 — 22/11/2026
-Pedidos de Andrés después de probar la 0.4.0 (registro de su PC revisado):
+Pedidos  después de probar la 0.4.0 (registro de su PC revisado):
 - **Ventanas que "querían acomodarse y no podían"**: el registro mostraba que McBar y el Explorador se peleaban por el área de trabajo cada pocos minutos. Ahora las correcciones de McBar son silenciosas (no avisan a todas las ventanas, así nada se sacude ni el Explorador reacciona) y, si la pelea sigue, McBar deja de corregir hasta que cambie algo (monitores, Preferencias o reinicio del Explorador).
 - **Rendimiento**:
   - El Dock flotante tenía una sombra con efecto (DropShadowEffect + caché) que se recalculaba en cada cuadro de la lupa: ahora es una sombra dibujada, sin costo.
   - El Dock ya no cambia su forma en cada cuadro mientras el mouse está encima.
   - El Launchpad usa ventana rápida (antes era una ventana "en capas" de pantalla completa: Windows copiaba toda la pantalla en cada cuadro).
   - La ventana de la isla vuelve a medir 300 de alto y solo crece mientras un cajón lo necesita.
-- **Dock** (elegido por Andrés):
+- **Dock**:
   - El fondo crece con la lupa como en macOS: los íconos ya no se salen.
   - "Vidrio dibujado por McBar" en lugar del desenfoque de Windows: esquinas suaves, sin bordes dentados ni cortes de la sombra. El desenfoque sigue como opción en Preferencias → Dock.
   - La forma de la ventana ya no recorta las esquinas (Windows no las suaviza): las dibuja WPF.
 - **Papelera que desaparecía**: para quitar o cerrar un ícono arrastrándolo hay que mantenerlo afuera un momento (se ve el cartel), así no se pierde por un tirón sin querer. Si la Papelera y Descargas no estaban, vuelven solas al actualizar; también hay un botón en Preferencias → Dock para volver a ponerlas.
-- **Clima propio** (elegido por Andrés): tocar el clima de la barra o de la isla abre un widget con el tiempo de ahora, sensación térmica, humedad, viento, las próximas 24 horas y los próximos 7 días (con barrita de mínima/máxima y probabilidad de lluvia). Datos de Open-Meteo, nada de Windows.
+- **Clima propio**: tocar el clima de la barra o de la isla abre un widget con el tiempo de ahora, sensación térmica, humedad, viento, las próximas 24 horas y los próximos 7 días (con barrita de mínima/máxima y probabilidad de lluvia). Datos de Open-Meteo, nada de Windows.
 - **Isla con estilo Vidrio**: dibujaba un cuadrado oscuro enorme (el desenfoque de Windows no respeta la forma de la ventana). Ahora es vidrio dibujado por McBar.
 - **Launchpad muy transparente**: la escala de transparencia ahora va de casi opaco (0) a casi nada (100), pareja; con desenfoque el velo va a la mitad.
 - **Preferencias en pestañas**: secciones a la izquierda (Dock, Barra superior, Isla dinámica, Notificaciones, Launchpad, Bandeja, General, Widgets) y su contenido a la derecha; recuerda la última abierta.
 
 ## 0.4.0 — 22/11/2026
-Pedidos de Andrés: fondo del Launchpad más transparente, carpetas, y dejar de usar el panel lateral de notificaciones de Windows. Más los errores vistos en su video del 22/11 (15:06).
+Pedidos de Pedido: fondo del Launchpad más transparente, carpetas, y dejar de usar el panel lateral de notificaciones de Windows. Más los errores vistos en su video del 22/11 (15:06).
 
 **Nuevo**
 - **Centro de notificaciones propio**: las notificaciones de Windows se guardan en McBar (hasta 60, agrupadas por app, con "hace 5 min"). Con la isla se abre como cajón desde la píldora (clic en la hora, o en la píldora si hay sin leer: aparece un globito con la cantidad). Con la barra de menú, el reloj muestra un puntito azul y abre el panel de la derecha con las notificaciones arriba de los widgets.
@@ -286,7 +290,7 @@ Pedidos de Andrés: fondo del Launchpad más transparente, carpetas, y dejar de 
 - Se anota en el registro si Windows no acepta poner su barra en "ocultar automáticamente".
 
 ## 0.3.2 — 22/11/2026
-Pedidos de Andrés después de probar la isla (video del 22/11):
+Pedidos  después de probar la isla (video del 22/11):
 - **Se trababa todo**: los íconos de bandeja que pone el propio Windows (volumen, red) ya no se muestran ni se tocan. Tocarlos abría paneles de Windows anclados a su barra escondida, que quedaban invisibles y se quedaban con el mouse.
 - **Volumen repetido**: era el ícono de volumen de Windows en la bandeja; queda solo el de McBar.
 - **Reloj de la píldora más grande** (y tamaño configurable).
@@ -303,7 +307,7 @@ Pedidos de Andrés después de probar la isla (video del 22/11):
 - El control de brillo (WMI) se inicia en segundo plano (en PCs de escritorio podía demorar el arranque).
 
 ## 0.3.1 — 22/11/2026
-Arreglos después de probar la 0.2 en la PC de Andrés:
+Arreglos después de probar la 0.2 en la PC :
 - **Lentitud**: el bucle de animación del Dock tenía un error que se repetía (registro: "Index was out of range" en DockWindow.Step). Ahora trabaja sobre una copia fija de la lista en cada cuadro y, si algo falla, se detiene en vez de repetir el error.
 - **Lentitud**: la bandeja propia ahora corre en su propio hilo; antes cada mensaje de cada app (y su reenvío al Explorador) frenaba la interfaz.
 - **Lentitud**: la detección de pantalla completa ya no escucha cada movimiento de la ventana activa (despertaba a McBar con cada movimiento del mouse); ahora se revisa al cambiar el foco y una vez por segundo.
@@ -339,7 +343,7 @@ Nuevo:
 - Bandeja del sistema propia: los íconos de las apps en la barra de McBar.
 
 ## 0.1.0 — 17/11/2026
-Primera versión de McBar (creado por Andrés Londero):
+Primera versión de McBar (creado por Londero):
 - Dock estilo macOS con ampliación, rebote, indicadores, Descargas, Papelera, arrastrar y soltar, ocultación automática.
 - Barra de menú superior con menús, estado del sistema y reloj.
 - Centro de control, Widgets, Launchpad y Preferencias.

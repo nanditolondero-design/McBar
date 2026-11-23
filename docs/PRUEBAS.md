@@ -183,7 +183,7 @@ Tema:
 - [ ] Abrir McBar.exe desde Descargas: aparece el instalador (vidrio, ícono flotando, versión 0.5.0).
 - [ ] Instalar con todo marcado: progreso animado, "¡Listo!", "Abrir McBar" abre la copia de `%LocalAppData%\Programs\McBar`.
 - [ ] Menú Inicio y escritorio: acceso directo "McBar" con su ícono.
-- [ ] Configuración → Aplicaciones instaladas: aparece McBar 0.5.0, de Andrés Londero.
+- [ ] Configuración → Aplicaciones instaladas: aparece McBar 0.5.0,  Londero.
 - [ ] El Dock trae las apps que estaban fijadas en la barra de Windows.
 - [ ] Reiniciar la PC: McBar arranca solo y la barra de Windows no aparece antes.
 - [ ] Abrir de nuevo el mismo McBar.exe de Descargas: abre la instalada (no vuelve a instalar).
@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.2 (edición Store)
+- [ ] En GitHub Actions aparecen dos archivos: McBar-win-x64 (el .exe de siempre) y McBar-Store-msix.
+- [ ] El .exe de siempre se comporta igual que antes (instalador, "Instalar McBar…" al probar).
+- [ ] La edición Store (instalada desde la Store o en modo prueba): no muestra el instalador ni "Instalar McBar…"; "Abrir McBar al iniciar Windows" aparece también en Configuración → Aplicaciones → Inicio; cursores, sonidos y modo oscuro automático cambian Windows de verdad.
+
 ### Versión 1.9.1
 - [ ] Prender "Abrir McBar al iniciar Windows" y reiniciar la PC: la barra de Windows casi no se ve (como mucho una rayita) y McBar aparece antes que antes.
 - [ ] Preferencias → Dock → "Botón de apagado en el Dock": aparece al lado de la Papelera con el símbolo rojo. Clic → Suspender / Reiniciar… / Apagar… / Bloquear / Cerrar sesión…; Reiniciar y Apagar piden confirmación (Cancelar no hace nada). Clic derecho → también "Quitar del Dock". Apagar la opción lo saca.
@@ -266,7 +271,7 @@ Tema:
 
 ### Versión 1.8.5
 - [ ] Isla dinámica → Estilo → Vidrio: la píldora deja ver el fondo difuminado. General → Transparencia del vidrio de 0 a 100: la píldora pasa de casi opaca a muy transparente. En pantalla completa no queda ningún recuadro difuminado suelto.
-- [ ] Cambiar el ícono del Launchpad por los .icns de Launchpad que mandó Andrés: cambia.
+- [ ] Cambiar el ícono del Launchpad por los .icns de Launchpad de prueba: cambia.
 - [ ] Estilo Mac → Oscuro/Claro desde las: se ve "19:00" / "7:00"; los nombres de las barras con la misma letra que los interruptores.
 
 ### Versión 1.8.4

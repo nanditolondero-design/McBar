@@ -110,7 +110,7 @@ namespace McBar.Panels
             return root;
         }
 
-        // 0.4.1 (pedido de Andrés): cada opción es un botón ENTERO (ícono + texto), no solo el circulito.
+        // 0.4.1: cada opción es un botón ENTERO (ícono + texto), no solo el circulito.
 
         private static Border Circle(string glyph, bool active, out TextBlock g)
         {

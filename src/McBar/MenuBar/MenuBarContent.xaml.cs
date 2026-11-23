@@ -169,7 +169,7 @@ namespace McBar.MenuBar
         }
 
         /// <summary>
-        /// 0.4.4 (pedido de Andrés): en la isla, si no hay app activa la primera fila quedaba solo con el logo.
+        /// 0.4.4: en la isla, si no hay app activa la primera fila quedaba solo con el logo.
         /// Entonces el logo pasa a la derecha, después de todo lo demás, y queda todo en UN solo renglón.
         /// </summary>
         private void ApplyRows()

@@ -7,7 +7,7 @@
 //     estaban al apagar la opción.
 // Las partes están en MacSystemLook.cs (modo oscuro, cursores, sonidos), MacInput.cs (gancho del mouse,
 // sacudir, clic en el fondo), Screenshots.cs, StageManager.cs y AppMenus.cs.
-// (Los "botones de colores" de la 1.8.0 se sacaron en la 1.8.1 a pedido de Andrés: no quedaban bien.)
+// (Los "botones de colores" de la 1.8.0 se sacaron en la 1.8.1: no quedaban bien.)
 using System;
 using System.Collections.Generic;
 using System.IO;

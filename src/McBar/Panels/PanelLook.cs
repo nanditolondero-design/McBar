@@ -1,5 +1,5 @@
 // McBar — Creado por Andrés Londero
-// 1.6.0 — Aspecto de los paneles como en macOS (lo que Andrés aprobó en la vista previa):
+// 1.6.0 — Aspecto de los paneles como en macOS (según la vista previa aprobada):
 //  - Sombra grande y suave debajo del panel (PanelShadow: una ventanita aparte, porque el panel recorta su
 //    forma para el desenfoque y una sombra dentro de él no se vería).
 //  - Brillo fino arriba: el borde de vidrio más claro arriba y apagándose hacia abajo (Highlight).

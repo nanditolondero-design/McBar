@@ -75,5 +75,5 @@ P={
 if __name__=='__main__':
     scale=int(sys.argv[1]) if len(sys.argv)>1 else 1
     for i,(k,p) in enumerate(P.items()):
-        render(p, 27, f'/home/claude/walls/{k}{"" if scale==1 else "_prev"}.jpg', scale)
+        render(p, 27, f'{k}{"" if scale==1 else "_prev"}.jpg', scale)
         print('ok',k)

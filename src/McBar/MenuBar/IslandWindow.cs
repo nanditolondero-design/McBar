@@ -284,7 +284,7 @@ namespace McBar.MenuBar
                     // 1.8.5: la "Transparencia del vidrio" (Preferencias → General) también cambia la píldora de vidrio.
                     // 1.8.6: se probó pintarlo con el fondo de pantalla difuminado (Core/WallpaperGlass, sin uso ahora).
                     int tr = s.GlassTransparency;
-                    // 1.8.7 (Andrés eligió "transparencia real"): solo un tinte con transparencia; se ve de verdad lo
+                    // 1.8.7 (se eligió "transparencia real"): solo un tinte con transparencia; se ve de verdad lo
                     // que está detrás (ventanas incluidas), sin desenfoque. La transparencia del vidrio regula el tinte
                     // (con un mínimo para que la hora se siga leyendo).
                     bg = GlassTint(tr);

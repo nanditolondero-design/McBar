@@ -619,7 +619,7 @@ namespace McBar.Dock
         private bool ConfirmedPullOut(DockItem it) => IsPulledOut(it) && (DateTime.Now - _pulledSince).TotalMilliseconds >= 450;
 
         /// <summary>
-        /// 0.4.0 (pedido de Andrés): una app abierta que NO está fijada se puede arrastrar fuera del Dock
+        /// 0.4.0: una app abierta que NO está fijada se puede arrastrar fuera del Dock
         /// y al soltarla se cierra (se les pide cerrar a sus ventanas, como "Salir").
         /// </summary>
         private static bool ClosesOnDrag(DockItem it) =>
