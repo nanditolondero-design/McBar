@@ -199,3 +199,6 @@ Captura de Andrés: con la 1.8.5 la píldora de vidrio tenía un rectángulo cla
 ## 1.8.7 (23/11/2026)
 Andrés: "¿no hay forma de que sea real la transparencia?" → opciones: (1) transparencia real sin desenfoque, (2) desenfoque real con la composición de Windows 11 (experimental). Eligió la 1. `IslandWindow.GlassTint(transparencia)`: degradé con alfa de `ScaleAlpha` (mínimo 0x30/0x38). `WallpaperGlass` queda sin uso. Pendiente si Andrés lo pide: opción 2 (HostBackdropBrush + recorte redondeado).
 
+## 1.8.8 (23/11/2026)
+Andrés: "agregar la opción de instalar si estoy probando la app". `App.IsTrying` / `App.InstallNow` (InstallerWindow con `fromRunning`: "Ahora no" / "Seguir probando"; al instalar abre la copia instalada con `--reinicio` y esta se cierra con `SafeCleanup(keepTaskbarHidden: true)`). "Instalar McBar…" en `MenuBarContent.BuildSystemMenu` y en el pie de Preferencias.
+

@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.8
+- [ ] Abrir McBar.exe desde Descargas → "Probar sin instalar". En el menú de McBar aparece "Instalar McBar…" y en Preferencias el botón abajo. Al tocarlo: instalador con "Instalar" y "Ahora no". Instalar → "Abrir McBar": se cierra la copia de prueba y abre la instalada, con los mismos ajustes y sin que aparezca la barra de Windows.
+- [ ] Con McBar instalado (abierto desde el menú Inicio) esas opciones NO aparecen.
+
 ### Versión 1.8.7
 - [ ] Isla → Estilo → Vidrio: con una ventana detrás de la píldora (no maximizada) se ve esa ventana a través, sin recuadro. Transparencia del vidrio 0 → casi opaca; 100 → casi invisible pero la hora se lee.
 

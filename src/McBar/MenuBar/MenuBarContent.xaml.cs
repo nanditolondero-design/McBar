@@ -558,6 +558,7 @@ namespace McBar.MenuBar
             cm.Items.Add(Mi("Configuración del sistema…", () => Launcher.Open("ms-settings:")));
             cm.Items.Add(Mi("Preferencias de McBar…", App.OpenSettings));
             cm.Items.Add(Mi("Acerca de McBar", App.ShowAbout));
+            if (App.IsTrying) cm.Items.Add(Mi("Instalar McBar…", App.InstallNow)); // 1.8.8: se está probando sin instalar
             cm.Items.Add(new Separator());
             // 1.3.0: perfiles y modo juego
             var prof = SettingsStore.Current.Profiles;

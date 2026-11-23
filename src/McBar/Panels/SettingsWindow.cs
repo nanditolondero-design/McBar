@@ -229,6 +229,14 @@ namespace McBar.Panels
             var about = new Button { Content = "Acerca de McBar", HorizontalAlignment = HorizontalAlignment.Left };
             about.SetResourceReference(StyleProperty, "McButton");
             about.Click += (_, _) => McDialog.ShowAbout();
+            // 1.8.8: si se está probando sin instalar, botón para instalar (al medio, abajo)
+            if (App.IsTrying)
+            {
+                var inst = new Button { Content = "Instalar McBar…", HorizontalAlignment = HorizontalAlignment.Center };
+                inst.SetResourceReference(StyleProperty, "McAccentButton");
+                inst.Click += (_, _) => App.InstallNow();
+                foot.Children.Add(inst);
+            }
             var quit = new Button { Content = "Salir de McBar", HorizontalAlignment = HorizontalAlignment.Right };
             quit.SetResourceReference(StyleProperty, "McButton");
             quit.Click += (_, _) =>

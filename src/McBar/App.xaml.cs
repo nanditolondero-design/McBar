@@ -973,6 +973,32 @@ namespace McBar
             _trimTimer.Start();
         }
 
+        /// <summary>1.8.8: McBar se está probando sin instalar (no corre desde la carpeta instalada).</summary>
+        public static bool IsTrying => !Installer.IsRunningInstalled;
+
+        /// <summary>
+        /// 1.8.8: instalar desde McBar mientras se lo prueba. Abre el instalador; al terminar abre la copia
+        /// instalada (con --reinicio, que espera a que esta se cierre) y esta se cierra sin volver a mostrar la
+        /// barra de Windows. Los ajustes son los mismos (%AppData%\McBar), así que queda todo igual.
+        /// </summary>
+        public static void InstallNow()
+        {
+            if (!IsTrying) { McDialog.Info("McBar ya está instalado", "Esta copia es la instalada."); return; }
+            var setup = new InstallerWindow(Installer.InstalledVersion() != null, fromRunning: true);
+            setup.ShowDialog();
+            if (setup.Result != "installed") return;
+            SettingsStore.Current.PortablePath = "";
+            SettingsStore.Current.PortableVersion = "";
+            SettingsStore.Save();
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Installer.InstalledExe, "--reinicio") { UseShellExecute = false, WorkingDirectory = Installer.InstallDir });
+            }
+            catch (Exception ex) { Log.Write("Abrir McBar instalado: " + ex.Message); McDialog.Info("McBar se instaló", "Abrilo desde el menú Inicio."); }
+            SafeCleanup(keepTaskbarHidden: true);
+            Current.Shutdown();
+        }
+
         public static void Quit()
         {
             SafeCleanup();

@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.7-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.8-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -143,7 +143,7 @@ Es una alternativa a la barra de menú: una píldora negra arriba al centro, com
 
 - Se instala **para tu usuario, sin permisos de administrador**, en `%LocalAppData%\Programs\McBar`, y figura en *Configuración → Aplicaciones instaladas*.
 - **Actualizar**: abrí el `McBar.exe` nuevo y elegí "Actualizar". Los ajustes se conservan.
-- **Probar sin instalar**: botón del instalador o `McBar.exe --portable`.
+- **Probar sin instalar**: botón del instalador o `McBar.exe --portable`. Mientras lo probás, el menú de McBar y Preferencias tienen **Instalar McBar…**.
 - **Desinstalar**: *Configuración → Aplicaciones instaladas → McBar → Desinstalar* (o `McBar.exe --uninstall`). La barra de Windows vuelve como estaba.
 - **Salir**: menú de McBar (arriba a la izquierda) → *Salir de McBar*.
 
@@ -244,6 +244,7 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.8.8** | Instalar desde McBar mientras se lo prueba |
 | **1.8.7** | Píldora de vidrio con transparencia real |
 | **1.8.6** | Píldora de vidrio con el fondo difuminado, sin recuadro |
 | **1.8.5** | Píldora de vidrio con desenfoque y transparencia regulable, .icns más tolerantes |

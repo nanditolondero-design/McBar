@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.8.8 — 23/11/2026 (pedido de Andrés)
+- **Instalar mientras se prueba**: si McBar se está usando "sin instalar", aparece **"Instalar McBar…"** en el menú de McBar (arriba a la izquierda o en la píldora) y como botón abajo en Preferencias. Abre el instalador (con "Ahora no" en vez de "Probar sin instalar"); al terminar, se abre la copia instalada y la de prueba se cierra sola, sin que vuelva a aparecer la barra de Windows. Los ajustes quedan iguales.
+
 ## 1.8.7 — 23/11/2026 (elección de Andrés: transparencia real)
 - **Píldora de vidrio transparente de verdad**: ahora se ve lo que realmente está detrás (también las ventanas), nítido y sin desenfoque, con un tinte oscuro encima. "Transparencia del vidrio" regula ese tinte (0 casi opaca, 100 casi invisible, con un mínimo para que la hora se siga leyendo). Reemplaza el vidrio pintado con el fondo de pantalla de la 1.8.6.
 

@@ -25,9 +25,13 @@ namespace McBar.Panels
         private readonly Grid _page = new Grid();
         private readonly Border _card;
 
-        public InstallerWindow(bool update)
+        /// <summary>1.8.8: abierta desde McBar ya en marcha (probando sin instalar): sin "Probar sin instalar".</summary>
+        private readonly bool _fromRunning;
+
+        public InstallerWindow(bool update, bool fromRunning = false)
         {
             _update = update;
+            _fromRunning = fromRunning;
             Title = update ? "Actualizar McBar" : "Instalar McBar";
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
@@ -198,7 +202,13 @@ namespace McBar.Panels
             var install = Big(_update ? "Actualizar" : "Instalar", true);
             install.Click += (_, _) => RunInstall();
             buttons.Children.Add(install);
-            if (!_update)
+            if (_fromRunning)
+            {
+                var later = Big("Ahora no", false); // 1.8.8: ya se está probando
+                later.Click += (_, _) => { Result = "cancel"; Close(); };
+                buttons.Children.Add(later);
+            }
+            else if (!_update)
             {
                 var portable = Big("Probar sin instalar", false);
                 portable.Click += (_, _) => { Result = "portable"; Close(); };
@@ -298,7 +308,7 @@ namespace McBar.Panels
             {
                 var retry = Big("Probar de nuevo", true);
                 retry.Click += (_, _) => ShowWelcome();
-                var portable = Big("Usar sin instalar", false);
+                var portable = Big(_fromRunning ? "Seguir probando" : "Usar sin instalar", false);
                 portable.Click += (_, _) => { Result = "portable"; Close(); };
                 buttons.Children.Add(retry);
                 buttons.Children.Add(portable);
