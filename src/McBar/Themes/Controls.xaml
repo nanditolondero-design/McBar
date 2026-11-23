@@ -19,13 +19,30 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border Margin="10" Padding="5" CornerRadius="9" MinWidth="210"
-                            Background="{DynamicResource Mc.PanelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}" BorderThickness="1">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.35" Color="Black"/>
-                        </Border.Effect>
-                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
-                    </Border>
+                    <!-- 1.6.0: esquinas más redondeadas, sombra más grande y suave (en una capa aparte, así no se
+                         recalcula al pasar el mouse por las opciones) y brillo fino arriba -->
+                    <Grid Margin="18,12,18,26" MinWidth="210">
+                        <Border CornerRadius="12" Background="{DynamicResource Mc.PanelBg}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="30" ShadowDepth="10" Direction="270" Opacity="0.4" Color="Black" RenderingBias="Performance"/>
+                            </Border.Effect>
+                            <Border.CacheMode>
+                                <BitmapCache/>
+                            </Border.CacheMode>
+                        </Border>
+                        <Border Padding="5" CornerRadius="12" Background="{DynamicResource Mc.PanelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}" BorderThickness="1">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                        <Border CornerRadius="12" BorderThickness="1" IsHitTestVisible="False">
+                            <Border.BorderBrush>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#40FFFFFF" Offset="0"/>
+                                    <GradientStop Color="#14FFFFFF" Offset="0.12"/>
+                                    <GradientStop Color="#00FFFFFF" Offset="0.5"/>
+                                </LinearGradientBrush>
+                            </Border.BorderBrush>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -357,6 +374,31 @@
         </Setter>
     </Style>
 
+    <!-- ===== Cuadro de contraseña / clave (1.4.0), igual que McTextBox ===== -->
+    <Style x:Key="McPasswordBox" TargetType="PasswordBox">
+        <Setter Property="Foreground" Value="{DynamicResource Mc.Text}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Mc.Text}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource Mc.Accent}"/>
+        <Setter Property="FontFamily" Value="{StaticResource Mc.Font}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{DynamicResource Mc.InputBg}"
+                            BorderBrush="{DynamicResource Mc.PanelBorder}" BorderThickness="1">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Mc.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===== Control segmentado (RadioButton) ===== -->
     <Style x:Key="McSegment" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource Mc.Text}"/>
@@ -385,7 +427,7 @@
 
     <!-- Tarjeta (tile) del Centro de control y de los widgets -->
     <Style x:Key="McTile" TargetType="Border">
-        <Setter Property="CornerRadius" Value="13"/>
+        <Setter Property="CornerRadius" Value="14"/> <!-- 1.6.0: antes 13 -->
         <Setter Property="Background" Value="{DynamicResource Mc.TileBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Mc.TileBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>

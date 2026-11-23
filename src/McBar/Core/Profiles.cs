@@ -35,6 +35,7 @@ namespace McBar.Core
             nameof(AppSettings.TaskbarModified), nameof(AppSettings.OriginalTaskbarState), nameof(AppSettings.OriginalMinAnimate),
             nameof(AppSettings.PortablePath), nameof(AppSettings.PortableVersion), nameof(AppSettings.FirstRunDone), nameof(AppSettings.LookVersion),
             nameof(AppSettings.StartWithWindows),
+            nameof(AppSettings.MacIconsKey), nameof(AppSettings.MacIconsMonth), nameof(AppSettings.MacIconsUsed),
         };
 
         /// <summary>La lista de perfiles en sí (no se copia al cambiar de perfil).</summary>
@@ -46,6 +47,7 @@ namespace McBar.Core
             var copy = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(s, Options), Options) ?? new AppSettings();
             copy.Profiles = new List<SettingsProfile>();
             copy.ActiveProfile = "";
+            copy.MacIconsKey = ""; // 1.4.0: la clave nunca va dentro de un perfil
             return JsonSerializer.Serialize(copy, Options);
         }
 
@@ -111,13 +113,18 @@ namespace McBar.Core
         public static event Action? ProfileChanged;
 
         /// <summary>Archivo exportado: marca, versión y ajustes. Pura.</summary>
-        public static string Export(AppSettings s) => JsonSerializer.Serialize(new ExportFile
+        public static string Export(AppSettings s)
         {
-            App = "McBar",
-            Version = typeof(Profiles).Assembly.GetName().Version?.ToString(3) ?? "",
-            Exported = DateTime.Now,
-            Settings = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(s, Options), Options),
-        }, Options);
+            var copy = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(s, Options), Options) ?? new AppSettings();
+            copy.MacIconsKey = ""; // 1.4.0: la clave de macOSicons no se exporta (es personal y está cifrada para esta PC)
+            return JsonSerializer.Serialize(new ExportFile
+            {
+                App = "McBar",
+                Version = typeof(Profiles).Assembly.GetName().Version?.ToString(3) ?? "",
+                Exported = DateTime.Now,
+                Settings = copy,
+            }, Options);
+        }
 
         /// <summary>Lee un archivo exportado (o un settings.json suelto). Devuelve null si no es de McBar. Pura.</summary>
         public static AppSettings? ReadExport(string json)

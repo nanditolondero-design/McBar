@@ -55,7 +55,7 @@ namespace McBar.Dock
             _previewTimer.Stop();
             var it = _hoverItem;
             if (it == null || it.Kind != DockItemKind.App || it.Windows.Count == 0 || _dragging || _menuOpen || it.Removing) return;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
             double cx = _winLeftPx / sc + it.LayoutLeft + it.LayoutSize / 2;
             double top = _winTopPx / sc + BarTop - Math.Max(0, it.LayoutSize - BaseSize);
             App.ShowDockPreview(it.Windows.ToList(), cx, top, _monitor);
@@ -95,7 +95,7 @@ namespace McBar.Dock
         private double IconBottom => ActualHeight - BottomMargin - Pad;
 
         /// <summary>Píxeles a reservar abajo para que las ventanas maximizadas no queden tapadas.</summary>
-        public int ReservePx => AutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * App.Scale);
+        public int ReservePx => AutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * _monitor.Scale);
 
         // Ventana rápida (común, con vidrio de DWM y forma recortada) en lugar de "en capas".
         private readonly bool _fast;
@@ -124,7 +124,8 @@ namespace McBar.Dock
             HotZone.MouseEnter += (_, _) => { if (_hidden) { _hidden = false; EnsureAnimating(); } };
             SizeChanged += (_, _) => EnsureAnimating();
             DragOver += Window_DragOver;
-            DragLeave += (_, _) => { _hover = false; EnsureAnimating(); };
+            DragEnter += (_, _) => { _hideTimer.Stop(); if (_hidden) { _hidden = false; } _hover = true; EnsureAnimating(); }; // 1.4.1
+            DragLeave += (_, _) => { _hover = false; EnsureAnimating(); if (AutoHide) _hideTimer.Start(); };
             Drop += Window_Drop;
 
             SourceInitialized += (_, _) =>
@@ -143,6 +144,8 @@ namespace McBar.Dock
                 SettingsStore.PinsChanged += OnPinsChanged;
                 GameMode.Changed += OnGameMode;
             };
+            // 1.5.0: al pasar a un monitor con otra escala, Windows le cambia el tamaño: se vuelve a acomodar.
+            DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(ApplyGeometry), System.Windows.Threading.DispatcherPriority.Loaded);
             Closed += (_, _) => Teardown();
         }
 
@@ -153,13 +156,13 @@ namespace McBar.Dock
             if (S.DockStyle == "full" || IsTaskbar) return _monitor.Bounds.Width;
             var baseSizes = _items.Select(BaseOf).ToArray();
             double need = Magnifier.TotalWidth(baseSizes, Gap) + BarPadX * 2 + (MaxSize - BaseSize) * 3 + 280;
-            return (int)Math.Min(_monitor.Bounds.Width, Math.Ceiling(need * App.Scale));
+            return (int)Math.Min(_monitor.Bounds.Width, Math.Ceiling(need * _monitor.Scale));
         }
 
         public void ApplyGeometry()
         {
             if (_hwnd == IntPtr.Zero) return;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
             _winHeightPx = (int)Math.Ceiling(WindowHeightDip * sc);
             _winWidthPx = ComputeWidthPx();
             var b = _monitor.Bounds;
@@ -195,7 +198,7 @@ namespace McBar.Dock
         private void CheckWindowWidth()
         {
             int need = ComputeWidthPx();
-            if (need > _winWidthPx || need < _winWidthPx - BaseSize * 3 * App.Scale) ApplyGeometry();
+            if (need > _winWidthPx || need < _winWidthPx - BaseSize * 3 * _monitor.Scale) ApplyGeometry();
         }
 
         public void SetFullscreen(bool fullscreen)
@@ -244,7 +247,7 @@ namespace McBar.Dock
         private static int IconPixelSize()
         {
             double max = S.Magnification ? S.MagnifiedSize : S.DockIconSize;
-            return (int)Math.Min(256, Math.Ceiling(max * Math.Max(1.0, App.Scale) / 16.0) * 16);
+            return (int)Math.Min(256, Math.Ceiling(max * Math.Max(1.0, _monitor.Scale) / 16.0) * 16);
         }
 
         // ================== Elementos ==================
@@ -385,7 +388,7 @@ namespace McBar.Dock
                         {
                             if (img == null && hwnd != IntPtr.Zero) img = IconLoader.FromWindow(hwnd);
                             it.View.SetIcon(img);
-                        }, displayName: it.Name);
+                        }, displayName: it.Name, appShape: true);
                     }
                     else if (it.Windows.Count > 0)
                     {
@@ -471,7 +474,7 @@ namespace McBar.Dock
         {
             var it = _items.FirstOrDefault(i => i.Windows.Any(w => w.Hwnd == hwnd));
             if (it == null || !IsVisible) return null;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
             double size = BaseSize;
             double left = it.LayoutLeft + (it.LayoutSize - size) / 2;
             int x = _winLeftPx + (int)(left * sc);
@@ -492,6 +495,7 @@ namespace McBar.Dock
         private void OnRendering(object? sender, EventArgs e)
         {
             double now = _clock.Elapsed.TotalSeconds;
+            Perf.DockFrame(now - _lastTick); // 1.5.0: medición (Preferencias → Diagnóstico)
             double dt = Math.Clamp(now - _lastTick, 0.001, 0.05);
             _lastTick = now;
             bool more;
@@ -506,11 +510,41 @@ namespace McBar.Dock
             {
                 CompositionTarget.Rendering -= OnRendering;
                 _animating = false;
+                Perf.DockAnimationEnded();
             }
         }
 
+        /// <summary>
+        /// ¿El ícono que se arrastra está FUERA del Dock? 1.4.1: no solo hacia arriba: también si se lo lleva
+        /// a los costados, más allá de la barra (en cualquier punto de la pantalla).
+        /// </summary>
         private bool IsPulledOut(DockItem it) =>
-            _dragging && it == _pressItem && (it.Removable || ClosesOnDrag(it)) && _pressPoint.Y - _dragPos.Y > PullOutDistance;
+            _dragging && it == _pressItem && (it.Removable || ClosesOnDrag(it)) &&
+            OutsideDock(_pressPoint.Y - _dragPos.Y, _dragPos.X, _lastBarLeft, _lastBarW);
+
+        private double _lastBarLeft, _lastBarW;
+        private DragGhost? _ghost;
+        private bool _suppressPuff;
+
+        /// <summary>Fuera del Dock: más de 50 arriba, o más de 40 a un costado de la barra. Pura, se prueba.</summary>
+        public static bool OutsideDock(double up, double x, double barLeft, double barW, double pull = PullOutDistance) =>
+            up > pull || (barW > 0 && (x < barLeft - 40 || x > barLeft + barW + 40));
+
+        /// <summary>1.4.1: con el ícono fuera del Dock, lo dibuja una ventanita que sigue al mouse por toda la pantalla.</summary>
+        private void UpdateGhost()
+        {
+            var it = _pressItem;
+            if (it == null || !_dragging || !IsPulledOut(it))
+            {
+                _ghost?.Cancel();
+                _ghost = null;
+                return;
+            }
+            if (!Win32.GetCursorPos(out var p)) return;
+            _ghost ??= new DragGhost(it.View.Icon.Source, Math.Max(BaseSize, it.LayoutSize));
+            string label = ClosesOnDrag(it) ? "Cerrar app" : "Quitar del Dock";
+            _ghost.MoveTo(p.x, p.y, label, 0.9);
+        }
 
         /// <summary>
         /// 0.4.1: para quitar o cerrar hay que mantener el ícono afuera un momento (se ve el cartel) — así no
@@ -570,7 +604,7 @@ namespace McBar.Dock
 
             var lefts = Magnifier.Layout(cur, baseSizes, Gap, _anchorX, out double start, out double width);
             double cx = ActualWidth / 2;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
 
             // ocultación automática
             double hideTarget = _hidden ? BarHeight + BottomMargin + 8 : 0;
@@ -606,6 +640,7 @@ namespace McBar.Dock
             }
             Canvas.SetLeft(Bar, barLeft);
             Canvas.SetTop(Bar, BarTop);
+            _lastBarLeft = barLeft; _lastBarW = barW;
             if (Math.Abs(Bar.Width - barW) > 0.01 || double.IsNaN(Bar.Width)) Bar.Width = Math.Max(0, barW);
             if (Math.Abs(Bar.Height - BarHeight) > 0.01 || double.IsNaN(Bar.Height)) Bar.Height = BarHeight;
             if (BarShadow1.Visibility == Visibility.Visible)
@@ -639,7 +674,7 @@ namespace McBar.Dock
                 {
                     left = _dragPos.X - cur[i] / 2;
                     extraUp = Math.Max(0, _pressPoint.Y - _dragPos.Y);
-                    if (IsPulledOut(it)) opacity = 0.55;
+                    if (IsPulledOut(it)) opacity = _ghost != null ? 0 : 0.55; // 1.4.1: lo muestra el fantasma
                 }
                 if (it.PoofStart >= 0)
                 {
@@ -689,7 +724,7 @@ namespace McBar.Dock
                 if (_pulledSince == DateTime.MaxValue) _pulledSince = DateTime.Now;
             }
             else _pulledSince = DateTime.MaxValue;
-            if (_pressItem != null && IsPulledOut(_pressItem)) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; }
+            if (_pressItem != null && IsPulledOut(_pressItem)) { if (_ghost == null) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; } }
             else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
             { labelFor = _hoverItem; labelText = _hoverItem.Name; }
 
@@ -727,7 +762,7 @@ namespace McBar.Dock
         private void UpdateShape(double barLeft, double barW, double hy, double zl, double zr, double zt, bool active)
         {
             if (!_fast || _hwnd == IntPtr.Zero || _puffActive > 0) return;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
             int R(double v) => (int)Math.Round(v * sc);
             double barTop = BarTop + hy;
             const double m = 6; // margen para las esquinas suavizadas y la sombra (las dibuja WPF)
@@ -779,6 +814,7 @@ namespace McBar.Dock
                 {
                     _dragPos = p;
                     ReorderWhileDragging(p);
+                    UpdateGhost();
                 }
             }
             EnsureAnimating();
@@ -813,13 +849,22 @@ namespace McBar.Dock
             _pressItem = null;
             _dragging = false;
             if (Stage.IsMouseCaptured) Stage.ReleaseMouseCapture();
+            // 1.4.1: la nubecita la hace el fantasma donde se soltó (en cualquier lugar de la pantalla)
+            var ghost = _ghost;
+            _ghost = null;
+            if (ghost != null && pulledOut) ghost.Poof(); else ghost?.Cancel();
             if (item == null) return;
 
             if (wasDragging)
             {
-                if (pulledOut && ClosesOnDrag(item)) CloseByDrag(item);
-                else if (pulledOut) RemoveFromDock(item, poof: true);
-                else SavePins();
+                _suppressPuff = ghost != null && pulledOut;
+                try
+                {
+                    if (pulledOut && ClosesOnDrag(item)) CloseByDrag(item);
+                    else if (pulledOut) RemoveFromDock(item, poof: true);
+                    else SavePins();
+                }
+                finally { _suppressPuff = false; }
             }
             else if (HitItem(e.GetPosition(Stage)) == item)
             {
@@ -1050,6 +1095,7 @@ namespace McBar.Dock
         /// <summary>Nubecita de humo (animación de "quitar del Dock"). Se borra sola al terminar.</summary>
         private void Puff(double cx, double cy, double size)
         {
+            if (_suppressPuff) return; // 1.4.1: ya la hizo el fantasma
             var rnd = new Random();
             if (_fast && _hwnd != IntPtr.Zero) { _puffActive++; WindowOps.ClearShape(_hwnd); _shapeKey = ""; }
             var layer = new Canvas { IsHitTestVisible = false };
@@ -1098,7 +1144,7 @@ namespace McBar.Dock
 
         private ContextMenu NewMenu(UIElement target)
         {
-            var cm = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Top };
+            var cm = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Top, VerticalOffset = 16 }; // 1.6.0: compensa el margen nuevo de la sombra
             PopupGuard.Attach(cm);
             cm.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
             cm.Closed += (_, _) =>
@@ -1333,6 +1379,8 @@ namespace McBar.Dock
                 ? DragDropEffects.Link : DragDropEffects.None;
             var p = e.GetPosition(Stage);
             _hover = true;
+            _hideTimer.Stop();
+            if (_hidden) _hidden = false; // 1.4.1: si estaba oculto, sube entero al arrastrar algo encima
             _mouseX = p.X - ActualWidth / 2;
             _anchorX = _mouseX;
             EnsureAnimating();
@@ -1348,6 +1396,7 @@ namespace McBar.Dock
                 if (parts.Length == 2) PinTarget(parts[0], parts[1]);
                 _hover = false;
                 EnsureAnimating();
+                if (AutoHide) _hideTimer.Start();
                 return;
             }
             if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;

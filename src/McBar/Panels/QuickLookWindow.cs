@@ -43,11 +43,10 @@ namespace McBar.Panels
             Topmost = true;
             FontFamily = (FontFamily)FindResource("Mc.Font");
             var m = App.MonitorOrPrimary(App.ActiveMonitor());
-            double sc = App.Scale, mw = m.Work.Width / sc, mh = m.Work.Height / sc;
+            double sc = m.Scale, mw = m.Work.Width / sc, mh = m.Work.Height / sc;
             Width = Math.Min(1100, mw * 0.7);
             Height = Math.Min(800, mh * 0.78);
-            Left = m.Work.Left / sc + (mw - Width) / 2;
-            Top = m.Work.Top / sc + (mh - Height) / 2;
+            WindowOps.PlaceOnMonitor(this, m, (m.Work.Left - m.Bounds.Left) / sc + (mw - Width) / 2, (m.Work.Top - m.Bounds.Top) / sc + (mh - Height) / 2, Width, Height); // 1.5.0
 
             // cabecera
             var icon = new Image { Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0) };

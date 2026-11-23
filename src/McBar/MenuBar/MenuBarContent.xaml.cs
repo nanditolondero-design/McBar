@@ -271,7 +271,7 @@ namespace McBar.MenuBar
             try
             {
                 var p = el.PointToScreen(new Point(0, 0));
-                double sc = App.Scale;
+                double sc = WindowOps.DpiScale(el); // 1.5.0
                 return new PxRect((int)p.X, (int)p.Y, (int)(p.X + el.ActualWidth * sc), (int)(p.Y + el.ActualHeight * sc));
             }
             catch { return new PxRect(0, 0, 16, 16); }
@@ -433,8 +433,8 @@ namespace McBar.MenuBar
         {
             cm.PlacementTarget = owner;
             cm.Placement = PlacementMode.Bottom;
-            cm.HorizontalOffset = -10;
-            cm.VerticalOffset = -9;
+            cm.HorizontalOffset = -18; // 1.6.0: margen nuevo del menú
+            cm.VerticalOffset = -13;
             owner.Tag = "open";
             PopupGuard.Attach(cm);
             cm.Closed += (_, _) => owner.Tag = null;

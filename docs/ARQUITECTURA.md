@@ -94,6 +94,24 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Aspecto de los paneles (1.6.0)
+`Panels/PanelLook`: `Radius` (18), `Spring` (BackEase 0.32), `Highlight()` (borde con brillo arriba, encima del contenido) y `SpringIn()` (escala 0.94 → 1 y baja 14, 460 ms). `PanelShadow.Attach(window)`: ventana transparente detrás del panel con un rectángulo redondeado con `DropShadowEffect` en `BitmapCache`, recortado (`CombinedGeometry.Exclude`) para que no oscurezca el vidrio; sigue al panel (posición, tamaño, opacidad) y se cierra con él. `PanelWindow` los usa a todos.
+
+## Escala por monitor y rendimiento (1.5.0)
+- El proceso es `PerMonitorV2` (app.manifest). `MonitorInfo.Scale` = escala de ese monitor. Regla: lo que está atado a un monitor usa `m.Scale` (nunca `App.Scale`, que es la del sistema). Ventanas de McBar que se ubican en un monitor: `WindowOps.PlaceOnMonitor(w, m, leftDip, topDip[, ancho, alto])` con distancias desde la esquina del monitor en unidades de su escala; la ubica en píxeles con SetWindowPos. Dentro de una ventana ya mostrada, `WindowOps.DpiScale(visual)`.
+- `Core/Perf`: el Dock anota cada cuadro (`DockFrame`) y al terminar la animación `DockAnimationEnded` resume (pura: `Summarize`). El Launchpad anota cuánto tarda en `ContentRendered`.
+
+## Arrastrar fuera del Dock (1.4.1)
+`DockWindow.UpdateGhost()` (desde `Stage_MouseMove` mientras se arrastra): si `IsPulledOut` (= `OutsideDock`: más de 50 arriba o 40 a un costado de la barra) crea un `Dock/DragGhost` con el ícono y lo mueve a `GetCursorPos`; el ícono dentro del Dock queda con opacidad 0. Al soltar: `Poof()` (nubecita en el fantasma) y `_suppressPuff` evita la del Dock; si no se quitó, `Cancel()`.
+
+## Íconos de macOSicons (1.4.0)
+- `Core/MacIcons.RunAsync(manual)`: arma la lista (apps fijadas + `AppCatalog`), saca las que no hace falta (`ShouldSkip`, `NeedsLookup` con el índice), y por cada una hace POST a la API (cuenta el cupo con `CountOne`; 401/403 = clave mala, 429 = sin cupo), elige el resultado con `Pick` (mismo nombre normalizado o que empiece igual, el más bajado) y baja `lowResPngUrl` como `<nombre de la app>.png`. Así `IconPack` lo encuentra por nombre. Guarda `indice.json` y `creditos.txt`. Evento `IconsChanged` → `App.UseMacIconsFolder` (pone la carpeta como `IconPackPath` y recarga los íconos).
+- Clave: `AppSettings.MacIconsKey` cifrada con `Native/Dpapi` (CryptProtectData); está en `Profiles.MachineFields` y se borra en `Export`/`Capture`.
+- Puras con pruebas: `Pick`, `ShouldSkip`, `Remaining`, `SafeFileName`, `NeedsLookup`, `ParseHits`.
+
+## Íconos con forma de Mac (1.3.2)
+`Core/IconShaper.Shape(src, px)` corre en el hilo STA del Shell dentro de `IconLoader.Request` cuando `appShape` y `IconShape == "mac"`. Puras: `SquirclePoints`, `IsFullBleed`, `Dominant`, `Mix`. Al cambiar el ajuste, `App.OnSettingsChanged` vacía el caché y rehace los íconos del Dock (igual que con el paquete de íconos).
+
 ## Vigilante de trabadas (1.3.1)
 `Core/HangWatch`: hilo aparte que cada segundo manda un "ping" (`BeginInvoke`) al hilo de la interfaz. `Dispatcher.Hooks.OperationStarted/Completed` guardan la tarea en curso (nombre interno de `DispatcherOperation.Name` por reflexión). 5 s sin respuesta → log con la tarea; 20 s (`RestartIfHung`) → `Recovery.SaveReport` + `McBar.exe --reinicio` + `Kill()`. `--reinicio` espera hasta 15 s el mutex (abandonado = tomado) y no muestra el instalador. `Decide` es pura.
 

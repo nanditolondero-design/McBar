@@ -125,6 +125,39 @@ namespace McBar.Native
             catch { }
         }
 
+        /// <summary>
+        /// 1.5.0: pone una ventana de McBar en un monitor, en píxeles reales de ESE monitor. Con monitores de
+        /// escalas distintas, Left/Top de WPF (en unidades de la escala del principal) la dejaban corrida en el otro.
+        /// <paramref name="leftDip"/>/<paramref name="topDip"/> son distancias desde la esquina del monitor, en
+        /// unidades de su escala; ancho y alto (opcionales) también.
+        /// </summary>
+        public static void PlaceOnMonitor(Window w, MonitorInfo m, double leftDip, double topDip, double? widthDip = null, double? heightDip = null)
+        {
+            double sc = m.Scale;
+            int x = m.Bounds.Left + (int)Math.Round(leftDip * sc), y = m.Bounds.Top + (int)Math.Round(topDip * sc);
+            if (widthDip != null) w.Width = widthDip.Value;
+            if (heightDip != null) w.Height = heightDip.Value;
+            // si la ventana todavía no existe, primero en unidades de WPF (aproximado)…
+            if (new WindowInteropHelper(w).Handle == IntPtr.Zero)
+            {
+                double sys = Win32.SystemScale();
+                w.Left = x / sys; w.Top = y / sys;
+            }
+            void Exact()
+            {
+                var h = new WindowInteropHelper(w).Handle;
+                if (h == IntPtr.Zero) return;
+                uint flags = 0x0004 | 0x0010; // NOZORDER | NOACTIVATE
+                int pw = 0, ph = 0;
+                if (widthDip != null && heightDip != null) { pw = (int)Math.Round(widthDip.Value * sc); ph = (int)Math.Round(heightDip.Value * sc); }
+                else flags |= 0x0001; // NOSIZE
+                Win32.SetWindowPos(h, IntPtr.Zero, x, y, pw, ph, flags);
+            }
+            // …y después en píxeles exactos, ya con la ventana creada
+            if (new WindowInteropHelper(w).Handle != IntPtr.Zero) Exact();
+            else w.SourceInitialized += (_, _) => Exact();
+        }
+
         public static double DpiScale(Visual v)
         {
             var src = PresentationSource.FromVisual(v);

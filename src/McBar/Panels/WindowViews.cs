@@ -74,7 +74,7 @@ namespace McBar.Panels
             RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
             var hwnd = w.Hwnd;
             if (!string.IsNullOrEmpty(w.IconSource))
-                IconLoader.Request(w.IconSource, (int)size, src => img.Source = src ?? IconLoader.FromWindow(hwnd));
+                IconLoader.Request(w.IconSource, (int)Math.Max(size, 48), src => img.Source = src ?? IconLoader.FromWindow(hwnd), appShape: true);
             else img.Source = IconLoader.FromWindow(hwnd);
             return img;
         }
@@ -129,16 +129,15 @@ namespace McBar.Panels
             var sp = new StackPanel();
             sp.Children.Add(_row);
             sp.Children.Add(_name);
-            var card = new Border { Child = sp, Padding = new Thickness(14, 14, 14, 10), CornerRadius = new CornerRadius(26), BorderThickness = new Thickness(1), MaxWidth = m.Bounds.Width / App.Scale - 80 };
+            var card = new Border { Child = sp, Padding = new Thickness(14, 14, 14, 10), CornerRadius = new CornerRadius(26), BorderThickness = new Thickness(1), MaxWidth = m.Bounds.Width / m.Scale - 80 };
             card.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
             card.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
             Content = card;
             SourceInitialized += (_, _) => WindowOps.MakeToolNoActivate(this);
             Loaded += (_, _) =>
             {
-                double sc = App.Scale;
-                Left = m.Bounds.Left / sc + (m.Bounds.Width / sc - ActualWidth) / 2;
-                Top = m.Bounds.Top / sc + (m.Bounds.Height / sc - ActualHeight) / 2;
+                double sc = m.Scale;
+                WindowOps.PlaceOnMonitor(this, m, (m.Bounds.Width / sc - ActualWidth) / 2, (m.Bounds.Height / sc - ActualHeight) / 2); // 1.5.0
             };
             // empieza en la app anterior (como Alt+Tab)
             _sel = _apps.Count > 1 ? 1 : 0;
@@ -228,10 +227,10 @@ namespace McBar.Panels
             SourceInitialized += (_, _) => { WindowOps.MakeToolNoActivate(this); WindowOps.MakeGlass(this); };
             Loaded += (_, _) =>
             {
-                double sc = App.Scale;
-                double minL = m.Bounds.Left / sc + 8, maxL = m.Bounds.Right / sc - ActualWidth - 8;
-                Left = Math.Clamp(centerX - ActualWidth / 2, minL, Math.Max(minL, maxL));
-                Top = bottomY - ActualHeight - 8;
+                // 1.5.0: centerX/bottomY vienen en unidades de la escala de ESTE monitor (las calcula el Dock)
+                double sc = m.Scale, ox = m.Bounds.Left / sc, oy = m.Bounds.Top / sc;
+                double minL = 8, maxL = m.Bounds.Width / sc - ActualWidth - 8;
+                WindowOps.PlaceOnMonitor(this, m, Math.Clamp(centerX - ox - ActualWidth / 2, minL, Math.Max(minL, maxL)), bottomY - oy - ActualHeight - 8);
                 _thumbs.Sync();
                 // 1.3.1: Windows a veces entrega la miniatura (sobre todo de minimizadas) un momento después
                 foreach (var ms in new[] { 120, 450 })
@@ -271,9 +270,8 @@ namespace McBar.Panels
             ShowInTaskbar = false;
             Topmost = true;
             FontFamily = (FontFamily)FindResource("Mc.Font");
-            double sc = App.Scale;
-            Left = m.Bounds.Left / sc; Top = m.Bounds.Top / sc;
-            Width = m.Bounds.Width / sc; Height = m.Bounds.Height / sc;
+            double sc = m.Scale;
+            WindowOps.PlaceOnMonitor(this, m, 0, 0, m.Bounds.Width / sc, m.Bounds.Height / sc); // 1.5.0
             _thumbs = new ThumbHost(this);
 
             var root = new Grid { Background = new SolidColorBrush(Color.FromArgb(0x8C, 0x08, 0x08, 0x0C)) };

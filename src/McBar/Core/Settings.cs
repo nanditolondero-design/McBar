@@ -159,6 +159,17 @@ namespace McBar.Core
         public bool WallpaperByTime { get; set; } = false;
         /// <summary>Imágenes de mañana, tarde, atardecer y noche (ver Core/DynamicWallpaper.Slots). 1.3.0.</summary>
         public List<string> WallpaperImages { get; set; } = new List<string> { "", "", "", "" };
+        /// <summary>Clave de la API de macOSicons, cifrada con la cuenta de Windows (Native/Dpapi). 1.4.0.</summary>
+        public string MacIconsKey { get; set; } = "";
+        /// <summary>Buscar solos los íconos de las apps nuevas (al abrir McBar y cada 6 horas). 1.4.0.</summary>
+        public bool MacIconsAuto { get; set; } = true;
+        /// <summary>Búsquedas por mes del plan de macOSicons (gratis: 50). 1.4.0.</summary>
+        public int MacIconsMonthlyLimit { get; set; } = 50;
+        /// <summary>Mes ("2026-11") y búsquedas usadas en ese mes. 1.4.0.</summary>
+        public string MacIconsMonth { get; set; } = "";
+        public int MacIconsUsed { get; set; }
+        /// <summary>Forma de los íconos de apps: "none" (los originales) o "mac" (squircle de macOS). 1.3.2.</summary>
+        public string IconShape { get; set; } = "none";
         /// <summary>Atajos de mosaico Ctrl+Alt+flechas. 1.0.0.</summary>
         public bool TileShortcuts { get; set; } = true;
         /// <summary>Esquinas activas: acción de cada esquina (ver Core/HotCorners.Actions). 1.0.0.</summary>
@@ -282,7 +293,15 @@ namespace McBar.Core
         public static void NotifyChanged()
         {
             Save();
-            Changed?.Invoke();
+            // 1.4.1: se avisa a cada parte por separado. Antes, si una fallaba (por ejemplo la que rehace los
+            // monitores), las de después (Dock, isla, barra) no se enteraban y el estilo elegido "no cambiaba".
+            var list = Changed?.GetInvocationList();
+            if (list == null) return;
+            foreach (var d in list)
+            {
+                try { ((Action)d)(); }
+                catch (Exception ex) { Log.Write($"Ajustes ({d.Method.DeclaringType?.Name}.{d.Method.Name}): {ex}"); }
+            }
         }
 
         /// <summary>Corrige valores fuera de rango (por si el archivo se editó a mano).</summary>
@@ -311,6 +330,11 @@ namespace McBar.Core
             s.IconPackPath ??= "";
             s.PortablePath ??= "";
             s.PortableVersion ??= "";
+            if (s.IconShape != "mac") s.IconShape = "none";
+            s.MacIconsKey ??= "";
+            s.MacIconsMonth ??= "";
+            s.MacIconsMonthlyLimit = Math.Clamp(s.MacIconsMonthlyLimit, 1, 100000);
+            s.MacIconsUsed = Math.Max(0, s.MacIconsUsed);
             s.DesktopWidgets ??= new List<DesktopWidget>();
             s.CalendarUrls ??= new List<string>();
             s.CornerTopLeft = ValidCorner(s.CornerTopLeft);

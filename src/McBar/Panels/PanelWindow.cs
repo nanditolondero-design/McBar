@@ -20,7 +20,8 @@ namespace McBar.Panels
         private bool _closing;
         private readonly bool _slideFromRight;
 
-        private const double CornerRadiusDip = 16;
+        private const double CornerRadiusDip = PanelLook.Radius; // 1.6.0: 18 (antes 16)
+        private PanelShadow? _shadow;
 
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
         public bool IsClosing => _closing;
@@ -49,7 +50,11 @@ namespace McBar.Panels
             };
             Card.SetResourceReference(Border.BackgroundProperty, "Mc.GlassBg");
             Card.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
-            Content = Card;
+            // 1.6.0: brillo fino arriba, encima del borde
+            var root = new Grid();
+            root.Children.Add(Card);
+            root.Children.Add(PanelLook.Highlight(CornerRadiusDip));
+            Content = root;
 
             SourceInitialized += (_, _) =>
             {
@@ -65,7 +70,7 @@ namespace McBar.Panels
         {
             var h = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             if (h == IntPtr.Zero) return;
-            double sc = App.Scale;
+            double sc = WindowOps.DpiScale(this); // 1.5.0: escala del monitor donde está
             int w = (int)Math.Ceiling(ActualWidth * sc), hh = (int)Math.Ceiling(ActualHeight * sc), r = (int)(CornerRadiusDip * 2 * sc);
             Win32.SetWindowRgn(h, Win32.CreateRoundRectRgn(0, 0, w + 1, hh + 1, r, r), true);
         }
@@ -73,20 +78,18 @@ namespace McBar.Panels
         /// <summary>Muestra el panel debajo de la barra de menú del monitor indicado, pegado a la derecha.</summary>
         public void ShowBelowMenuBar(MonitorInfo monitor, double? height = null)
         {
-            double sc = App.Scale;
-            double top = App.TopInsetDip(monitor);
-            Left = monitor.Bounds.Right / sc - Width - 8;
-            Top = top;
+            double sc = monitor.Scale;
+            double top = App.TopInsetDip(monitor) - monitor.Bounds.Top / sc;
+            WindowOps.PlaceOnMonitor(this, monitor, monitor.Bounds.Width / sc - Width - 8, top); // 1.5.0
             if (height != null) Height = height.Value; else SizeToContent = SizeToContent.Height;
             Show();
             Activate();
+            _shadow ??= PanelShadow.Attach(this); // 1.6.0: sombra grande y suave
 
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
-            if (_slideFromRight)
-                _slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(60, 0, TimeSpan.FromMilliseconds(240)) { EasingFunction = ease });
-            else
-                _slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(-10, 0, TimeSpan.FromMilliseconds(200)) { EasingFunction = ease });
+            // 1.6.0: entrada con resorte (crece desde la esquina de arriba a la derecha con un rebote chiquito)
+            BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+            if (_slideFromRight) PanelLook.SpringIn(Card, new Point(1, 0), fromY: 0, fromScale: 0.97, fromX: 50);
+            else PanelLook.SpringIn(Card, new Point(0.85, 0));
         }
 
         public void CloseAnimated()
@@ -98,7 +101,11 @@ namespace McBar.Panels
             fade.Completed += (_, _) => { Close(); App.ScheduleTrim(); };
             BeginAnimation(OpacityProperty, fade);
             if (_slideFromRight)
-                _slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, 40, TimeSpan.FromMilliseconds(130)));
+            {
+                var t = new TranslateTransform();
+                Card.RenderTransform = t;
+                t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, 40, TimeSpan.FromMilliseconds(130)));
+            }
         }
 
         // ---------- Ayudantes para armar contenido ----------

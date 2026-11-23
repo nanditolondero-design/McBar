@@ -118,7 +118,7 @@ namespace McBar.MenuBar
 
         public MonitorInfo Monitor => _monitor;
         public int ReservePx => _wantVisible && SettingsStore.Current.IslandReserveSpace
-            ? (int)Math.Ceiling((TopMargin + CompactHeightFor(SettingsStore.Current) + 4) * App.Scale) : 0;
+            ? (int)Math.Ceiling((TopMargin + CompactHeightFor(SettingsStore.Current) + 4) * _monitor.Scale) : 0;
 
         public IslandWindow(MonitorInfo monitor)
         {
@@ -132,7 +132,7 @@ namespace McBar.MenuBar
             ShowActivated = false;
             ResizeMode = ResizeMode.NoResize;
             Title = "McBar Isla";
-            Width = Math.Min(monitor.Bounds.Width / App.Scale, 1120);
+            Width = Math.Min(monitor.Bounds.Width / monitor.Scale, 1120);
             Height = BaseWindowHeight; // crece solo mientras hay un cajón abierto (ver EnsureWindowHeight)
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             FontSize = 13;
@@ -233,6 +233,8 @@ namespace McBar.MenuBar
             _onLive = () => Dispatcher.BeginInvoke(new Action(OnLiveChanged));
             LiveStatus.Changed += _onLive;
 
+            // 1.5.0: al pasar a un monitor con otra escala, Windows le cambia el tamaño: se vuelve a acomodar.
+            DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(ApplyGeometry), System.Windows.Threading.DispatcherPriority.Loaded);
             SourceInitialized += (_, _) =>
             {
                 _hwnd = new WindowInteropHelper(this).Handle;
@@ -259,8 +261,9 @@ namespace McBar.MenuBar
         {
             var s = SettingsStore.Current;
             Brush bg;
-            // 0.4.3: con el tema Vidrio la isla también es de vidrio
-            string style = ThemeManager.IsGlass ? "glass" : s.IslandStyle;
+            // 1.4.1: manda lo elegido en Preferencias → Isla dinámica → Estilo. Antes el tema Vidrio forzaba la
+            // isla de vidrio y cambiar el estilo no hacía nada (al elegir el tema Vidrio se pone "Vidrio" una vez).
+            string style = s.IslandStyle;
             switch (style)
             {
                 case "graphite": bg = new SolidColorBrush(Color.FromRgb(0x2C, 0x2C, 0x30)); break;
@@ -303,8 +306,8 @@ namespace McBar.MenuBar
         /// <summary>Forma de la ventana rápida = la píldora (fuera de ella los clics pasan a las ventanas de atrás).</summary>
         private void UpdateShape()
         {
-            if (!_fast || _hwnd == IntPtr.Zero) return;
-            double sc = App.Scale;
+            if (!_fast || _hwnd == IntPtr.Zero || _sizeAnim) return;
+            double sc = _monitor.Scale;
             double w = _pill.ActualWidth > 0 ? _pill.ActualWidth : _pill.Width;
             double h = _pill.ActualHeight > 0 ? _pill.ActualHeight : _pill.Height;
             int px = (int)Math.Round((ActualWidth - w) / 2 * sc), py = (int)Math.Round(TopMargin * sc);
@@ -315,10 +318,23 @@ namespace McBar.MenuBar
             WindowOps.SetShape(_hwnd, px, py, pw, ph, r);
         }
 
+        /// <summary>Forma fija para toda la animación (centrada arriba, del tamaño dado).</summary>
+        private void SetShapeFor(double w, double h, double radius)
+        {
+            if (!_fast || _hwnd == IntPtr.Zero) return;
+            double sc = _monitor.Scale;
+            int px = (int)Math.Round((ActualWidth - w) / 2 * sc), py = (int)Math.Round(TopMargin * sc);
+            int pw = (int)Math.Round(w * sc), ph = (int)Math.Round(h * sc), r = (int)Math.Round(radius * sc);
+            string key = $"{px},{py},{pw},{ph},{r}";
+            if (key == _shapeKey) return;
+            _shapeKey = key;
+            WindowOps.SetShape(_hwnd, px, py, pw, ph, r);
+        }
+
         private void PlaceBackdrop()
         {
             if (_fast || SettingsStore.Current.IslandStyle != "glass" || !_backdrop.IsVisible || _winWidthPx == 0) return;
-            double sc = App.Scale;
+            double sc = _monitor.Scale;
             int w = (int)Math.Round(_pill.ActualWidth * sc), h = (int)Math.Round(_pill.ActualHeight * sc);
             int x = _winLeftPx + (_winWidthPx - w) / 2, y = _winTopPx + (int)Math.Round(TopMargin * sc);
             _backdrop.Place(x, y, w, h, (int)Math.Round(Math.Min(_pill.ActualHeight / 2, 26) * sc));
@@ -341,7 +357,7 @@ namespace McBar.MenuBar
         {
             if (_hwnd == IntPtr.Zero || !_wantVisible) return;
             var b = _monitor.Bounds;
-            int w = (int)Math.Ceiling(Width * App.Scale), h = (int)Math.Ceiling(Height * App.Scale);
+            int w = (int)Math.Ceiling(Width * _monitor.Scale), h = (int)Math.Ceiling(Height * _monitor.Scale);
             _winLeftPx = b.Left + (b.Width - w) / 2;
             _winTopPx = b.Top;
             _winWidthPx = w;
@@ -376,11 +392,30 @@ namespace McBar.MenuBar
 
         // ================== Estados ==================
 
+        private bool _sizeAnim;
+        private int _sizeAnimId;
+
         private void AnimateSize(double w, double h)
         {
             var ease = new BackEase { Amplitude = 0.28, EasingMode = EasingMode.EaseOut };
             var dur = TimeSpan.FromMilliseconds(420);
-            _pill.BeginAnimation(WidthProperty, new DoubleAnimation(Math.Min(w, Width - 12), dur) { EasingFunction = ease });
+            w = Math.Min(w, Width - 12);
+            // 1.5.0: durante la animación la forma de la ventana queda FIJA (la más grande entre antes y después,
+            // con margen para el rebote) en vez de recalcularse en cada cuadro: cambiar la forma 60 veces por
+            // segundo obligaba a Windows a recomponer la ventana entera y la animación se trababa.
+            int id = ++_sizeAnimId;
+            _sizeAnim = true;
+            double cw = _pill.ActualWidth > 0 ? _pill.ActualWidth : _pill.Width, ch = _pill.ActualHeight > 0 ? _pill.ActualHeight : _pill.Height;
+            SetShapeFor(Math.Min(Width - 4, Math.Max(cw, w) * 1.08 + 8), Math.Max(ch, h) * 1.08 + 6, Math.Min(Math.Min(ch, h) / 2, 26));
+            var aw = new DoubleAnimation(w, dur) { EasingFunction = ease };
+            aw.Completed += (_, _) =>
+            {
+                if (id != _sizeAnimId) return;
+                _sizeAnim = false;
+                _shapeKey = "";
+                UpdateShape();
+            };
+            _pill.BeginAnimation(WidthProperty, aw);
             _pill.BeginAnimation(HeightProperty, new DoubleAnimation(h, dur) { EasingFunction = ease });
         }
 
@@ -455,7 +490,7 @@ namespace McBar.MenuBar
             ShowLayer(_expanded);
             _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), (kind == DrawerKind.Notifications ? 410 : 380));
-            double maxH = _monitor.Bounds.Height / App.Scale * 0.8;
+            double maxH = _monitor.Bounds.Height / _monitor.Scale * 0.8;
             double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
             EnsureWindowHeight(h);
             AnimateSize(w, h);

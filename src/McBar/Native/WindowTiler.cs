@@ -22,7 +22,7 @@ namespace McBar.Native
             if (m == null) return;
             if (Win32.IsIconic(hwnd) || Win32.IsZoomed(hwnd)) Win32.ShowWindow(hwnd, Win32.SW_RESTORE);
             if (Win32.GetWindowRect(hwnd, out var wr) && !Before.ContainsKey(hwnd)) Before[hwnd] = wr;
-            var r = Tiling.Compute(layout, m.Work.Left, m.Work.Top, m.Work.Width, m.Work.Height, (int)Math.Round(6 * App.Scale));
+            var r = Tiling.Compute(layout, m.Work.Left, m.Work.Top, m.Work.Width, m.Work.Height, (int)Math.Round(6 * m.Scale));
             // borde invisible = diferencia entre GetWindowRect y el marco visible
             int bl = 0, bt = 0, br = 0, bb = 0;
             if (Win32.GetWindowRect(hwnd, out var full) && DwmGetWindowAttribute(hwnd, 9 /*EXTENDED_FRAME_BOUNDS*/, out var vis, Marshal.SizeOf<Win32.RECT>()) == 0)

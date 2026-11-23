@@ -1,6 +1,7 @@
 // McBar — Creado por Andrés Londero
 // Paquetes de íconos (0.4.3): una carpeta con imágenes (.png, .ico, .jpg, .bmp) — por ejemplo un pack de
-// RocketDock/ObjectDock, un tema de íconos de Linux (Papirus, etc., que traen PNG por tamaño) o una
+// RocketDock/ObjectDock, un tema de íconos de Linux que traiga PNG (los que son solo SVG, como Papirus,
+// todavía no se leen) o una
 // carpeta armada a mano. El ícono se busca por el nombre del archivo, comparando sin mayúsculas, espacios,
 // guiones ni puntos: "google-chrome.png", "Google Chrome.png" o "chrome.ico" sirven para Chrome.
 // Se elige en Preferencias → Dock → Paquete de íconos. Si una app no está en el pack, se usa la de Windows.

@@ -69,9 +69,8 @@ namespace McBar.Panels
                 else b.SetResourceReference(Border.BackgroundProperty, "Mc.Track");
             }
             var m = App.MonitorOrPrimary(App.ActiveMonitor());
-            double sc = App.Scale;
-            Left = m.Bounds.Left / sc + (m.Bounds.Width / sc - Width) / 2;
-            Top = m.Bounds.Top / sc + m.Bounds.Height / sc - Height - 150;
+            double sc = m.Scale;
+            WindowOps.PlaceOnMonitor(this, m, (m.Bounds.Width / sc - Width) / 2, m.Bounds.Height / sc - Height - 150); // 1.5.0
             BeginAnimation(OpacityProperty, null);
             Opacity = 1;
             if (!IsVisible) Show();

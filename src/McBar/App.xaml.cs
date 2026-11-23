@@ -203,6 +203,7 @@ namespace McBar
             StartReminders();
             LiveStatus.Start(); // 1.2.0: temporizador, cronómetro, micrófono/cámara y descargas
             StartPersonalization(); // 1.3.0: perfiles, modo juego y fondo según la hora
+            StartMacIcons(); // 1.4.0: íconos de macOSicons para las apps instaladas
             StartWatchdog();
             HangWatch.Start(Dispatcher); // 1.3.1: si la interfaz se traba, lo anota y McBar se reinicia solo
             ScheduleTrim(6);
@@ -244,7 +245,7 @@ namespace McBar
             var s = SettingsStore.Current;
             var monitors = Monitors.All();
             if (monitors.Count == 0) return;
-            string key = string.Join(";", monitors.Select(m => m.Device + "@" + m.Bounds)) +
+            string key = string.Join(";", monitors.Select(m => m.Device + "@" + m.Bounds + "x" + m.Scale)) +
                          $"|{s.ShowMenuBar}|{s.MenuBarOnAllMonitors}|{s.DockOnAllMonitors}|{s.TopBarMode}|{s.FastWindows}|{Scale}";
             if (key == _lastLayoutKey && Docks.Count > 0) { UpdateWorkAreas(); return; }
             _lastLayoutKey = key;
@@ -317,17 +318,20 @@ namespace McBar
         {
             try
             {
+                // 1.5.0: todo en píxeles del monitor donde está la ventana (cada monitor puede tener otra escala)
                 var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
-                var m = (h != IntPtr.Zero ? Monitors.FromWindow(h) : null) ?? MonitorOrPrimary(null);
-                double top = TopInsetDip(m);
-                double bottom = m.Work.Bottom / Scale - 8;
-                if (bottom - top < w.MinHeight) return;
-                if (w.Top < top) w.Top = top;
-                if (w.Top + w.ActualHeight > bottom)
-                {
-                    w.Height = Math.Max(w.MinHeight, bottom - w.Top);
-                    if (w.Top + w.Height > bottom) w.Top = Math.Max(top, bottom - w.Height);
-                }
+                if (h == IntPtr.Zero || !Win32.GetWindowRect(h, out var r)) return;
+                var m = Monitors.FromWindow(h) ?? MonitorOrPrimary(null);
+                double sc = m.Scale;
+                int topPx = m.Bounds.Top + (int)Math.Round((TopInsetDip(m) - m.Bounds.Top / sc) * sc);
+                int bottomPx = m.Work.Bottom - (int)Math.Round(8 * sc);
+                int minH = (int)Math.Round(w.MinHeight * sc);
+                if (bottomPx - topPx < minH) return;
+                int top = Math.Max(r.top, topPx), height = r.bottom - r.top;
+                if (top + height > bottomPx) height = Math.Max(minH, bottomPx - top);
+                if (top + height > bottomPx) top = Math.Max(topPx, bottomPx - height);
+                if (top != r.top || height != r.bottom - r.top)
+                    Win32.SetWindowPos(h, IntPtr.Zero, r.left, top, r.right - r.left, height, 0x0004 | 0x0010);
             }
             catch (Exception ex) { Log.Write("KeepBelowTopBar: " + ex.Message); }
         }
@@ -336,7 +340,7 @@ namespace McBar
         public static double TopInsetDip(MonitorInfo m)
         {
             var s = SettingsStore.Current;
-            double top = m.Bounds.Top / Scale;
+            double top = m.Bounds.Top / m.Scale;
             if (!s.ShowMenuBar) return top + 8;
             return top + (s.IsIslandLike ? IslandWindow.TopGapFor(s) + IslandWindow.CompactHeightFor(s) + 8 : MenuBarWindow.BarHeightDip + 6);
         }
@@ -502,9 +506,10 @@ namespace McBar
                 _lastOwnTray = s.UseOwnTray;
             }
             if (s.ShowWeatherInMenuBar && LastWeather == null) _ = WeatherService.GetAsync();
-            if (s.IconPackPath != _lastIconPack)
+            if (s.IconPackPath != _lastIconPack || s.IconShape != _lastIconShape)
             {
                 _lastIconPack = s.IconPackPath;
+                _lastIconShape = s.IconShape;
                 IconPack.Reset();
                 IconLoader.ClearCache();
                 foreach (var d in Docks) d.RefreshIcons();
@@ -550,7 +555,9 @@ namespace McBar
         {
             if (_launchpad != null && _launchpad.IsVisible) { _launchpad.CloseAnimated(); return; }
             if (_launchpad != null && RecentlyClosed(_launchpad.ClosedAt)) return;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             _launchpad = new LaunchpadWindow(MonitorOrPrimary(monitor));
+            _launchpad.ContentRendered += (_, _) => Perf.LaunchpadOpened(sw.Elapsed.TotalMilliseconds); // 1.5.0
             _launchpad.ShowAnimated();
         }
 
@@ -579,6 +586,7 @@ namespace McBar
 
         private static WeatherWindow? _weather;
         private static string? _lastIconPack;
+        private static string? _lastIconShape;
 
         /// <summary>Widget del clima propio (barra de menú).</summary>
         public static void ToggleWeather(MonitorInfo? monitor = null)
@@ -607,7 +615,7 @@ namespace McBar
             var m = MonitorOrPrimary(monitor);
             _widgets = new WidgetsWindow();
             double top = TopInsetDip(m);
-            double bottom = m.Work.Bottom / Scale - 8;
+            double bottom = m.Work.Bottom / m.Scale - 8;
             // 0.4.0: el panel mide lo que su contenido (antes ocupaba todo el alto y quedaba un hueco vacío)
             _widgets.MaxHeight = Math.Max(300, bottom - top);
             _widgets.ShowBelowMenuBar(m);
@@ -712,6 +720,39 @@ namespace McBar
         private static readonly List<DesktopWidgetWindow> DesktopWidgetWindows = new List<DesktopWidgetWindow>();
         private static DispatcherTimer? _reminderTimer;
 
+        // ================== Íconos de macOSicons (1.4.0) ==================
+
+        private static DispatcherTimer? _macIconsTimer;
+
+        private static void StartMacIcons()
+        {
+            MacIcons.IconsChanged += UseMacIconsFolder;
+            _macIconsTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(2) };
+            _macIconsTimer.Tick += async (_, _) =>
+            {
+                _macIconsTimer.Interval = TimeSpan.FromHours(6);
+                var s = SettingsStore.Current;
+                if (!s.MacIconsAuto || !MacIcons.HasKey || MacIcons.Busy) return;
+                await MacIcons.RunAsync(manual: false);
+            };
+            _macIconsTimer.Start();
+        }
+
+        /// <summary>Usa la carpeta de macOSicons como paquete de íconos y vuelve a cargar los íconos.</summary>
+        public static void UseMacIconsFolder()
+        {
+            var s = SettingsStore.Current;
+            if (!string.Equals(s.IconPackPath, MacIcons.Folder, StringComparison.OrdinalIgnoreCase))
+            {
+                s.IconPackPath = MacIcons.Folder;
+                SettingsStore.NotifyChanged(); // OnSettingsChanged recarga los íconos
+                return;
+            }
+            IconPack.Reset();
+            IconLoader.ClearCache();
+            foreach (var d in Docks) d.RefreshIcons();
+        }
+
         // ================== Personalización (1.3.0) ==================
 
         private static void StartPersonalization()
@@ -755,8 +796,8 @@ namespace McBar
             var model = new DesktopWidget
             {
                 Kind = kind,
-                X = m.Work.Right / Scale - 360 - (n / 4) * 330,
-                Y = m.Work.Top / Scale + 60 + (n % 4) * 190
+                X = m.Work.Right / m.Scale - 360 - (n / 4) * 330,
+                Y = m.Work.Top / m.Scale + 60 + (n % 4) * 190
             };
             SettingsStore.Current.DesktopWidgets.Add(model);
             SettingsStore.Save();
@@ -832,8 +873,10 @@ namespace McBar
                 _trimTimer.Tick += (_, _) =>
                 {
                     _trimTimer!.Stop();
+                    // 1.5.0: ya NO se vacía la memoria a la fuerza (TrimWorkingSet): Windows la volvía a cargar
+                    // del disco la próxima vez y abrir el Launchpad o un panel tenía tironcitos. Solo se le
+                    // sugiere al recolector que junte lo que sobra, sin bloquear.
                     GC.Collect(2, GCCollectionMode.Optimized, false);
-                    Win32.TrimWorkingSet();
                 };
             }
             _trimTimer.Stop();
@@ -858,6 +901,7 @@ namespace McBar
             _reminderTimer?.Stop();
             try { LiveStatus.Stop(); } catch { }
             try { DynamicWallpaper.Stop(); } catch { }
+            _macIconsTimer?.Stop();
             foreach (var w in DesktopWidgetWindows.ToList()) { try { w.Close(); } catch { } }
             foreach (var d in Docks) { try { d.Teardown(); } catch { } }
             foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }

@@ -240,6 +240,35 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.6.0
+- [ ] Centro de control, Widgets, Wi-Fi/Bluetooth/Sonido (con la barra de menú): aparecen con un rebote chiquito, se ve el fondo difuminado a través, sombra grande y suave alrededor (no un recuadro oscuro) y una línea de brillo arriba. Al cerrar, la sombra se va junto con el panel.
+- [ ] Buscador (Win+S): aparece con rebote; escribir rápido no traba.
+- [ ] Menús de la barra y del Dock: esquinas redondeadas, sombra suave, en el mismo lugar de siempre (no corridos).
+- [ ] Tema claro: los paneles se ven bien (sin manchas oscuras).
+
+### Versión 1.5.0
+- [ ] Dos monitores con escalas distintas (Configuración → Pantalla): en los dos, Dock, barra/isla nítidos y del mismo tamaño visual; Launchpad, buscador (Win+S), Centro de control, Alt+Tab y Win+Tab aparecen centrados y enteros en el monitor correcto.
+- [ ] Cambiar la escala de un monitor con McBar abierto → se rehace todo bien.
+- [ ] Abrir y cerrar el Launchpad varias veces: la segunda vez aparece al instante. Pasar de página: fluido.
+- [ ] Preferencias → Diagnóstico: después de mover el mouse por el Dock dice "Dock: 60 cuadros por segundo…" (o lo que dé el monitor) y "Launchpad: aparece en … ms".
+
+### Versión 1.4.1
+- [ ] Arrastrar un ícono fijado del Dock hasta la mitad de la pantalla (o a un costado): el ícono sigue al mouse con "Quitar del Dock"; esperar medio segundo y soltar → nubecita donde se soltó y el ícono sale del Dock. Volver al Dock sin soltar → vuelve a su lugar.
+- [ ] Con ocultación automática: abrir el Launchpad, arrastrar una app hacia abajo → el Dock sube entero; soltar → queda fijada y el Dock se vuelve a esconder.
+- [ ] Launchpad: arrastrar una app (de escritorio y una de la Tienda, como Calculadora) hacia un borde, se esconde el Launchpad, soltar en el escritorio → aparece el acceso directo y abre la app.
+- [ ] Preferencias → Isla dinámica → Estilo: Negro / Grafito / Vidrio / Color cambia la píldora al toque, también con el tema Vidrio. Dock → Estilo: cada opción cambia el Dock.
+
+### Versión 1.4.0
+- [ ] Crear cuenta en macosicons.com y copiar la clave de la API. Preferencias → Dock → Íconos de macOSicons.com: pegarla → "Guardar clave" → dice "Clave guardada… quedan 50 de 50".
+- [ ] "Bajar íconos ahora": va diciendo "Buscando Chrome… (3 de 40)". Al terminar, el Dock y el Launchpad muestran los íconos nuevos y dice cuántos bajó y cuántas búsquedas quedan.
+- [ ] Una clave mal escrita → "macOSicons no aceptó la clave".
+- [ ] "Ver créditos" abre creditos.txt con el autor de cada ícono.
+- [ ] Exportar ajustes: el archivo NO tiene la clave.
+
+### Versión 1.3.2
+- [ ] Preferencias → Dock → Forma de los íconos → "Como en Mac": los íconos del Dock cambian al toque (Chrome, Explorador, etc. sobre una placa clara con esquinas suaves; Calculadora/Configuración de la Tienda recortadas). Abrir el Launchpad y Alt+Tab: igual. "Original" vuelve como estaba.
+- [ ] Con un paquete de íconos elegido: también toman la forma.
+
 ### Versión 1.3.1
 - [ ] Isla expandida → abrir el menú Archivo / Ventana / el de McBar: el menú se ve entero, encima de la píldora, y sigue encima después de unos segundos.
 - [ ] Abrir Preferencias en una pantalla chica: la barra de título queda debajo de la píldora (no tapada).

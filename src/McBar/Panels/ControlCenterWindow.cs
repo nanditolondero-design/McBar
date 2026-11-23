@@ -137,7 +137,8 @@ namespace McBar.Panels
 
         private static TextBlock RowLabel(string title)
         {
-            var label = Text(title, 12.5, true);
+            var label = Text(title, 12.5);
+            label.FontWeight = FontWeights.Medium; // 1.6.0: un poco más liviano, como en macOS
             label.Margin = new Thickness(8, 0, 0, 0);
             label.VerticalAlignment = VerticalAlignment.Center;
             return label;

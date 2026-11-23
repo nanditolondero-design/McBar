@@ -248,6 +248,15 @@ namespace McBar.Native
         [DllImport("gdi32.dll")] public static extern int CombineRgn(IntPtr dest, IntPtr src1, IntPtr src2, int mode);
         public const int RGN_OR = 2;
 
+        [DllImport("shcore.dll")] private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+
+        /// <summary>1.5.0: escala de un monitor (MDT_EFFECTIVE_DPI). Si no se puede, la del sistema.</summary>
+        public static double MonitorScale(IntPtr hMonitor)
+        {
+            try { if (GetDpiForMonitor(hMonitor, 0, out var x, out _) == 0 && x > 0) return x / 96.0; } catch { }
+            return SystemScale();
+        }
+
         public static double SystemScale()
         {
             try { return GetDpiForSystem() / 96.0; } catch { return 1.0; }

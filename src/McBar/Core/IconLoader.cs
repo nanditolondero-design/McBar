@@ -20,6 +20,7 @@ namespace McBar.Core
     {
         private static readonly Dictionary<string, ImageSource> Cache = new Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
         private static readonly object CacheLock = new object();
+        private static readonly Queue<string> Order = new Queue<string>(); // orden de llegada (para sacar el más viejo)
         private static Dispatcher? _shell;
         private static readonly object StartLock = new object();
 
@@ -58,9 +59,12 @@ namespace McBar.Core
         }
 
         /// <summary>Pide un ícono. El callback se ejecuta en el hilo de la interfaz.</summary>
-        public static void Request(string parsingName, int sizePx, Action<ImageSource?> callback, bool useCache = true, string? displayName = null)
+        public static void Request(string parsingName, int sizePx, Action<ImageSource?> callback, bool useCache = true, string? displayName = null, bool appShape = false)
         {
-            var key = parsingName + "|" + sizePx;
+            // 1.3.2: appShape = es el ícono de una app (Dock, Launchpad, Alt+Tab): si en Preferencias se eligió
+            // "Como en Mac", se le da la forma de los íconos de macOS (Core/IconShaper).
+            bool mac = appShape && SettingsStore.Current.IconShape == "mac";
+            var key = parsingName + "|" + sizePx + (mac ? "|mac" : "");
             if (useCache)
             {
                 lock (CacheLock)
@@ -76,11 +80,15 @@ namespace McBar.Core
                 var packed = IconPack.Find(parsingName, displayName);
                 if (packed != null) img = IconPack.Load(packed, sizePx);
                 img ??= LoadNow(parsingName, sizePx);
+                if (img != null && mac) img = IconShaper.Shape(img, sizePx) ?? img;
                 if (img != null && useCache)
                 {
                     lock (CacheLock)
                     {
-                        if (Cache.Count > 120) Cache.Clear(); // tope simple para no crecer sin límite
+                        // 1.5.0: tope más grande (antes 120: con el Launchpad abierto se vaciaba todo y se volvían a
+                        // cargar los íconos del Dock y del Launchpad cada vez). Se saca el más viejo, no todo.
+                        if (Cache.Count >= 400 && Order.Count > 0) { Cache.Remove(Order.Dequeue()); }
+                        if (!Cache.ContainsKey(key)) Order.Enqueue(key);
                         Cache[key] = img;
                     }
                 }
@@ -91,7 +99,7 @@ namespace McBar.Core
         /// <summary>Vacía todo el caché (al cambiar el paquete de íconos).</summary>
         public static void ClearCache()
         {
-            lock (CacheLock) Cache.Clear();
+            lock (CacheLock) { Cache.Clear(); Order.Clear(); }
         }
 
         public static void Forget(string parsingName)

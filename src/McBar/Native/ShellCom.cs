@@ -59,7 +59,12 @@ namespace McBar.Native
     [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IShellLinkW
     {
+        // El orden de los métodos tiene que ser el de la interfaz de Windows (1.4.1: completa hasta SetIDList).
         [PreserveSig] int GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cch, IntPtr pfd, uint fFlags);
+        [PreserveSig] int GetIDList(out IntPtr ppidl);
+        [PreserveSig] int SetIDList(IntPtr pidl);
+        [PreserveSig] int GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cch);
+        [PreserveSig] int SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
     }
 
     [ComImport, Guid("0000010b-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -68,6 +73,7 @@ namespace McBar.Native
         [PreserveSig] int GetClassID(out Guid pClassID);
         [PreserveSig] int IsDirty();
         [PreserveSig] int Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+        [PreserveSig] int Save([MarshalAs(UnmanagedType.LPWStr)] string? pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
     }
 
     [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
@@ -141,6 +147,33 @@ namespace McBar.Native
             }
             catch { return null; }
             finally { if (o != null) Marshal.ReleaseComObject(o); }
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHParseDisplayName(string name, IntPtr bindingContext, out IntPtr pidl, uint sfgaoIn, out uint sfgaoOut);
+
+        /// <summary>
+        /// 1.4.1: crea un acceso directo (.lnk) a cualquier app de la lista (de escritorio o de la Tienda,
+        /// "shell:AppsFolder\…") en <paramref name="linkPath"/>. Sirve para soltar apps del Launchpad en el escritorio.
+        /// </summary>
+        public static bool CreateLinkTo(string parsingName, string linkPath, string? description = null)
+        {
+            object? link = null;
+            IntPtr pidl = IntPtr.Zero;
+            try
+            {
+                if (SHParseDisplayName(parsingName, IntPtr.Zero, out pidl, 0, out _) != 0 || pidl == IntPtr.Zero) return false;
+                link = new ShellLinkCoClass();
+                if (((IShellLinkW)link).SetIDList(pidl) != 0) return false;
+                if (!string.IsNullOrEmpty(description)) ((IShellLinkW)link).SetDescription(description);
+                return ((IPersistFile)link).Save(linkPath, true) == 0;
+            }
+            catch { return false; }
+            finally
+            {
+                if (pidl != IntPtr.Zero) Marshal.FreeCoTaskMem(pidl);
+                if (link != null) Marshal.ReleaseComObject(link);
+            }
         }
 
         /// <summary>Destino real (.exe) de un acceso directo .lnk, o null.</summary>

@@ -49,6 +49,7 @@ namespace McBar.Panels
             ("notificaciones", "Notificaciones", "ms-settings:notifications"),
         };
 
+        private Grid _shell = new Grid();
         private readonly TextBox _box = new TextBox();
         private readonly StackPanel _list = new StackPanel();
         private readonly Border _results;
@@ -70,9 +71,8 @@ namespace McBar.Panels
             SizeToContent = SizeToContent.Height;
             Width = 680;
             FontFamily = (FontFamily)FindResource("Mc.Font");
-            double sc = App.Scale;
-            Left = m.Bounds.Left / sc + (m.Bounds.Width / sc - Width) / 2;
-            Top = m.Bounds.Top / sc + m.Bounds.Height / sc * 0.2;
+            double sc = m.Scale;
+            WindowOps.PlaceOnMonitor(this, m, (m.Bounds.Width / sc - Width) / 2, m.Bounds.Height / sc * 0.2); // 1.5.0
 
             var icon = new TextBlock { Text = "", FontSize = 22, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0), Opacity = 0.7 };
             icon.SetResourceReference(TextBlock.FontFamilyProperty, "Mc.Icons");
@@ -103,14 +103,25 @@ namespace McBar.Panels
             var card = new Border
             {
                 Child = sp,
-                CornerRadius = new CornerRadius(18),
-                BorderThickness = new Thickness(1),
-                Margin = new Thickness(16),
-                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 28, ShadowDepth = 8, Opacity = 0.45 }
+                CornerRadius = new CornerRadius(PanelLook.Radius),
+                BorderThickness = new Thickness(1)
             };
             card.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
             card.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
-            Content = card;
+            // 1.6.0: la sombra va en una capa APARTE (antes estaba en la tarjeta y se recalculaba con cada letra
+            // escrita, porque cambiaban los resultados) y es más grande y suave; brillo fino arriba.
+            var shadow = new Border
+            {
+                CornerRadius = new CornerRadius(PanelLook.Radius),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 40, ShadowDepth = 14, Direction = 270, Opacity = 0.42, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance },
+                CacheMode = new BitmapCache()
+            };
+            shadow.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg"); // mismo color: no oscurece la tarjeta
+            _shell = new Grid { Margin = new Thickness(24, 16, 24, 32) };
+            _shell.Children.Add(shadow);
+            _shell.Children.Add(card);
+            _shell.Children.Add(PanelLook.Highlight());
+            Content = _shell;
 
             PreviewKeyDown += OnKey;
             Deactivated += (_, _) => CloseAnimated();
@@ -119,7 +130,8 @@ namespace McBar.Panels
                 WindowOps.Activate(new System.Windows.Interop.WindowInteropHelper(this).Handle);
                 _box.Focus();
                 Keyboard.Focus(_box);
-                BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140)));
+                BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+                PanelLook.SpringIn(_shell, new Point(0.5, 0), fromY: -10, fromScale: 0.96); // 1.6.0
                 FileIndex.Warm();
                 if (AppCatalog.Cached != null) _apps = AppCatalog.Cached.ToList();
                 try { _apps = await AppCatalog.LoadAsync(); } catch { }

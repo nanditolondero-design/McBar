@@ -17,6 +17,11 @@ namespace McBar.Native
         /// <summary>Rectángulo completo del monitor, en píxeles.</summary>
         public PxRect Bounds { get; init; }
         public PxRect Work { get; init; }
+        /// <summary>
+        /// 1.5.0: escala de ESTE monitor (1 = 100 %, 1.25 = 125 %…). Con monitores de escalas distintas cada uno
+        /// tiene la suya; antes se usaba la del principal para todos y en el otro se veía borroso o corrido.
+        /// </summary>
+        public double Scale { get; init; } = 1.0;
     }
 
     public readonly struct PxRect
@@ -57,7 +62,8 @@ namespace McBar.Native
                 Device = info.szDevice ?? "",
                 Primary = (info.dwFlags & Win32.MONITORINFOF_PRIMARY) != 0,
                 Bounds = new PxRect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom),
-                Work = new PxRect(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom)
+                Work = new PxRect(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom),
+                Scale = Win32.MonitorScale(hMonitor)
             };
         }
 

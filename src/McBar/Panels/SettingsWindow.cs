@@ -78,7 +78,11 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Mostrar el Dock en todos los monitores", s.DockOnAllMonitors, v => s.DockOnAllMonitors = v));
             dock.Children.Add(Switch("Animar ventanas al minimizar y restaurar (hacia el Dock)", s.AnimateWindows, v => s.AnimateWindows = v));
             dock.Children.Add(Switch("Vista previa de las ventanas al dejar el mouse sobre una app", s.DockPreviews, v => s.DockPreviews = v));
+            // 1.3.2: todos los íconos de apps con la forma de macOS
+            dock.Children.Add(Segment("Forma de los íconos", new[] { ("none", "Original"), ("mac", "Como en Mac") },
+                s.IconShape, v => { s.IconShape = v; Changed(); }));
             dock.Children.Add(IconPackRow(s));
+            dock.Children.Add(MacIconsBox(s)); // 1.4.0
             var restore = new Button { Content = "Volver a poner la Papelera y Descargas", Margin = new Thickness(0, 10, 0, 4), HorizontalAlignment = HorizontalAlignment.Left };
             restore.SetResourceReference(StyleProperty, "McButton");
             restore.Click += (_, _) => App.Dock?.RestoreDefaultStacks();
@@ -545,6 +549,50 @@ namespace McBar.Panels
             return sp;
         }
 
+        /// <summary>1.4.0: íconos de macOSicons.com bajados solos para las apps instaladas.</summary>
+        private UIElement MacIconsBox(AppSettings s)
+        {
+            var sp = new StackPanel { Margin = new Thickness(0, 10, 0, 4) };
+            sp.Children.Add(BoxTitle("Íconos de macOSicons.com"));
+            sp.Children.Add(Tip("McBar busca cada app instalada en macOSicons.com y baja su ícono estilo Mac (las del Dock primero). Necesita la clave gratis de tu cuenta: creala en macosicons.com → tu cuenta → API. Los íconos son de sus autores (ver créditos)."));
+            var status = new TextBlock { FontSize = 11.5, Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap };
+            status.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            void ShowState() => status.Text = (MacIcons.HasKey ? "Clave guardada. " : "Sin clave. ") +
+                $"{MacIcons.DownloadedCount()} ícono(s) bajado(s). Este mes quedan {MacIcons.RemainingNow()} de {s.MacIconsMonthlyLimit} búsquedas.";
+
+            var keyRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            var key = new PasswordBox { Width = 240, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), ToolTip = "Clave de la API de macOSicons" };
+            key.SetResourceReference(StyleProperty, "McPasswordBox");
+            keyRow.Children.Add(key);
+            keyRow.Children.Add(Btn("Guardar clave", () => { MacIcons.SetKey(key.Password); key.Password = ""; ShowState(); }));
+            sp.Children.Add(keyRow);
+
+            sp.Children.Add(Switch("Bajar solos los íconos de las apps nuevas", s.MacIconsAuto, v => s.MacIconsAuto = v));
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+            Button? go = null;
+            go = Btn("Bajar íconos ahora", async () =>
+            {
+                if (!MacIcons.HasKey) { status.Text = "Primero guardá la clave de macOSicons."; return; }
+                go!.IsEnabled = false;
+                Action<string> prog = t => status.Text = t;
+                MacIcons.Progress += prog;
+                try { status.Text = await MacIcons.RunAsync(manual: true); }
+                finally { MacIcons.Progress -= prog; go!.IsEnabled = true; }
+            });
+            row.Children.Add(go);
+            row.Children.Add(Btn("Usar estos íconos", () => { App.UseMacIconsFolder(); ShowState(); }));
+            row.Children.Add(Btn("Ver créditos", () =>
+            {
+                if (System.IO.File.Exists(MacIcons.CreditsPath)) Launcher.Open(MacIcons.CreditsPath);
+                else status.Text = "Todavía no se bajó ningún ícono.";
+            }, new Thickness(0)));
+            sp.Children.Add(row);
+            sp.Children.Add(status);
+            ShowState();
+            return sp;
+        }
+
         /// <summary>Botones para poner widgets en el escritorio (1.1.0).</summary>
         private UIElement DesktopWidgetsBox()
         {
@@ -629,8 +677,9 @@ namespace McBar.Panels
             var usage = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap };
             usage.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-            timer.Tick += (_, _) => usage.Text = Diagnostics.Sample().Format();
-            usage.Text = Diagnostics.Sample().Format();
+            // 1.5.0: también la fluidez (Core/Perf)
+            timer.Tick += (_, _) => usage.Text = Diagnostics.Sample().Format() + "\n" + Perf.Format();
+            usage.Text = Diagnostics.Sample().Format() + "\n" + Perf.Format();
             timer.Start();
             Closed += (_, _) => timer.Stop();
             var version = new TextBlock { FontSize = 12, Margin = new Thickness(0, 6, 0, 0), Text = $"Versión {Installer.CurrentVersion.ToString(3)}" };
@@ -781,7 +830,14 @@ namespace McBar.Panels
                 var rb = new RadioButton { Content = name, GroupName = "McTheme", IsChecked = s.Theme == key };
                 rb.SetResourceReference(StyleProperty, "McSegment");
                 var k = key;
-                rb.Checked += (_, _) => { s.Theme = k; SettingsStore.Save(); ThemeManager.Apply(); };
+                rb.Checked += (_, _) =>
+                {
+                    s.Theme = k;
+                    if (k == "glass") s.IslandStyle = "glass"; // 1.4.1: la isla acompaña al tema (después se puede cambiar)
+                    SettingsStore.Save();
+                    ThemeManager.Apply();
+                    Changed();
+                };
                 seg.Children.Add(rb);
             }
             Grid.SetColumn(segBorder, 1);

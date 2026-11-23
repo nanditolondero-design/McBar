@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.3.1-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.6.0-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -45,7 +45,9 @@ McBar reemplaza la barra de tareas de Windows por un **Dock** abajo y una **barr
 - **Vista previa en vivo** de las ventanas al dejar el mouse sobre un ícono.
 - Las ventanas se achican **hacia su ícono** al minimizar.
 - **Estilos**: Clásico, Flotante, Ancho completo, Barra (como Windows 11 pero flotante) o Solo íconos.
-- **Paquetes de íconos** de otras barras o sistemas (.png / .ico).
+- **Íconos de macOSicons.com**: McBar lee tus apps instaladas y baja solo el ícono estilo Mac de cada una (con la clave gratis de tu cuenta de macOSicons; los íconos no vienen con McBar y son de sus autores).
+- **Íconos con forma de Mac**: todas las apps con el cuadrado de esquinas suaves de macOS (opcional).
+- **Paquetes de íconos** de otras barras o sistemas (carpeta con .png / .ico / .jpg / .bmp, buscados por nombre de archivo).
 - Ocultación automática y un Dock en cada monitor.
 
 ### Barra de menú
@@ -230,6 +232,11 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.6.0** | Gráficos: paneles y menús con vidrio, sombra suave y brillo como macOS, animaciones con resorte |
+| **1.5.0** | Rendimiento: nítido con monitores de escalas distintas, Launchpad y paneles más fluidos, medición |
+| **1.4.1** | Quitar del Dock arrastrando a cualquier lado, apps del Launchpad al escritorio, estilos que no cambiaban |
+| **1.4.0** | Baja solo los íconos estilo Mac de tus apps desde macOSicons.com |
+| **1.3.2** | Íconos con forma de Mac |
 | **1.3.1** | Se reinicia solo si se traba; el instalador vuelve a aparecer con una versión nueva |
 | **1.3.0** | Perfiles, modo juego, exportar/importar ajustes, fondo según la hora |
 | **1.2.0** | Temporizador y cronómetro en vivo, micrófono/cámara en uso, descargas |

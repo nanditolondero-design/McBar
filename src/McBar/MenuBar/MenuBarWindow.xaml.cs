@@ -20,7 +20,7 @@ namespace McBar.MenuBar
         private bool _wantVisible;
 
         public MonitorInfo Monitor => _monitor;
-        public int ReservePx => _wantVisible ? (int)Math.Ceiling(BarHeightDip * App.Scale) : 0;
+        public int ReservePx => _wantVisible ? (int)Math.Ceiling(BarHeightDip * _monitor.Scale) : 0;
 
         internal MenuBarWindow(MonitorInfo monitor)
         {
@@ -30,6 +30,8 @@ namespace McBar.MenuBar
             _content.SetTwoRows(false);
             Root.Child = _content;
 
+            // 1.5.0: al pasar a un monitor con otra escala, Windows le cambia el tamaño: se vuelve a acomodar.
+            DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(ApplyGeometry), System.Windows.Threading.DispatcherPriority.Loaded);
             SourceInitialized += (_, _) =>
             {
                 _hwnd = new WindowInteropHelper(this).Handle;
@@ -55,7 +57,7 @@ namespace McBar.MenuBar
         {
             if (_hwnd == IntPtr.Zero || !_wantVisible) return;
             var b = _monitor.Bounds;
-            int h = (int)Math.Ceiling(BarHeightDip * App.Scale);
+            int h = (int)Math.Ceiling(BarHeightDip * _monitor.Scale);
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, b.Left, b.Top, b.Width, h, Win32.SWP_NOACTIVATE);
         }
 

@@ -76,11 +76,8 @@ namespace McBar.Panels
             Topmost = true;
             ShowInTaskbar = false;
             ResizeMode = ResizeMode.NoResize;
-            double sc = App.Scale;
-            Left = monitor.Bounds.Left / sc;
-            Top = monitor.Bounds.Top / sc;
-            Width = monitor.Bounds.Width / sc;
-            Height = monitor.Bounds.Height / sc;
+            double sc = monitor.Scale;
+            WindowOps.PlaceOnMonitor(this, monitor, 0, 0, monitor.Bounds.Width / sc, monitor.Bounds.Height / sc); // 1.5.0
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             if (_fast) _root.Opacity = 0; else Opacity = 0;
 
@@ -164,10 +161,12 @@ namespace McBar.Panels
         {
             Show();
             Activate();
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var ease = PanelLook.Spring; // 1.6.0: con resorte, como el resto de McBar
             Fader.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200)));
-            _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
-            _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
+            var zx = new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(420)) { EasingFunction = ease };
+            CacheWhile(_content, zx);
+            _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, zx);
+            _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.08, 1, TimeSpan.FromMilliseconds(420)) { EasingFunction = ease });
         }
 
         public void CloseAnimated()
@@ -178,7 +177,9 @@ namespace McBar.Panels
             var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(160));
             fade.Completed += (_, _) => { Close(); _icons.Clear(); App.ScheduleTrim(); };
             Fader.BeginAnimation(OpacityProperty, fade);
-            _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
+            var zx = new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160));
+            CacheWhile(_content, zx);
+            _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, zx);
             _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
         }
 
@@ -248,6 +249,7 @@ namespace McBar.Panels
                     old.RenderTransform = tOld;
                     var outAnim = new DoubleAnimation(0, -direction * w * 0.35, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
                     outAnim.Completed += (_, _) => _pageHost.Children.Remove(old);
+                    CacheWhile(old, outAnim);
                     tOld.BeginAnimation(TranslateTransform.XProperty, outAnim);
                     old.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(220)));
                     old.IsHitTestVisible = false;
@@ -257,7 +259,9 @@ namespace McBar.Panels
             {
                 var tNew = new TranslateTransform();
                 next.RenderTransform = tNew;
-                tNew.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(direction * w * 0.35, 0, TimeSpan.FromMilliseconds(340)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                var inAnim = new DoubleAnimation(direction * w * 0.35, 0, TimeSpan.FromMilliseconds(340)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+                CacheWhile(next, inAnim);
+                tNew.BeginAnimation(TranslateTransform.XProperty, inAnim);
                 next.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)));
             }
             UpdateDots();
@@ -310,7 +314,7 @@ namespace McBar.Panels
                         if (src == null) return;
                         _icons[app.Target] = src;
                         if (_waiting.TryGetValue(app.Target, out var l)) foreach (var i in l) i.Source = src;
-                    }, useCache: false, displayName: app.Name);
+                    }, useCache: true, displayName: app.Name, appShape: true); // 1.5.0: los íconos quedan en memoria
                 }
                 list.Add(img);
             }
@@ -331,8 +335,7 @@ namespace McBar.Panels
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxWidth = 120,
-                Margin = new Thickness(0, 7, 0, 0),
-                Effect = LabelShadow
+                Margin = new Thickness(0, 7, 0, 0)
             };
             var iconHost = new Grid { HorizontalAlignment = HorizontalAlignment.Center, RenderTransformOrigin = new Point(0.5, 0.5) };
             var zoom = new ScaleTransform(1, 1);
@@ -351,7 +354,7 @@ namespace McBar.Panels
 
             var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             sp.Children.Add(iconHost);
-            sp.Children.Add(label);
+            sp.Children.Add(Shadowed(label));
             var card = new Border
             {
                 Child = sp,
@@ -383,12 +386,38 @@ namespace McBar.Panels
             return card;
         }
 
-        private static readonly System.Windows.Media.Effects.DropShadowEffect LabelShadow = MakeLabelShadow();
-        private static System.Windows.Media.Effects.DropShadowEffect MakeLabelShadow()
+        /// <summary>
+        /// 1.5.0: sombra del nombre de la app SIN efecto de sombra (DropShadowEffect): una copia del texto en
+        /// negro, corrida un píxel, detrás. Se ve igual y no hay que recalcular 81 sombras en cada cuadro de la
+        /// animación.
+        /// </summary>
+        private static Grid Shadowed(TextBlock label)
         {
-            var e = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 6, ShadowDepth = 1, Opacity = 0.6, Color = Colors.Black };
-            e.Freeze();
-            return e;
+            var shadow = new TextBlock
+            {
+                Foreground = ShadowBrush, FontSize = label.FontSize, TextAlignment = label.TextAlignment,
+                TextTrimming = label.TextTrimming, MaxWidth = label.MaxWidth, Margin = new Thickness(label.Margin.Left + 0.8, label.Margin.Top + 1.2, 0, 0)
+            };
+            shadow.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = label });
+            var g = new Grid { HorizontalAlignment = HorizontalAlignment.Center };
+            g.Children.Add(shadow);
+            g.Children.Add(label);
+            return g;
+        }
+
+        private static readonly Brush ShadowBrush = MakeShadowBrush();
+        private static Brush MakeShadowBrush()
+        {
+            var b = new SolidColorBrush(Color.FromArgb(0x8C, 0, 0, 0));
+            b.Freeze();
+            return b;
+        }
+
+        /// <summary>1.5.0: mientras dura una animación, el contenido se dibuja como una sola imagen (mucho más liviano).</summary>
+        private static void CacheWhile(UIElement el, AnimationTimeline anim)
+        {
+            el.CacheMode = new BitmapCache { EnableClearType = false, SnapsToDevicePixels = false };
+            anim.Completed += (_, _) => el.CacheMode = null;
         }
 
         // ---------- Soltar sobre una tarjeta: dentro = carpeta; en el borde = mover ----------
@@ -701,18 +730,16 @@ namespace McBar.Panels
             {
                 data.SetData(typeof(string), app.Target);
                 data.SetData(DockPinFormat, app.Name + "\n" + app.Target);
-                try
-                {
-                    var shell = ShellCom.ShellDataObject(app.Target);
-                    if (shell?.GetData("Shell IDList Array") is System.IO.MemoryStream ids) data.SetData("Shell IDList Array", ids);
-                }
-                catch { }
+                // 1.4.1: para el escritorio (o cualquier carpeta) va un acceso directo .lnk de verdad, armado al
+                // empezar a arrastrar. Antes se pasaba la lista de ítems del Shell y el escritorio no lo aceptaba.
+                var lnk = TempLinkFor(app);
+                if (lnk != null) data.SetFileDropList(new System.Collections.Specialized.StringCollection { lnk });
             }
             QueryContinueDragEventHandler watch = (_, qe) =>
             {
                 if (app == null || _droppedOutside || !Win32.GetCursorPos(out var pt)) return;
-                double sc = App.Scale;
-                double x = pt.x / sc - Left, y = pt.y / sc - Top;
+                var local = PointFromScreen(new Point(pt.x, pt.y)); // 1.5.0: bien con cualquier escala
+                double x = local.X, y = local.Y;
                 if (y > ActualHeight - 120 || x < 30 || x > ActualWidth - 30)
                 {
                     // fuera de la grilla: se esconde el Launchpad para soltar en el Dock o el escritorio
@@ -731,6 +758,24 @@ namespace McBar.Panels
                 source.Opacity = 1;
             }
             if (_droppedOutside) { _closing = true; ClosedAt = DateTime.Now; Close(); App.ScheduleTrim(); }
+        }
+
+        /// <summary>Acceso directo temporal "Nombre.lnk" para soltar la app en el escritorio (null si no se pudo).</summary>
+        private static string? TempLinkFor(CatalogApp app)
+        {
+            try
+            {
+                var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "McBar", "arrastre");
+                // limpiar los de arrastres viejos (más de un día)
+                if (System.IO.Directory.Exists(root))
+                    foreach (var old in System.IO.Directory.GetDirectories(root))
+                        try { if ((DateTime.Now - System.IO.Directory.GetCreationTime(old)).TotalDays > 1) System.IO.Directory.Delete(old, true); } catch { }
+                var dir = System.IO.Path.Combine(root, Guid.NewGuid().ToString("N").Substring(0, 8));
+                System.IO.Directory.CreateDirectory(dir);
+                var path = System.IO.Path.Combine(dir, MacIcons.SafeFileName(app.Name) + ".lnk");
+                return ShellCom.CreateLinkTo(app.Target, path, app.Name) ? path : null;
+            }
+            catch (Exception ex) { Log.Write("Launchpad acceso directo: " + ex.Message); return null; }
         }
 
         /// <summary>Formato que entiende el Dock para fijar una app arrastrada desde el Launchpad ("nombre\ntarget").</summary>

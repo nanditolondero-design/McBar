@@ -122,3 +122,24 @@ También: la isla reservaba una franja de lado a lado arriba (Andrés: "la píld
 
 Vista previa de minimizadas (Andrés: "no cargan siempre o tardan mucho"): `DwmQueryThumbnailSourceSize` de una ventana minimizada da el tamaño del botón minimizado, así que se usa `Win32.NormalSize` (GetWindowPlacement); ícono de la app detrás de la miniatura; reintentos de `Sync`; 400 ms y cambio inmediato entre íconos (`App.DockPreviewOpen`).
 Píldora sobre menús (Andrés: "la píldora tapa el menú", "los botones de minutos quedan cortados"): `PopupGuard` sube cada menú/popup a lo más alto al abrirse; `KeepBarsOnTop` no actúa con un menú abierto; `App.KeepBelowTopBar(Window)` para Preferencias; `TimerView` en dos renglones.
+
+## 1.3.2 (22/11/2026) — íconos con forma de Mac
+Pedido de Andrés: "¿no se puede hacer que solo le dé forma de ícono de Mac?". `Core/IconShaper` (en el hilo del Shell, con RenderTargetBitmap): superelipse n=5 al 90 % del cuadro; si el ícono llena su cuadro (`IsFullBleed`: cubre ≥85 %, bordes y esquinas opacos) se recorta, si no va al 66 % sobre una placa con degradé claro del color dominante (`Dominant`, `Mix`). `IconLoader.Request(..., appShape: true)` desde el Dock (apps), Launchpad y Alt+Tab/vista previa; clave de caché con "|mac". Ajuste `IconShape` ("none"/"mac"). Pruebas en `Stage15Tests`.
+
+## 1.4.0 (23/11/2026) — íconos de macOSicons para las apps instaladas
+Pedido de Andrés: "que no vengan los íconos sino que la app lea las apps instaladas y baje los íconos sola para cada app". API de macOSicons (POST https://api.macosicons.com/api/v1/search con `x-api-key`, respuesta `hits[]` con `appName`, `lowResPngUrl`, `credit`, `creditUrl`, `downloads`). Plan gratis: 50 búsquedas por mes; los términos piden conservar el crédito del autor y permiten uso personal. `Core/MacIcons` (índice `indice.json`, `creditos.txt`), `Native/Dpapi` (clave cifrada), `App.StartMacIcons` (automático: a los 2 min y cada 6 h) y `MacIconsBox` en Preferencias → Dock. Pruebas en `Stage16Tests`.
+Ideas para después: elegir otro ícono para una app (clic derecho en el Launchpad), leer .svg/.icns/.zip en los paquetes.
+
+## 1.4.1 (23/11/2026) — arreglos pedidos por Andrés (sus mensajes se perdieron y los resumió)
+- "El estilo de la barra, píldora y Dock no cambiaba": `SettingsStore.NotifyChanged` avisa a cada suscriptor con su propio try/catch (si uno fallaba, los siguientes no se enteraban); el tema Vidrio ya no fuerza el estilo de la isla.
+- "La animación de borrado se queda corta": `Dock/DragGhost` (ventana transparente que no recibe clics) sigue al mouse por toda la pantalla; `DockWindow.OutsideDock` (puro) también cuenta los costados.
+- "Arrastrando del Launchpad al Dock oculto queda a mitad de camino": `DragEnter`/`DragOver` muestran el Dock (`_hidden = false`) y `DragLeave`/`Drop` lo vuelven a esconder.
+- "No puedo poner íconos en el escritorio desde el Launchpad": se arrastra un .lnk real (`ShellCom.CreateLinkTo` con `SHParseDisplayName` + `IShellLinkW.SetIDList`) en `%TEMP%\McBar\arrastre`.
+- Pregunta: barras de título estilo macOS en todas las ventanas → ver respuesta en el chat (no se hizo: requiere meterse en otros programas).
+
+## 1.5.0 (23/11/2026) — rendimiento
+Andrés tiene 2 monitores con escalas distintas, así que la escala por monitor fue lo primero. Manifest `PerMonitorV2`; `MonitorInfo.Scale` (GetDpiForMonitor); Dock, barra e isla usan `_monitor.Scale` y se reacomodan en `DpiChanged`; los paneles se ubican con `WindowOps.PlaceOnMonitor` (píxeles reales). Además: sin `TrimWorkingSet`; Launchpad sin `DropShadowEffect` (sombra = copia del texto) y con `BitmapCache` durante las animaciones; caché de íconos de 400 con salida del más viejo; forma fija de la isla durante la animación; `Core/Perf` en Diagnóstico. Pruebas en `Stage18Tests`.
+Sigue: 1.6.0 gráficos (animaciones tipo resorte, vidrio nativo de Windows 11, sombras y bordes de panel, tipografía) — primero se le muestra a Andrés cómo quedaría.
+
+## 1.6.0 (23/11/2026) — gráficos
+Andrés aprobó la vista previa ("Me gusta la vista previa de la 1.6.0, hacela así"). `Panels/PanelLook` (curva `Spring`, `Highlight`, `SpringIn`) y `PanelShadow` (ventana aparte, que no recibe clics, recortada para que la sombra solo se vea afuera del panel, debajo de él en el orden de ventanas). Mc.GlassBg más transparente, radio 18 en paneles y 14 en tarjetas, menús con sombra en capa aparte y brillo, buscador con sombra separada, Launchpad con resorte.

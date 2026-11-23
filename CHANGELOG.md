@@ -1,5 +1,38 @@
 # Cambios
 
+## 1.6.0 — 23/11/2026 (etapa: gráficos, como la vista previa aprobada)
+- **Paneles con aspecto de macOS** (Centro de control, Widgets, Clima, Wi-Fi, Bluetooth, Sonido): vidrio más transparente (se ve más el fondo difuminado), esquinas más redondeadas (18), **sombra grande y suave** debajo y un **brillo fino arriba** en el borde.
+- **Animación con resorte**: los paneles, el buscador y el Launchpad aparecen con un rebote chiquito, todos con la misma curva.
+- **Buscador**: misma sombra y brillo; la sombra va en una capa aparte y ya no se recalcula con cada letra.
+- **Menús** (barra, Dock, clic derecho): esquinas más redondeadas, sombra más grande y suave y brillo arriba.
+- Tarjetas del Centro de control con esquinas de 14 y textos un poco más livianos.
+
+## 1.5.0 — 23/11/2026 (etapa: rendimiento)
+- **Nítido en monitores con escalas distintas** (por ejemplo notebook al 125 % y monitor al 100 %): McBar ahora usa la escala de CADA monitor (antes tomaba la del principal para todos y en el otro se veía borroso o corrido). Dock, barra, isla, Launchpad, buscador, paneles, Alt+Tab, Win+Tab, vista previa, Quick Look, cartel de volumen y el ícono que se arrastra se ubican en píxeles reales del monitor donde están. Si una ventana pasa a un monitor con otra escala, se vuelve a acomodar sola.
+- **Abrir el Launchpad y los paneles sin tironcitos**: McBar ya no vacía la memoria a la fuerza al cerrarlos (Windows tenía que volver a cargarla del disco la próxima vez).
+- **Launchpad más fluido**: los nombres de las apps tienen una sombra dibujada una sola vez (antes, 81 sombras recalculadas en cada cuadro), y mientras se abre, se cierra o se pasa de página el contenido se dibuja como una sola imagen.
+- **Íconos en memoria**: el Launchpad reutiliza los íconos ya cargados (la segunda vez abre al instante) y la memoria de íconos guarda hasta 400 y saca el más viejo (antes se vaciaba entera al pasar de 120).
+- **Isla más suave**: mientras se agranda o se achica, su forma queda fija en vez de recalcularse 60 veces por segundo.
+- **Medición** en Preferencias → Diagnóstico: cuadros por segundo del Dock en la última animación (y % con tironcitos) y cuánto tarda en aparecer el Launchpad.
+
+## 1.4.1 — 23/11/2026 (arreglos)
+- **Quitar del Dock arrastrando a cualquier lado**: apenas el ícono sale del Dock (hacia arriba o a los costados de la barra), lo sigue al mouse por toda la pantalla con el cartel "Quitar del Dock" / "Cerrar app", y al soltarlo hace la nubecita ahí mismo. Antes, unos centímetros arriba del Dock el ícono desaparecía.
+- **Arrastrar del Launchpad al Dock oculto**: el Dock ahora sube entero al pasar algo arrastrando por encima (antes quedaba a mitad de camino) y se vuelve a esconder al terminar.
+- **Apps del Launchpad al escritorio**: al soltar una app en el escritorio (o en cualquier carpeta) se crea su acceso directo, también para las apps de la Tienda.
+- **Estilos que no cambiaban**: si una parte de McBar fallaba al aplicar los ajustes, las demás (Dock, isla, barra) no se enteraban; ahora cada una se actualiza por separado y el error queda en `mcbar.log`. Además, el estilo de la isla (Negro, Grafito, Vidrio, Color) ahora manda siempre; antes el tema Vidrio lo pisaba. Al elegir el tema Vidrio, la isla pasa a Vidrio una vez.
+
+## 1.4.0 — 23/11/2026 (íconos de macOSicons)
+- **McBar baja solo los íconos estilo Mac de tus apps** desde macOSicons.com (Preferencias → Dock → "Íconos de macOSicons.com"). Lee las apps instaladas (primero las del Dock, después las del Launchpad), busca cada una y baja su ícono a `%AppData%\McBar\iconos-macos`, que pasa a usarse como paquete de íconos. McBar no trae ningún ícono adentro: cada uno los baja con su propia cuenta.
+- Necesita la **clave gratis** de una cuenta de macOSicons.com (se guarda cifrada con tu usuario de Windows; no va en los perfiles ni en las exportaciones).
+- Cuida el **cupo** del plan gratis (50 búsquedas por mes): cuenta las que usa y frena; el mes siguiente sigue con las que falten.
+- Solo usa un ícono si el nombre coincide (para no ponerle a una app el ícono de otra). Las apps sin ícono en macOSicons siguen con el suyo y se vuelven a probar en 30 días. Desinstaladores, "léame" y ayudas no se buscan.
+- "Bajar solos los íconos de las apps nuevas": 2 minutos después de abrir McBar y cada 6 horas busca las apps que todavía no tienen.
+- **Créditos**: cada ícono es de su autor; McBar guarda quién lo hizo en `creditos.txt` (botón "Ver créditos"), como piden los términos de macOSicons.
+
+## 1.3.2 — 22/11/2026
+- **Íconos con forma de Mac** (Preferencias → Dock → Forma de los íconos → "Como en Mac"): todas las apps del Dock, el Launchpad y Alt+Tab toman la forma de los íconos de macOS (cuadrado de esquinas suaves). Si el ícono ya llena su cuadro (apps de la Tienda con fondo), se le recortan las esquinas; si es un ícono suelto (casi todos los de Windows), va al centro de una placa de un color muy claro sacado del mismo ícono. Funciona también con los paquetes de íconos. Viene en "Original".
+- Paquetes de íconos: se corrigió el comentario que decía que Papirus trae PNG (trae SVG, que todavía no se lee).
+
 ## 1.3.1 — 22/11/2026 (arreglos)
 - **Si McBar se traba** (Dock e isla quietos): a los 5 segundos anota en `mcbar.log` qué estaba haciendo («La interfaz no responde hace…»), y a los 20 segundos guarda un informe en `%AppData%\McBar\errores` y **se reinicia solo**. Se puede apagar en Preferencias → Diagnóstico.
 - **Instalador**: si antes se eligió "Probar sin instalar" con un `McBar.exe` en una carpeta y después se baja una versión NUEVA al mismo lugar, ahora vuelve a aparecer el instalador (antes se salteaba siempre).
