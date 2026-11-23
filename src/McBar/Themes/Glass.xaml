@@ -21,6 +21,11 @@
         <GradientStop Color="#40FFFFFF" Offset="1"/>
     </LinearGradientBrush>
     <SolidColorBrush x:Key="Mc.TileBg" Color="#2EFFFFFF"/>
+    <!-- 1.8.3: Preferencias de vidrio (sobre el acrílico de Windows); la transparencia del vidrio la cambia -->
+    <LinearGradientBrush x:Key="Mc.SettingsBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#7A2A2A32" Offset="0"/>
+        <GradientStop Color="#8C16161C" Offset="1"/>
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="Mc.TileBorder" Color="#40FFFFFF"/>
     <SolidColorBrush x:Key="Mc.Hover" Color="#40FFFFFF"/>
     <SolidColorBrush x:Key="Mc.Pressed" Color="#5CFFFFFF"/>

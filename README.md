@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.2-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.4-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -49,6 +49,8 @@ McBar reemplaza la barra de tareas de Windows por un **Dock** abajo y una **barr
 - **Íconos con forma de Mac**: todas las apps con el cuadrado de esquinas suaves de macOS (opcional).
 - **Paquetes de íconos** de otras barras o sistemas (carpeta con .png / .ico / .jpg / .bmp, buscados por nombre de archivo).
 - Ocultación automática y un Dock en cada monitor.
+
+- **Carpetas de apps** como en Android: arrastrá una app encima de otra y dejala un momento; al tocar la carpeta se abre un panel con sus apps.
 
 ### Barra de menú
 
@@ -242,6 +244,8 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.8.4** | Íconos .icns: avisa si no se puede leer y lee también los formatos viejos |
+| **1.8.3** | Carpetas de apps en el Dock (como Android), Preferencias de vidrio |
 | **1.8.2** | Íconos .icns de macOS (ícono propio y paquetes de íconos) |
 | **1.8.1** | La tecla Windows ya no abre Inicio, foco al escritorio al minimizar, cerrar escritorios, forma propia de cada pila, textos que no se cortan, íconos "Como en Mac" de un color por app; sin los botones de colores |
 | **1.8.0** | Estilo Mac (todo opcional): modo oscuro automático, cursores y sonidos, capturas, Alt como Cmd, organizador visual, pilas en abanico y más |

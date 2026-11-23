@@ -187,6 +187,8 @@ namespace McBar.Core
         public string StackStyle { get; set; } = "grid";
         /// <summary>1.8.1: forma propia de cada pila (ruta de la carpeta → "grid"/"fan"/"list"); si no está, StackStyle.</summary>
         public Dictionary<string, string> StackStyles { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>1.8.3: carpetas de apps del Dock (como en Android). Ver Core/DockFolders.</summary>
+        public List<DockAppFolder> DockFolders { get; set; } = new List<DockAppFolder>();
         /// <summary>Alt hace de Cmd: Alt+C/V/X/Z… = Ctrl+…, Alt+Q cierra la app, Alt+M minimiza, Alt+Espacio buscador.</summary>
         public bool MacShortcuts { get; set; } = false;
         /// <summary>Menús reales de la app en la barra (si la app los tiene).</summary>
@@ -406,6 +408,9 @@ namespace McBar.Core
                 .Where(kv => !string.IsNullOrEmpty(kv.Key) && StackFan.IsStyle(kv.Value))
                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
             s.ScreenshotFolder ??= "";
+            s.DockFolders ??= new List<DockAppFolder>();
+            s.DockFolders.RemoveAll(f => f == null || string.IsNullOrWhiteSpace(f.Id));
+            foreach (var f in s.DockFolders) { f.Targets ??= new List<string>(); f.Targets.RemoveAll(string.IsNullOrWhiteSpace); f.Name = string.IsNullOrWhiteSpace(f.Name) ? "Carpeta" : f.Name; }
             return s;
         }
     }

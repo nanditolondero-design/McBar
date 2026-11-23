@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="Mc.GlassBg" Color="#ABF6F6F8"/> <!-- 1.6.0: más transparente (antes #C4F6F6F8) -->
     <SolidColorBrush x:Key="Mc.PanelBorder" Color="#24000000"/>
     <SolidColorBrush x:Key="Mc.WindowBg" Color="#FFF2F2F4"/>
+    <SolidColorBrush x:Key="Mc.SettingsBg" Color="#FFF2F2F4"/> <!-- 1.8.3 -->
     <SolidColorBrush x:Key="Mc.TileBg" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="Mc.TileBorder" Color="#14000000"/>
     <SolidColorBrush x:Key="Mc.Hover" Color="#1A000000"/>

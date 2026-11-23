@@ -181,3 +181,12 @@ Andrés: "lo de la ventana minimizada sigue pasando, no hace foco en el escritor
 ## 1.8.2 (23/11/2026)
 Andrés: "¿puede usar icns para íconos la app?" → "agregalo". `Core/Icns` (lee las entradas del contenedor, elige el PNG más chico que alcance el tamaño o el más grande; `Entries`/`BestPng` puros, pruebas en Stage22Tests). Lo usan `IconLoader.FromImageFile` (ícono propio) e `IconPack` (`.icns` en `Extensions` y en `Load`). El selector de "Cambiar ícono…" acepta *.icns.
 
+## 1.8.3 (23/11/2026)
+Andrés: "el menú de config (Preferencias) debería ser como el glass del iPhone", "el efecto glass es nulo", "el menú de configuración de McBar no aparece más" y "poder agregar carpetas de apps en el Dock como en Android".
+- `Mc.SettingsBg` (Dark/Light opaco, Glass translúcido y en `ThemeManager.GlassBackgrounds`) + `WindowOps.SetGlassBackdrop` (DWMWA_SYSTEMBACKDROP_TYPE = acrílico en Win11 22H2+, `EnableBlur` en Win10). `App.OpenSettings` restaura si está minimizada y avisa si falla.
+- `Core/DockFolders` (Drop, NewWith, TakeOut, Dissolve; puros, Stage23Tests) + `AppSettings.DockFolders`; en `Pinned` va `mcbar:appfolder:<id>`. Dock: `DockItemKind.AppFolder`, `UpdateMerge` (quieta 450 ms en el centro de otra app = carpeta), `LoadFolderIcon` (2×2), `ShowAppFolder`, `AddToFolderMenu`, `McDialog.Prompt` para el nombre.
+- Supuesto (Andrés no eligió): se arman arrastrando (como Android) y además desde el clic derecho.
+
+## 1.8.4 (23/11/2026)
+Andrés: "cuando elijo un icns para el ícono del Launchpad no cambia en el Dock". `DockWindow.ChooseIcon` prueba la imagen con `IconLoader.FromImageFile` antes de guardarla y avisa si no se puede. `Icns.UnRle` + `Icns.DecodeOld` (RLE + máscara, ARGB) cuando el archivo no trae PNG; `Icns.Describe` para el registro. Pruebas en Stage22Tests.
+

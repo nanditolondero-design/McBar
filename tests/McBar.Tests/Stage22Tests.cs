@@ -57,6 +57,44 @@ namespace McBar.Tests
         }
 
         [Fact]
+        public void Rle_Descomprime()
+        {
+            // 0x02 = copiar 3 bytes (1,2,3); 0x81 = repetir 4 veces el 9
+            var d = new byte[] { 0x02, 1, 2, 3, 0x81, 9 };
+            Assert.Equal(new byte[] { 1, 2, 3, 9, 9, 9, 9 }, McBar.Core.Icns.UnRle(d, 0, d.Length, 1, 7));
+            Assert.Null(McBar.Core.Icns.UnRle(d, 0, d.Length, 1, 20)); // le faltan datos
+        }
+
+        private static byte[] RleChannel(byte v, int count)
+        {
+            var l = new List<byte>();
+            int left = count;
+            while (left > 0)
+            {
+                int c = Math.Min(130, left);
+                if (c < 3) { l.Add((byte)(c - 1)); for (int i = 0; i < c; i++) l.Add(v); }
+                else { l.Add((byte)(0x80 + c - 3)); l.Add(v); }
+                left -= c;
+            }
+            return l.ToArray();
+        }
+
+        [Fact]
+        public void FormatoViejo_Is32ConMascara()
+        {
+            var rgb = RleChannel(200, 256).Concat(RleChannel(10, 256)).Concat(RleChannel(30, 256)).ToArray();
+            var mask = Enumerable.Repeat((byte)255, 256).ToArray();
+            var f = Icns(Entry("is32", rgb), Entry("s8mk", mask));
+            Assert.Null(McBar.Core.Icns.BestPng(f, 64));
+            var img = McBar.Core.Icns.DecodeOld(f);
+            Assert.NotNull(img);
+            Assert.Equal(16, img!.PixelWidth);
+            var px = new byte[4];
+            img.CopyPixels(new System.Windows.Int32Rect(0, 0, 1, 1), px, 4, 0);
+            Assert.Equal(new byte[] { 30, 10, 200, 255 }, px); // BGRA
+        }
+
+        [Fact]
         public void EntradaCortadaNoRompe()
         {
             var f = Icns(Entry("ic07", FakePng(128)));

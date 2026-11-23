@@ -240,6 +240,19 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.4
+- [ ] Clic derecho en el Launchpad del Dock → Ícono → Cambiar ícono… → un .icns moderno: cambia al toque. Uno viejo (Mac OS X 10.5/10.6): también cambia (más chico). Uno que no se pueda leer: aparece «No se pudo leer ese ícono» y queda el de antes.
+
+### Versión 1.8.3
+- [ ] Tema Vidrio → abrir Preferencias: se ve el fondo de pantalla difuminado detrás. Mover "Transparencia del vidrio" de 0 a 100: la ventana pasa de casi opaca a muy transparente.
+- [ ] Minimizar Preferencias y volver a elegir "Preferencias de McBar…" desde el menú de McBar: vuelve al frente.
+- [ ] Arrastrar una app fija del Dock y dejarla quieta encima de otra (~medio segundo, la de abajo se pone transparente) → soltar: aparece una carpeta con las dos (ícono con las apps en chiquito). Arrastrar una tercera encima: se agrega.
+- [ ] Tocar la carpeta: panel con las apps; clic en una la abre (o la trae si está abierta). Clic en el nombre → cambiar el nombre.
+- [ ] Clic derecho en una app del panel → Sacar de la carpeta: vuelve al Dock al lado. Con una sola app, la carpeta se deshace.
+- [ ] Clic derecho en la carpeta → Deshacer la carpeta / Quitar del Dock. Clic derecho en una app fija → Opciones → Agregar a una carpeta → Carpeta nueva….
+- [ ] Reordenar apps arrastrando sigue funcionando (pasando rápido por encima no arma carpetas).
+- [ ] Con dos monitores: la carpeta aparece en los dos Docks.
+
 ### Versión 1.8.2
 - [ ] Clic derecho en una app del Dock → Ícono → Cambiar ícono… → elegir un .icns (por ejemplo uno de macosicons.com): se ve nítido. Lo mismo con el Launchpad.
 - [ ] Preferencias → Dock → paquete de íconos: una carpeta con .icns (nombre como la app, p. ej. "Google Chrome.icns") cambia esos íconos.

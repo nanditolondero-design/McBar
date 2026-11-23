@@ -73,6 +73,33 @@ namespace McBar.Native
             catch (Exception ex) { McBar.Core.Log.Write("Vidrio: " + ex.Message); }
         }
 
+        /// <summary>
+        /// 1.8.3: ventana normal (con barra de título) de vidrio, como el vidrio del iPhone: el fondo de Windows se
+        /// ve difuminado a través. En Windows 11 22H2 o más nuevo usa el acrílico del sistema (DWMWA_SYSTEMBACKDROP_TYPE);
+        /// en Windows 10 el desenfoque de siempre. La transparencia la da el fondo de WPF (Mc.SettingsBg).
+        /// </summary>
+        public static void SetGlassBackdrop(Window w, bool on)
+        {
+            try
+            {
+                var h = new WindowInteropHelper(w).Handle;
+                if (h == IntPtr.Zero) return;
+                var src = HwndSource.FromHwnd(h);
+                int build = Environment.OSVersion.Version.Build;
+                var m = on ? new Win32.MARGINS { left = -1, right = -1, top = -1, bottom = -1 } : new Win32.MARGINS();
+                if (src?.CompositionTarget != null) src.CompositionTarget.BackgroundColor = on ? Colors.Transparent : SystemColors.WindowColor;
+                Win32.DwmExtendFrameIntoClientArea(h, ref m);
+                if (build >= 22621)
+                {
+                    int type = on ? 3 /*acrílico*/ : 1 /*nada*/;
+                    Win32.DwmSetWindowAttribute(h, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, ref type, 4);
+                }
+                else if (on) EnableBlur(w, Color.FromArgb(0x30, 0x18, 0x18, 0x1E));
+                else DisableBlur(w);
+            }
+            catch (Exception ex) { McBar.Core.Log.Write("Vidrio de la ventana: " + ex.Message); }
+        }
+
         /// <summary>Forma de la ventana (en píxeles de la ventana): rectángulo redondeado + rectángulos extra.</summary>
         public static void SetShape(IntPtr hwnd, int x, int y, int w, int h, int radius, params (int x, int y, int w, int h)[] extra)
         {

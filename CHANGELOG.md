@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.8.4 — 23/11/2026 (arreglo)
+- **Ícono .icns que "no cambiaba"** (Andrés, con el Launchpad): si McBar no podía leer el archivo, dejaba el ícono de siempre sin avisar. Ahora prueba el archivo al elegirlo y, si no se puede, avisa con un cartel y no lo guarda.
+- Los .icns viejos ahora también se leen: colores comprimidos con su máscara (it32/ih32/il32/is32 + t8mk/h8mk/l8mk/s8mk) y ARGB (ic04/ic05). Lo único que no se puede leer es JPEG 2000 (Windows no lo trae); el registro anota qué tipos trae el archivo.
+
+## 1.8.3 — 23/11/2026 (pedidos de Andrés)
+- **Preferencias de vidrio** (con el tema Vidrio): la ventana de Preferencias ahora es de vidrio, como el del iPhone: se ve el fondo difuminado a través (acrílico de Windows 11; en Windows 10 el desenfoque de siempre). "Transparencia del vidrio" también la cambia (antes no le hacía nada).
+- **Abrir Preferencias**: si la ventana estaba minimizada o tapada, ahora vuelve al frente (antes parecía que "no abría"). Si algo falla al armarla, avisa con un cartel y lo anota en el registro.
+- **Carpetas de apps en el Dock, como en Android**: arrastrá una app y dejala un momento encima de otra (la de abajo se pone transparente) → al soltar se arma una carpeta en ese lugar. Arrastrar más apps encima las agrega. El ícono muestra las primeras 4 apps; al tocarla se abre un panel con todas (clic abre la app o la trae si ya está abierta). Clic derecho en la carpeta: Cambiar el nombre…, Deshacer la carpeta, Quitar del Dock. Clic derecho en una app de la carpeta: Sacar de la carpeta (si queda una sola, la carpeta se deshace). También: clic derecho en una app fija → Opciones → Agregar a una carpeta.
+
 ## 1.8.2 — 23/11/2026 (pedido de Andrés)
 - **Íconos .icns de macOS**: se pueden usar en "Cambiar ícono…" (Dock y Launchpad) y en los paquetes de íconos (una carpeta con .icns funciona igual que con .png). McBar toma de adentro la imagen PNG del tamaño justo. Los .icns muy viejos (Mac OS X 10.6 o antes), que guardan el ícono en otro formato, no se leen y queda el ícono original (se anota en el registro).
 - Compilación: `Core/TrafficLights.cs` y `Panels/TrafficLightsWindow.cs` quedan vacíos (el zip no borra archivos del repo y los viejos usaban ajustes que ya no existen; CS1061).

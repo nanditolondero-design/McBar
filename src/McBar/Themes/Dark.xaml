@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="Mc.GlassBg" Color="#8F28282E"/> <!-- 1.6.0: más transparente (antes #B8262628) -->
     <SolidColorBrush x:Key="Mc.PanelBorder" Color="#38FFFFFF"/>
     <SolidColorBrush x:Key="Mc.WindowBg" Color="#FF242427"/>
+    <SolidColorBrush x:Key="Mc.SettingsBg" Color="#FF242427"/> <!-- 1.8.3: fondo de Preferencias (en Vidrio es transparente) -->
     <SolidColorBrush x:Key="Mc.TileBg" Color="#FF3A3A3D"/>
     <SolidColorBrush x:Key="Mc.TileBorder" Color="#1FFFFFFF"/>
     <SolidColorBrush x:Key="Mc.Hover" Color="#33FFFFFF"/>

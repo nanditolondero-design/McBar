@@ -99,6 +99,16 @@ namespace McBar.Panels
             return d.ShowDialog() == true;
         }
 
+        /// <summary>1.8.3: pide un texto (por ejemplo el nombre de una carpeta). Null si se cancela.</summary>
+        public static string? Prompt(string title, string message, string initial, string okText = "Aceptar")
+        {
+            var box = new TextBox { Text = initial, Margin = new Thickness(0, 12, 0, 0), Padding = new Thickness(6, 4, 6, 4) };
+            box.SetResourceReference(StyleProperty, "McTextBox");
+            var d = new McDialog(title, message, okText, "Cancelar", false, box);
+            d.Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
+            return d.ShowDialog() == true ? box.Text.Trim() : null;
+        }
+
         public static void ShowAbout()
         {
             var v = Assembly.GetExecutingAssembly().GetName().Version;

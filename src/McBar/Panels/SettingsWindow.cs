@@ -27,14 +27,14 @@ namespace McBar.Panels
             MinWidth = 640;
             MinHeight = 420;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            SetResourceReference(BackgroundProperty, "Mc.WindowBg");
+            SetResourceReference(BackgroundProperty, "Mc.SettingsBg"); // 1.8.3: de vidrio con el tema Vidrio
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             Icon = McDialog.Logo();
 
             _apply = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _apply.Tick += (_, _) => { _apply.Stop(); SettingsStore.NotifyChanged(); };
 
-            SourceInitialized += (_, _) => WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark);
+            SourceInitialized += (_, _) => { WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark); WindowOps.SetGlassBackdrop(this, ThemeManager.IsGlass); };
             ThemeManager.ThemeChanged += OnTheme;
             Closed += (_, _) => { ThemeManager.ThemeChanged -= OnTheme; if (_apply.IsEnabled) { _apply.Stop(); SettingsStore.NotifyChanged(); } App.ScheduleTrim(); };
 
@@ -49,7 +49,9 @@ namespace McBar.Panels
 
         private void OnTheme()
         {
-            if (new WindowInteropHelper(this).Handle != IntPtr.Zero) WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark);
+            if (new WindowInteropHelper(this).Handle == IntPtr.Zero) return;
+            WindowOps.SetDarkTitleBar(this, ThemeManager.IsDark);
+            WindowOps.SetGlassBackdrop(this, ThemeManager.IsGlass); // 1.8.3
         }
 
         private void Changed() { _apply.Stop(); _apply.Start(); }

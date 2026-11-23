@@ -926,10 +926,29 @@ namespace McBar
 
         public static void OpenSettings()
         {
-            if (_settings != null && _settings.IsVisible) { _settings.Activate(); return; }
-            _settings = new SettingsWindow();
-            _settings.Show();
-            _settings.Activate();
+            try
+            {
+                // 1.8.3: si estaba minimizada o escondida detrás, se la trae (antes "no abría": Activate no la
+                // restauraba). Y si algo falla al armarla, se avisa en vez de no hacer nada.
+                if (_settings != null && _settings.IsLoaded)
+                {
+                    if (_settings.WindowState == WindowState.Minimized) _settings.WindowState = WindowState.Normal;
+                    if (!_settings.IsVisible) _settings.Show();
+                    WindowOps.Activate(new System.Windows.Interop.WindowInteropHelper(_settings).Handle);
+                    _settings.Activate();
+                    return;
+                }
+                _settings = new SettingsWindow();
+                _settings.Closed += (_, _) => _settings = null;
+                _settings.Show();
+                _settings.Activate();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Preferencias: " + ex);
+                _settings = null;
+                McDialog.Info("No se pudieron abrir las Preferencias", ex.Message);
+            }
         }
 
         public static void ShowAbout() => McDialog.ShowAbout();

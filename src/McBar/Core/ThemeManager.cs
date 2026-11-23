@@ -48,7 +48,7 @@ namespace McBar.Core
 
         /// <summary>Fondos del tema Vidrio a los que se les cambia la transparencia (los bordes y brillos no).</summary>
         public static readonly string[] GlassBackgrounds =
-            { "Mc.GlassBg", "Mc.PanelBg", "Mc.TileBg", "Mc.DockGlass", "Mc.DockBg", "Mc.MenuBarBg", "Mc.LabelBg" };
+            { "Mc.GlassBg", "Mc.PanelBg", "Mc.TileBg", "Mc.DockGlass", "Mc.DockBg", "Mc.MenuBarBg", "Mc.LabelBg", "Mc.SettingsBg" }; // 1.8.3: Preferencias
 
         /// <summary>
         /// Opacidad nueva de un fondo según la transparencia elegida (0..100). 50 deja el valor original;

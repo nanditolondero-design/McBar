@@ -17,6 +17,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using McBar.Core;
 using McBar.Native;
@@ -290,6 +291,11 @@ namespace McBar.Dock
                 return new DockItem(DockItemKind.Downloads, isStack) { Name = "Descargas", Target = t, IsPinned = true };
             if (t == AppIdentity.Trash)
                 return new DockItem(DockItemKind.Trash, isStack) { Name = "Papelera", Target = t, IsPinned = true };
+            if (!isStack && DockFolders.IsFolder(t)) // 1.8.3: carpeta de apps
+            {
+                var f = DockFolders.Find(S.DockFolders, t);
+                return f == null ? null : new DockItem(DockItemKind.AppFolder) { Name = f.Name, Target = t, IsPinned = true };
+            }
             if (AppIdentity.IsSpecial(t)) return null;
             if (isStack)
             {
@@ -350,7 +356,7 @@ namespace McBar.Dock
         }
 
         private int SeparatorIndex => _items.FindIndex(i => i.Kind == DockItemKind.Separator);
-        private int PinnedEnd => _items.FindLastIndex(i => !i.IsStack && i.IsPinned && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad)) + 1;
+        private int PinnedEnd => _items.FindLastIndex(i => !i.IsStack && i.IsPinned && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad || i.Kind == DockItemKind.AppFolder)) + 1;
 
         /// <summary>Vuelve a cargar todos los íconos (al cambiar el paquete de íconos).</summary>
         public void RefreshIcons() => ReloadIcons();
@@ -373,6 +379,9 @@ namespace McBar.Dock
             }
             switch (it.Kind)
             {
+                case DockItemKind.AppFolder: // 1.8.3
+                    LoadFolderIcon(it, px);
+                    break;
                 case DockItemKind.Launchpad:
                     it.View.SetIcon(TryFindResource("Mc.LaunchpadIcon") as ImageSource);
                     break;
@@ -844,7 +853,7 @@ namespace McBar.Dock
                 if (_dragging)
                 {
                     _dragPos = p;
-                    ReorderWhileDragging(p);
+                    if (!UpdateMerge(p)) ReorderWhileDragging(p); // 1.8.3: dejarla encima de otra arma una carpeta
                     UpdateGhost();
                 }
             }
@@ -886,7 +895,13 @@ namespace McBar.Dock
             if (ghost != null && pulledOut) ghost.Poof(); else ghost?.Cancel();
             if (item == null) return;
 
-            if (wasDragging)
+            var mergeOnto = _mergeReady && !pulledOut ? _mergeTarget : null; // 1.8.3
+            ClearMerge();
+            if (wasDragging && mergeOnto != null)
+            {
+                MergeInto(item, mergeOnto);
+            }
+            else if (wasDragging)
             {
                 _suppressPuff = ghost != null && pulledOut;
                 try
@@ -907,7 +922,7 @@ namespace McBar.Dock
         }
 
         private static bool CanDrag(DockItem item) =>
-            item.Kind != DockItemKind.Separator && (item.IsStack || ClosesOnDrag(item) || (item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad)));
+            item.Kind != DockItemKind.Separator && (item.IsStack || ClosesOnDrag(item) || (item.IsPinned && (item.Kind == DockItemKind.App || item.Kind == DockItemKind.Launchpad || item.Kind == DockItemKind.AppFolder)));
 
         /// <summary>Cierra la app soltada fuera del Dock: nubecita y se les pide cerrar a todas sus ventanas.</summary>
         private void CloseByDrag(DockItem item)
@@ -991,6 +1006,9 @@ namespace McBar.Dock
                 case DockItemKind.Launchpad:
                     App.ToggleLaunchpad(_monitor);
                     break;
+                case DockItemKind.AppFolder: // 1.8.3
+                    ShowAppFolder(item);
+                    break;
                 case DockItemKind.Downloads:
                     var dl = Win32.KnownFolder(Win32.FOLDERID_Downloads);
                     if (dl != null) ShowStack(item, dl, "Descargas");
@@ -1065,6 +1083,236 @@ namespace McBar.Dock
             SavePins();
         }
 
+        // ================== Carpetas de apps, como en Android (1.8.3) ==================
+
+        private DockItem? _mergeTarget;
+        private DateTime _mergeSince;
+        private bool _mergeReady;
+
+        /// <summary>Destino fijado de una app (la fijada, o la de su ventana si está abierta sin fijar).</summary>
+        private static string? AppTargetOf(DockItem it)
+        {
+            if (it.Kind != DockItemKind.App) return null;
+            if (it.IsPinned) return it.Target;
+            var w = it.Windows.FirstOrDefault();
+            if (w == null) return null;
+            return w.IconSource.StartsWith(AppIdentity.AppsFolderPrefix, StringComparison.OrdinalIgnoreCase) ? w.IconSource : w.ExePath;
+        }
+
+        /// <summary>
+        /// Mientras se arrastra una app: si queda quieta en el CENTRO de otra app fija (o de una carpeta) casi
+        /// medio segundo, esa se marca y al soltar se arma la carpeta. Devuelve true mientras está encima
+        /// (para no reordenar en ese momento).
+        /// </summary>
+        private bool UpdateMerge(Point p)
+        {
+            var d = _pressItem;
+            if (d == null || d.IsStack || AppTargetOf(d) == null) { ClearMerge(); return false; }
+            DockItem? over = null;
+            foreach (var it in _items)
+            {
+                if (it == d || it.Removing || !it.IsPinned || it.IsStack) continue;
+                if (it.Kind != DockItemKind.App && it.Kind != DockItemKind.AppFolder) continue;
+                double c = it.LayoutLeft + it.LayoutSize / 2;
+                if (Math.Abs(p.X - c) < it.LayoutSize * 0.28 && p.Y >= IconBottom - it.LayoutSize - 10 && p.Y <= IconBottom + Pad) { over = it; break; }
+            }
+            if (over == null) { ClearMerge(); return false; }
+            if (over != _mergeTarget)
+            {
+                ClearMerge();
+                _mergeTarget = over;
+                _mergeSince = DateTime.Now;
+                return true;
+            }
+            if (!_mergeReady && (DateTime.Now - _mergeSince).TotalMilliseconds >= 450)
+            {
+                _mergeReady = true;
+                over.View.SetMergeHighlight(true);
+            }
+            return true;
+        }
+
+        private void ClearMerge()
+        {
+            _mergeTarget?.View.SetMergeHighlight(false);
+            _mergeTarget = null;
+            _mergeReady = false;
+        }
+
+        private void MergeInto(DockItem dragged, DockItem onto)
+        {
+            var app = AppTargetOf(dragged);
+            if (app == null || onto.Target == null) { SavePins(); return; }
+            var ontoTarget = onto.Target;
+            ApplyFolderChange(pins => DockFolders.Drop(pins, S.DockFolders, app, ontoTarget, DockFolders.NewId));
+        }
+
+        /// <summary>Cambia los fijados (ya con el orden actual del Dock), guarda y vuelve a armar todos los Docks.</summary>
+        private void ApplyFolderChange(Func<List<PinnedApp>, List<PinnedApp>> change)
+        {
+            try
+            {
+                SavePins();
+                S.Pinned = change(S.Pinned);
+                RebuildItems();
+                SettingsStore.NotifyPinsChanged(this); // guarda y avisa a los Docks de los otros monitores
+            }
+            catch (Exception ex) { Log.Write("Carpeta del Dock: " + ex.Message); }
+        }
+
+        private void RenameFolder(DockItem item)
+        {
+            var f = DockFolders.Find(S.DockFolders, item.Target);
+            if (f == null) return;
+            var name = McDialog.Prompt("Nombre de la carpeta", "", f.Name, "Cambiar");
+            if (string.IsNullOrWhiteSpace(name)) return;
+            f.Name = name;
+            ApplyFolderChange(pins => pins.Select(x => string.Equals(x.Target, item.Target, StringComparison.OrdinalIgnoreCase) ? new PinnedApp { Name = name, Target = x.Target } : x).ToList());
+        }
+
+        /// <summary>Clic derecho en una app fija → Opciones → Agregar a una carpeta.</summary>
+        private MenuItem AddToFolderMenu(DockItem item)
+        {
+            var menu = new MenuItem { Header = "Agregar a una carpeta" };
+            var app = item.Target!;
+            foreach (var f in S.DockFolders.Where(x => S.Pinned.Any(pp => DockFolders.IdOf(pp.Target) == x.Id)))
+            {
+                var target = DockFolders.TargetFor(f.Id);
+                menu.Items.Add(Mi(f.Name, () => ApplyFolderChange(pins => DockFolders.Drop(pins, S.DockFolders, app, target, DockFolders.NewId))));
+            }
+            if (menu.Items.Count > 0) menu.Items.Add(new Separator());
+            menu.Items.Add(Mi("Carpeta nueva…", () =>
+            {
+                var name = McDialog.Prompt("Carpeta nueva", "Después podés arrastrar más apps encima de la carpeta.", "Carpeta", "Crear");
+                if (string.IsNullOrWhiteSpace(name)) return;
+                ApplyFolderChange(pins => DockFolders.NewWith(pins, S.DockFolders, app, name, DockFolders.NewId));
+            }));
+            return menu;
+        }
+
+        /// <summary>Ícono de la carpeta: placa de vidrio redondeada con las primeras 4 apps en chiquito (como Android).</summary>
+        private void LoadFolderIcon(DockItem it, int px)
+        {
+            var f = DockFolders.Find(S.DockFolders, it.Target);
+            var targets = f?.Targets.Take(4).ToList() ?? new List<string>();
+            var icons = new ImageSource?[targets.Count];
+            void Render()
+            {
+                var dv = new DrawingVisual();
+                using (var dc = dv.RenderOpen())
+                {
+                    double m = px * 0.06, size = px - 2 * m, r = px * 0.24;
+                    var plate = new Rect(m, m, size, size);
+                    var bg = new LinearGradientBrush(Color.FromArgb(0x8C, 0xF4, 0xF4, 0xF8), Color.FromArgb(0x66, 0xC8, 0xC8, 0xD2), 90);
+                    bg.Freeze();
+                    var edge = new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xFF, 0xFF)), Math.Max(1, px / 64.0));
+                    edge.Freeze();
+                    dc.DrawRoundedRectangle(bg, edge, plate, r, r);
+                    double cell = size * 0.36, gap = size * 0.08;
+                    double start = m + (size - (2 * cell + gap)) / 2;
+                    for (int i = 0; i < icons.Length; i++)
+                    {
+                        if (icons[i] == null) continue;
+                        double x = start + (i % 2) * (cell + gap), y = start + (i / 2) * (cell + gap);
+                        dc.DrawImage(icons[i], new Rect(x, y, cell, cell));
+                    }
+                }
+                var rtb = new RenderTargetBitmap(px, px, 96, 96, PixelFormats.Pbgra32);
+                RenderOptions.SetBitmapScalingMode(dv, BitmapScalingMode.HighQuality);
+                rtb.Render(dv);
+                rtb.Freeze();
+                it.View.SetIcon(rtb);
+            }
+            Render();
+            for (int i = 0; i < targets.Count; i++)
+            {
+                int k = i;
+                IconLoader.Request(targets[i], Math.Max(48, px / 2), img => { icons[k] = img; Render(); }, appShape: true);
+            }
+        }
+
+        /// <summary>Panel de la carpeta (como Android): nombre arriba y las apps en cuadrícula. Clic = abrir o ir a la app.</summary>
+        private void ShowAppFolder(DockItem item)
+        {
+            var f = DockFolders.Find(S.DockFolders, item.Target);
+            if (f == null) return;
+            int cols = Math.Clamp((int)Math.Ceiling(Math.Sqrt(f.Targets.Count)), 2, 4);
+            double width = cols * 92 + 40;
+            var popup = new Popup
+            {
+                PlacementTarget = item.View,
+                Placement = PlacementMode.Top,
+                AllowsTransparency = true,
+                StaysOpen = false,
+                PopupAnimation = PopupAnimation.Fade,
+                HorizontalOffset = (MaxSize - width) / 2,
+                VerticalOffset = -6
+            };
+            PopupGuard.Attach(popup);
+            var panel = new StackPanel();
+            var title = new TextBlock { Text = f.Name, FontSize = 17, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 12), Cursor = Cursors.Hand, ToolTip = "Cambiar el nombre" };
+            title.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+            title.MouseLeftButtonUp += (_, _) => { popup.IsOpen = false; RenameFolder(item); };
+            panel.Children.Add(title);
+            var grid = new UniformGrid { Columns = cols };
+            foreach (var t in f.Targets)
+            {
+                var target = t;
+                var img = new Image { Width = 56, Height = 56 };
+                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+                IconLoader.Request(target, 112, src => img.Source = src, appShape: true);
+                var name = new TextBlock { Text = AppIdentity.FriendlyName(target), Width = 84, FontSize = 11.5, TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 5, 0, 0) };
+                name.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                var sp = new StackPanel { Width = 88 };
+                sp.Children.Add(img);
+                sp.Children.Add(name);
+                var b = new Button { Content = sp, Padding = new Thickness(2, 8, 2, 8), ToolTip = name.Text };
+                b.SetResourceReference(StyleProperty, "McFlatButton");
+                b.Click += (_, _) => { popup.IsOpen = false; OpenFolderApp(target); };
+                var cm = new ContextMenu();
+                PopupGuard.Attach(cm);
+                var takeOut = new MenuItem { Header = "Sacar de la carpeta" };
+                takeOut.Click += (_, _) =>
+                {
+                    popup.IsOpen = false;
+                    ApplyFolderChange(pins => DockFolders.TakeOut(pins, S.DockFolders, item.Target!, target, AppIdentity.FriendlyName));
+                };
+                cm.Items.Add(takeOut);
+                b.ContextMenu = cm;
+                grid.Children.Add(b);
+            }
+            panel.Children.Add(grid);
+            var border = new Border
+            {
+                Width = width, Margin = new Thickness(12), Padding = new Thickness(14), CornerRadius = new CornerRadius(26), BorderThickness = new Thickness(1), Child = panel,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 26, ShadowDepth = 5, Opacity = 0.35 },
+                RenderTransformOrigin = new Point(0.5, 1)
+            };
+            border.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
+            border.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
+            var grow = new ScaleTransform(0.85, 0.85);
+            border.RenderTransform = grow;
+            popup.Child = border;
+            popup.Opened += (_, _) =>
+            {
+                _menuOpen = true; EnsureAnimating();
+                var a = new DoubleAnimation(0.85, 1, TimeSpan.FromMilliseconds(200)) { EasingFunction = new BackEase { Amplitude = 0.3, EasingMode = EasingMode.EaseOut } };
+                grow.BeginAnimation(ScaleTransform.ScaleXProperty, a);
+                grow.BeginAnimation(ScaleTransform.ScaleYProperty, a);
+            };
+            popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
+            popup.IsOpen = true;
+        }
+
+        /// <summary>Si la app ya está abierta la trae al frente; si no, la abre.</summary>
+        private void OpenFolderApp(string target)
+        {
+            var keys = AppIdentity.KeysForTarget(target);
+            var w = App.Tracker.Windows.Where(x => x.Keys.Overlaps(keys)).OrderByDescending(x => x.LastActivated).FirstOrDefault();
+            if (w != null) WindowOps.Activate(w.Hwnd);
+            else Launcher.Launch(target);
+        }
+
         // ================== Ícono propio (1.6.1) ==================
 
         /// <summary>Clave del ícono propio: el destino fijado, el Launchpad o el .exe de una app abierta.</summary>
@@ -1084,6 +1332,17 @@ namespace McBar.Dock
                 Directory.CreateDirectory(dir);
                 var dest = Path.Combine(dir, MacIcons.SafeFileName(item.Name) + "-" + Math.Abs(key.GetHashCode()).ToString("x") + Path.GetExtension(dlg.FileName));
                 File.Copy(dlg.FileName, dest, true);
+                // 1.8.4: probar que se pueda leer ANTES de usarlo (antes, si no se podía, quedaba el ícono de
+                // siempre sin avisar y parecía que no cambiaba)
+                if (IconLoader.FromImageFile(dest, 128) == null)
+                {
+                    try { File.Delete(dest); } catch { }
+                    McDialog.Info("No se pudo leer ese ícono",
+                        dest.EndsWith(".icns", StringComparison.OrdinalIgnoreCase)
+                            ? "Ese .icns guarda las imágenes en un formato que Windows no puede abrir (JPEG 2000). Probá con otro .icns o con un .png del mismo ícono."
+                            : "Probá con otra imagen (.png, .ico, .icns, .jpg).");
+                    return;
+                }
                 S.CustomIcons[key] = dest;
                 SettingsStore.Save();
                 LoadIcon(item);
@@ -1173,7 +1432,7 @@ namespace McBar.Dock
         private void SavePins()
         {
             S.Pinned = _items
-                .Where(i => !i.IsStack && i.IsPinned && !i.Removing && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad) && i.Target != null)
+                .Where(i => !i.IsStack && i.IsPinned && !i.Removing && (i.Kind == DockItemKind.App || i.Kind == DockItemKind.Launchpad || i.Kind == DockItemKind.AppFolder) && i.Target != null)
                 .Select(i => new PinnedApp { Name = i.Name, Target = i.Target! })
                 .ToList();
             S.Stacks = _items
@@ -1288,6 +1547,13 @@ namespace McBar.Dock
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
+                case DockItemKind.AppFolder: // 1.8.3
+                    cm.Items.Add(Mi("Abrir", () => ShowAppFolder(item)));
+                    cm.Items.Add(Mi("Cambiar el nombre…", () => RenameFolder(item)));
+                    cm.Items.Add(Mi("Deshacer la carpeta", () => ApplyFolderChange(pins => DockFolders.Dissolve(pins, S.DockFolders, item.Target!, AppIdentity.FriendlyName))));
+                    cm.Items.Add(new Separator());
+                    cm.Items.Add(Mi("Quitar del Dock", () => { RemoveFromDock(item, false); var f = DockFolders.Find(S.DockFolders, item.Target); if (f != null) { S.DockFolders.Remove(f); SettingsStore.Save(); } }));
+                    break;
                 case DockItemKind.Launchpad:
                     cm.Items.Add(Mi("Abrir", () => App.ToggleLaunchpad(_monitor)));
                     cm.Items.Add(IconMenu(item)); // 1.6.1
@@ -1314,6 +1580,7 @@ namespace McBar.Dock
                     if (string.IsNullOrEmpty(path) && item.Target != null && File.Exists(item.Target)) path = item.Target;
                     if (!string.IsNullOrEmpty(path)) options.Items.Add(Mi("Mostrar en el Explorador", () => Launcher.ShowInExplorer(path!)));
                     options.Items.Add(IconMenu(item)); // 1.6.1
+                    if (item.IsPinned && item.Target != null) options.Items.Add(AddToFolderMenu(item)); // 1.8.3
                     cm.Items.Add(options);
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi(item.IsRunning ? "Nueva ventana" : "Abrir", () => LaunchNew(item)));

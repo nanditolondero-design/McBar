@@ -2,8 +2,10 @@
 // 1.8.2 — Íconos .icns de macOS (pedido de Andrés). Un .icns es un contenedor: "icns" + largo, y adentro
 // varias entradas (tipo de 4 letras + largo + datos) con el mismo ícono en distintos tamaños. En los .icns
 // modernos (macOS 10.7 o después, y los de macosicons.com) esas imágenes son PNG comunes: McBar busca la que
-// mejor le queda al tamaño pedido y la usa como cualquier otro ícono. Los formatos viejos de adentro
-// (RLE de Mac OS 9 / 10.6, JPEG 2000) no se leen: en ese caso queda el ícono original.
+// mejor le queda al tamaño pedido y la usa como cualquier otro ícono.
+// 1.8.4: también lee los formatos viejos de adentro (colores comprimidos "RLE" it32/ih32/il32/is32 con su
+// máscara t8mk/h8mk/l8mk/s8mk, y ARGB ic04/ic05) cuando no hay PNG. JPEG 2000 no (Windows no lo trae): en
+// ese caso McBar avisa al elegirlo y queda el ícono original.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -64,14 +66,110 @@ namespace McBar.Core
             return pick == null ? null : (pick.Value.off, pick.Value.len);
         }
 
-        /// <summary>Carga el .icns al tamaño pedido (en píxeles). Null si no tiene imágenes PNG o falla.</summary>
+        // ---------- 1.8.4: formatos viejos ----------
+
+        /// <summary>Tamaño de cada entrada vieja de colores (RLE) y su máscara.</summary>
+        private static readonly (string color, string mask, int size)[] OldTypes =
+        {
+            ("it32", "t8mk", 128), ("ih32", "h8mk", 48), ("il32", "l8mk", 32), ("is32", "s8mk", 16),
+        };
+
+        /// <summary>
+        /// Descomprime el RLE de Apple: un byte n &lt; 0x80 = copiar n+1 bytes; n ≥ 0x80 = repetir el próximo byte
+        /// n−0x80+3 veces. Llena <paramref name="count"/> bytes por canal, uno tras otro. Pura, se prueba.
+        /// </summary>
+        public static byte[]? UnRle(byte[] d, int offset, int length, int channels, int count)
+        {
+            var outp = new byte[channels * count];
+            int pos = offset, end = offset + length, o = 0, total = channels * count;
+            while (o < total && pos < end)
+            {
+                int n = d[pos++];
+                if (n < 0x80)
+                {
+                    int c = n + 1;
+                    if (pos + c > end) return null;
+                    for (int i = 0; i < c && o < total; i++) outp[o++] = d[pos++];
+                }
+                else
+                {
+                    int c = n - 0x80 + 3;
+                    if (pos >= end) return null;
+                    byte v = d[pos++];
+                    for (int i = 0; i < c && o < total; i++) outp[o++] = v;
+                }
+            }
+            return o == total ? outp : null;
+        }
+
+        /// <summary>Arma la imagen (BGRA) de un formato viejo. Null si el archivo no tiene ninguno legible.</summary>
+        public static BitmapSource? DecodeOld(byte[] data)
+        {
+            var entries = Entries(data);
+            (string type, int off, int len) Get(string t) => entries.Find(e => e.type == t);
+            // ARGB (ic05 = 32 px, ic04 = 16 px): "ARGB" + RLE de A, R, G, B
+            foreach (var (t, size) in new[] { ("ic05", 32), ("ic04", 16) })
+            {
+                var e = Get(t);
+                if (e.type == null || e.len < 4 || data[e.off] != 'A' || data[e.off + 1] != 'R') continue;
+                var ch = UnRle(data, e.off + 4, e.len - 4, 4, size * size);
+                if (ch == null) continue;
+                return Build(size, i => (ch[i], ch[size * size + i], ch[2 * size * size + i], ch[3 * size * size + i]));
+            }
+            foreach (var (color, mask, size) in OldTypes)
+            {
+                var e = Get(color);
+                if (e.type == null) continue;
+                int n = size * size;
+                byte[]? rgb;
+                if (e.len == n * 4) // sin comprimir (algunos archivos viejos): ARGB
+                {
+                    var raw = new byte[n * 3];
+                    for (int i = 0; i < n; i++) { raw[i] = data[e.off + i * 4 + 1]; raw[n + i] = data[e.off + i * 4 + 2]; raw[2 * n + i] = data[e.off + i * 4 + 3]; }
+                    rgb = raw;
+                }
+                else
+                {
+                    int skip = color == "it32" ? 4 : 0; // it32 empieza con 4 bytes en cero
+                    rgb = UnRle(data, e.off + skip, e.len - skip, 3, n);
+                }
+                if (rgb == null) continue;
+                var m = Get(mask);
+                byte[]? alpha = m.type != null && m.len >= n ? data.AsSpan(m.off, n).ToArray() : null;
+                return Build(size, i => (alpha?[i] ?? (byte)255, rgb[i], rgb[n + i], rgb[2 * n + i]));
+            }
+            return null;
+        }
+
+        private static BitmapSource Build(int size, Func<int, (byte a, byte r, byte g, byte b)> px)
+        {
+            var bgra = new byte[size * size * 4];
+            for (int i = 0; i < size * size; i++)
+            {
+                var (a, r, g, b) = px(i);
+                bgra[i * 4] = b; bgra[i * 4 + 1] = g; bgra[i * 4 + 2] = r; bgra[i * 4 + 3] = a;
+            }
+            var src = BitmapSource.Create(size, size, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, bgra, size * 4);
+            src.Freeze();
+            return src;
+        }
+
+        /// <summary>Tipos de entrada que trae el archivo (para el registro cuando no se puede leer).</summary>
+        public static string Describe(byte[] data) => string.Join(", ", Entries(data).ConvertAll(e => e.type));
+
+        /// <summary>Carga el .icns al tamaño pedido (en píxeles). Null si no tiene imágenes legibles o falla.</summary>
         public static BitmapSource? Load(string path, int sizePx)
         {
             try
             {
                 var data = File.ReadAllBytes(path);
                 var pick = BestPng(data, Math.Max(16, sizePx));
-                if (pick == null) { Log.Write("Ícono .icns sin imágenes PNG (formato viejo): " + path); return null; }
+                if (pick == null)
+                {
+                    var old = DecodeOld(data); // 1.8.4
+                    if (old == null) Log.Write("Ícono .icns sin imágenes legibles (" + Describe(data) + "): " + path);
+                    return old;
+                }
                 var bi = new BitmapImage();
                 bi.BeginInit();
                 bi.StreamSource = new MemoryStream(data, pick.Value.offset, pick.Value.length, false);

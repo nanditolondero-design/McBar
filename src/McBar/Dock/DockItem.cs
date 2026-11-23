@@ -12,7 +12,7 @@ using McBar.Core;
 
 namespace McBar.Dock
 {
-    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash, Folder, File }
+    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash, Folder, File, AppFolder /* 1.8.3: carpeta de apps */ }
 
     internal sealed class DockItem
     {
@@ -104,6 +104,9 @@ namespace McBar.Dock
             Icon.Stretch = Stretch.Uniform;
             Children.Add(Icon);
         }
+
+        /// <summary>1.8.3: marca la app/carpeta sobre la que se va a soltar otra para armar una carpeta.</summary>
+        public void SetMergeHighlight(bool on) => Icon.Opacity = on ? 0.55 : 1.0;
 
         public void SetIcon(ImageSource? src)
         {
