@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.6-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.7-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -244,6 +244,7 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.8.7** | Píldora de vidrio con transparencia real |
 | **1.8.6** | Píldora de vidrio con el fondo difuminado, sin recuadro |
 | **1.8.5** | Píldora de vidrio con desenfoque y transparencia regulable, .icns más tolerantes |
 | **1.8.4** | Íconos .icns: avisa si no se puede leer y lee también los formatos viejos |

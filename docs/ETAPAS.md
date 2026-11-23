@@ -196,3 +196,6 @@ Andrés mandó dos .icns de Launchpad que "la app no lee" (ambos: PNG en ic07…
 ## 1.8.6 (23/11/2026)
 Captura de Andrés: con la 1.8.5 la píldora de vidrio tenía un rectángulo claro alrededor (el `_backdrop` con desenfoque de Windows no respeta la región redondeada en Windows 11). `Core/WallpaperGlass`: fondo de pantalla achicado a 96 px (borroso al estirarlo), recorte "Rellenar"/"Expandir" (`VisiblePart`, pura), `DrawingBrush` con Viewport = posición de la píldora en el monitor + tinte según la transparencia. `IslandWindow` ya no muestra `_backdrop`; actualiza el pincel al cambiar de tamaño y cada minuto.
 
+## 1.8.7 (23/11/2026)
+Andrés: "¿no hay forma de que sea real la transparencia?" → opciones: (1) transparencia real sin desenfoque, (2) desenfoque real con la composición de Windows 11 (experimental). Eligió la 1. `IslandWindow.GlassTint(transparencia)`: degradé con alfa de `ScaleAlpha` (mínimo 0x30/0x38). `WallpaperGlass` queda sin uso. Pendiente si Andrés lo pide: opción 2 (HostBackdropBrush + recorte redondeado).
+

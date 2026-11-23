@@ -164,7 +164,7 @@ namespace McBar.MenuBar
             _pill.SizeChanged += (_, _) =>
             {
                 _pill.CornerRadius = Corners(_pill.ActualHeight);
-                if (SettingsStore.Current.IslandStyle == "glass") { var gb = GlassBrush(); if (gb != null) _pill.Background = gb; } // 1.8.6: sigue al fondo
+
                 PlaceBackdrop();
                 UpdateShape();
             };
@@ -208,8 +208,6 @@ namespace McBar.MenuBar
             _clockTimer.Tick += (_, _) =>
             {
                 UpdateCompact(); ScheduleClock();
-                // 1.8.6: si cambió el fondo de pantalla (por ejemplo el fondo según la hora), el vidrio lo sigue
-                if (SettingsStore.Current.IslandStyle == "glass") { var gb = GlassBrush(); if (gb != null) _pill.Background = gb; }
             };
             _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _progressTimer.Tick += (_, _) => UpdateProgress();
@@ -284,10 +282,12 @@ namespace McBar.MenuBar
                     // 0.4.1: vidrio dibujado por McBar (el desenfoque de Windows pintaba toda la ventana:
                     // se veía un cuadrado oscuro gigante alrededor de la píldora).
                     // 1.8.5: la "Transparencia del vidrio" (Preferencias → General) también cambia la píldora de vidrio.
-                    // 1.8.6: vidrio dibujado con el fondo de pantalla difuminado (Core/WallpaperGlass); si no hay
-                    // imagen de fondo, el degradé de antes.
+                    // 1.8.6: se probó pintarlo con el fondo de pantalla difuminado (Core/WallpaperGlass, sin uso ahora).
                     int tr = s.GlassTransparency;
-                    bg = GlassBrush() ?? new LinearGradientBrush(Color.FromArgb(ThemeManager.ScaleAlpha(0xA0, tr), 0x3A, 0x3A, 0x40), Color.FromArgb(ThemeManager.ScaleAlpha(0xB0, tr), 0x1C, 0x1C, 0x20), 90);
+                    // 1.8.7 (Andrés eligió "transparencia real"): solo un tinte con transparencia; se ve de verdad lo
+                    // que está detrás (ventanas incluidas), sin desenfoque. La transparencia del vidrio regula el tinte
+                    // (con un mínimo para que la hora se siga leyendo).
+                    bg = GlassTint(tr);
                     break;
                 case "accent":
                     var a = Application.Current.TryFindResource("Mc.Accent") is SolidColorBrush ab ? ab.Color : Color.FromRgb(0x0A, 0x84, 0xFF);
@@ -310,12 +310,14 @@ namespace McBar.MenuBar
             _backdrop.Hide();
         }
 
-        /// <summary>1.8.6: vidrio con la parte del fondo de pantalla que queda detrás de la píldora.</summary>
-        private Brush? GlassBrush()
+        /// <summary>1.8.7: tinte del vidrio transparente (0 = casi opaco, 100 = casi invisible, con un mínimo).</summary>
+        internal static Brush GlassTint(int transparency)
         {
-            double w = _pill.ActualWidth > 0 ? _pill.ActualWidth : _pill.Width;
-            double monW = _monitor.Bounds.Width / _monitor.Scale;
-            return WallpaperGlass.BrushFor(_monitor, (monW - w) / 2, TopMargin, SettingsStore.Current.GlassTransparency);
+            byte a1 = Math.Max((byte)0x30, ThemeManager.ScaleAlpha(0x90, transparency));
+            byte a2 = Math.Max((byte)0x38, ThemeManager.ScaleAlpha(0xA0, transparency));
+            var b = new LinearGradientBrush(Color.FromArgb(a1, 0x3A, 0x3A, 0x40), Color.FromArgb(a2, 0x1C, 0x1C, 0x20), 90);
+            b.Freeze();
+            return b;
         }
 
         /// <summary>Forma de la ventana rápida = la píldora (fuera de ella los clics pasan a las ventanas de atrás).</summary>

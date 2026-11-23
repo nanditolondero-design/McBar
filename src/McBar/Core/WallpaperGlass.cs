@@ -5,6 +5,8 @@
 // mucho (al agrandarlo de nuevo queda borroso, como un vidrio esmerilado) y pinta adentro de la píldora
 // justo la parte del fondo que está detrás, con un tinte encima. Así la forma es perfecta y no gasta nada.
 // Como la isla se esconde con ventanas maximizadas, casi siempre lo que está detrás es el fondo de pantalla.
+// 1.8.7: SIN USO por ahora — Andrés eligió transparencia real (se ve lo que está detrás, sin desenfoque).
+// Queda por si se quiere volver a ofrecer como opción.
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

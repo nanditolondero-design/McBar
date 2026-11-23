@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.8.7 — 23/11/2026 (elección de Andrés: transparencia real)
+- **Píldora de vidrio transparente de verdad**: ahora se ve lo que realmente está detrás (también las ventanas), nítido y sin desenfoque, con un tinte oscuro encima. "Transparencia del vidrio" regula ese tinte (0 casi opaca, 100 casi invisible, con un mínimo para que la hora se siga leyendo). Reemplaza el vidrio pintado con el fondo de pantalla de la 1.8.6.
+
 ## 1.8.6 — 23/11/2026 (arreglo)
 - **Píldora de vidrio sin el rectángulo claro**: el desenfoque de Windows que se agregó en la 1.8.5 no respeta la forma redondeada en Windows 11 y se veía un recuadro alrededor de la píldora. Ahora el vidrio lo pinta McBar: la parte del fondo de pantalla que queda detrás de la píldora, difuminada, con un tinte que cambia con "Transparencia del vidrio" (sin bajar tanto que no se lea la hora). Sigue al fondo si cambia (por ejemplo con el fondo según la hora). Si el fondo es un color liso, queda el degradé de antes.
 
