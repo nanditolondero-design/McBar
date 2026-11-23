@@ -203,7 +203,14 @@ namespace McBar.Panels
                 var head = new Grid { Margin = new Thickness(2, 0, 0, 6) };
                 head.Children.Add(title);
                 head.Children.Add(close);
-                var box = new Border { Width = 200, Height = 125, CornerRadius = new CornerRadius(6) };
+                // 1.3.1: el ícono de la app queda DETRÁS de la miniatura: si Windows tarda en darla (o no la da,
+                // por ejemplo ventanas de otro escritorio), se ve el ícono en lugar de un cuadro vacío.
+                var box = new Border { Width = 200, Height = 125, CornerRadius = new CornerRadius(6), Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)) };
+                var fallback = WinUi.AppIcon(w, 48);
+                fallback.HorizontalAlignment = HorizontalAlignment.Center;
+                fallback.VerticalAlignment = VerticalAlignment.Center;
+                fallback.Opacity = 0.85;
+                box.Child = fallback;
                 var tile = new StackPanel { Margin = new Thickness(6) };
                 tile.Children.Add(head);
                 tile.Children.Add(box);
@@ -226,6 +233,13 @@ namespace McBar.Panels
                 Left = Math.Clamp(centerX - ActualWidth / 2, minL, Math.Max(minL, maxL));
                 Top = bottomY - ActualHeight - 8;
                 _thumbs.Sync();
+                // 1.3.1: Windows a veces entrega la miniatura (sobre todo de minimizadas) un momento después
+                foreach (var ms in new[] { 120, 450 })
+                {
+                    var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+                    t.Tick += (_, _) => { t.Stop(); if (IsLoaded) _thumbs.Sync(); };
+                    t.Start();
+                }
             };
             MouseEnter += (_, _) => _hide.Stop();
             MouseLeave += (_, _) => HideSoon();

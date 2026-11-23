@@ -33,7 +33,7 @@ namespace McBar.Core
         public static readonly string[] MachineFields =
         {
             nameof(AppSettings.TaskbarModified), nameof(AppSettings.OriginalTaskbarState), nameof(AppSettings.OriginalMinAnimate),
-            nameof(AppSettings.PortablePath), nameof(AppSettings.FirstRunDone), nameof(AppSettings.LookVersion),
+            nameof(AppSettings.PortablePath), nameof(AppSettings.PortableVersion), nameof(AppSettings.FirstRunDone), nameof(AppSettings.LookVersion),
             nameof(AppSettings.StartWithWindows),
         };
 

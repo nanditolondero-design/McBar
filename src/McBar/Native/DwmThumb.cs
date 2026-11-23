@@ -52,6 +52,13 @@ namespace McBar.Native
         {
             if (_h == IntPtr.Zero) return;
             var (sw, sh) = SourceSize();
+            // 1.3.1: una ventana minimizada informa el tamaño del botoncito minimizado (≈160×28) y la
+            // miniatura quedaba finita o vacía: se usa su tamaño normal (restaurada) para la proporción.
+            if (Win32.IsIconic(Source))
+            {
+                var (nw, nh) = Win32.NormalSize(Source);
+                if (nw > 0 && nh > 0) { sw = nw; sh = nh; }
+            }
             if (sw > 0 && sh > 0)
             {
                 var (x, y, w, h) = Fit(sw, sh, width, height);

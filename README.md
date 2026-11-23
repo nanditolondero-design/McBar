@@ -1,108 +1,248 @@
+<div align="center">
+
 # McBar
 
-**Dock y barra de menú estilo macOS para Windows 10 y 11.**
-Creado por Andrés Londero.
+**El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.3.1-0A84FF)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
+![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
+![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
 
-## Qué incluye (versión 1.3.0)
+Creado por **Andrés Londero**
 
-**Dock**
-- Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
-- Rebote al abrir una app, puntito debajo de las apps abiertas, etiqueta con el nombre.
-- Apps fijadas + apps abiertas sin fijar, separador, **Descargas** (pila con los últimos archivos) y **Papelera** (soltar archivos para borrarlos, vaciar con confirmación).
-- Arrastrar íconos para reordenar; arrastrarlos hacia arriba y soltar para quitarlos.
-- Soltar un .exe, un acceso directo o una carpeta en el Dock para fijarlo.
-- Clic derecho: ventanas abiertas, Mantener en el Dock, Mostrar en el Explorador, Nueva ventana, Ocultar, Salir.
-- Clic con la rueda: abre otra ventana de la app.
-- Ocultación automática opcional.
-- **Estilos**: Clásico, Flotante (separado del borde, con sombra), Ancho completo, Barra (ancha y flotante, como la de Windows 11) o Solo íconos (sin fondo).
-- **Paquetes de íconos**: una carpeta con .png/.ico de otras barras o sistemas.
-- Fondo con **desenfoque real**; el fondo puede quedar quieto (por defecto) o estirarse como en macOS.
-- Lado derecho configurable: sacá o agregá Papelera, Descargas, carpetas y archivos (arrastrándolos o con clic derecho → Agregar al Dock).
-- Arrastrar un ícono hacia arriba muestra "Quitar del Dock" y al soltarlo desaparece con una nubecita. Si es una app abierta sin fijar, muestra "Cerrar app" y al soltarla se cierra.
-- Las ventanas se achican **hacia su ícono del Dock** al minimizar y vuelven desde ahí.
-- **Varios monitores**: barra de menú y Dock en cada uno (se puede limitar al principal).
+<img src="docs/img/dock-y-barra.svg" alt="Dock y barra de menú de McBar sobre el escritorio de Windows" width="900">
 
-**Isla más viva (1.2.0)**
-- Temporizador y cronómetro en vivo en la isla y la barra (también desde el buscador: "temporizador 10").
-- Puntito naranja/verde cuando una app usa el micrófono o la cámara.
-- Progreso de las descargas de la carpeta Descargas, con aviso al terminar.
+</div>
 
-**Personalización (1.3.0)**
-- Perfiles (Trabajo, Juegos…) con todos los ajustes; se cambian desde el menú de McBar, Preferencias o el buscador.
-- Modo juego: sin Launchpad con la tecla Windows, sin esquinas, sin avisos en la isla y con el Dock oculto.
-- Exportar e importar los ajustes; fondo de pantalla que cambia según la hora.
+McBar reemplaza la barra de tareas de Windows por un **Dock** abajo y una **barra de menú** (o una **isla dinámica**) arriba, con el aspecto y las animaciones de macOS. También trae sus propios Launchpad, buscador, Centro de control, notificaciones, widgets, Wi-Fi/Bluetooth/sonido y Alt+Tab, así que no hace falta abrir nada de Windows. Y gasta lo mínimo: en reposo no usa procesador.
 
-**Barra de menú**
-- Menú de McBar (Acerca de este equipo, Configuración, Forzar salida, Suspender, Reiniciar, Apagar, Bloquear, Cerrar sesión).
-- Nombre de la app activa con menús Archivo, Edición, Ver, Ventana y Ayuda (mandan los atajos estándar de Windows a esa app).
-- A la derecha: **bandeja propia** (los íconos de WhatsApp, antivirus, etc., con sus menús de clic derecho), **clima** con ícono dinámico, batería, red, volumen, búsqueda, Centro de control y reloj.
-- Los íconos de la bandeja se pueden mostrar en color o en blanco y negro, y ocultar los que no quieras (quedan en el menú ⌃).
-- Fondo desenfocado (acrílico).
+> Las imágenes de esta página son **ilustraciones del diseño** de McBar (los íconos de apps son genéricos). Las capturas reales van en `docs/img/` con los mismos nombres.
 
-**Isla dinámica** (opcional, en Preferencias → Barra superior → Tipo): en lugar de la barra de menú, una píldora negra arriba al centro, como en el iPhone.
-- En reposo muestra la hora (y la tapa del disco con un ecualizador si suena algo).
-- Al pasar el mouse se agranda con todo lo de la barra: menús, bandeja, clima, batería, red, volumen, búsqueda, Centro de control y reloj.
-- Se agranda sola un momento con: volumen y brillo, enchufar/desenchufar y batería baja, tema nuevo y notificaciones.
-- Tocándola mientras suena algo: reproductor con tapa, título, artista, progreso y controles (Spotify, YouTube, etc.).
+---
 
-**Centro de control**: Wi-Fi, Bluetooth, modo avión, modo oscuro (cambia Windows de verdad), concentración, brillo (notebooks) y sonido.
+## Índice
 
-**Notificaciones propias** (0.4): McBar junta las notificaciones de Windows en su propio centro, agrupadas por app. Con la isla se abre como cajón desde la píldora; con la barra, tocando el reloj (arriba de los widgets). Win+N y Win+A abren las de McBar en vez de los paneles de Windows. Opcional: ocultar el cartelito de Windows.
+- [Qué trae](#qué-trae)
+- [Instalar](#instalar)
+- [Atajos de teclado](#atajos-de-teclado)
+- [Preferencias](#preferencias)
+- [Bajo consumo](#bajo-consumo)
+- [Si algo sale mal](#si-algo-sale-mal)
+- [Compilar](#compilar)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Historial de versiones](#historial-de-versiones)
 
-**Widgets, calendario y recordatorios** (1.1): widgets en el escritorio, eventos de Google/Outlook (enlace iCal) con aviso 10 min antes, y recordatorios escritos en lenguaje natural ("comprar pan mañana 18:00").
+---
 
-**Más cosas de Mac** (1.0): esquinas activas, ventanas en mosaico (menú Ventana o Ctrl+Alt+flechas), escritorios en Win+Tab y Quick Look con la barra espaciadora en el Explorador.
+## Qué trae
 
-**Ventanas estilo Mac** (0.8): vista previa en vivo de las ventanas al dejar el mouse sobre el Dock, Alt+Tab con los íconos de las apps (como Cmd+Tab) y Win+Tab con todas las ventanas (como Mission Control).
+### Dock
 
-**Wi-Fi, Bluetooth y sonido propios** (0.7): redes con contraseña, dispositivos Bluetooth (los de audio se conectan con un clic) y elegir parlantes/auriculares/micrófono, sin abrir Configuración.
+- Los íconos se agrandan al pasar el mouse (el de abajo del cursor queda fijo y los vecinos se corren, como en macOS). Las apps rebotan al abrirse y las abiertas tienen un puntito.
+- Apps fijadas y apps abiertas, **Descargas** (pila con los últimos archivos) y **Papelera** (soltá archivos para borrarlos).
+- Se reordena arrastrando. Para sacar un ícono, se arrastra hacia arriba ("Quitar del Dock", con nubecita); si es una app abierta sin fijar, "Cerrar app".
+- **Vista previa en vivo** de las ventanas al dejar el mouse sobre un ícono.
+- Las ventanas se achican **hacia su ícono** al minimizar.
+- **Estilos**: Clásico, Flotante, Ancho completo, Barra (como Windows 11 pero flotante) o Solo íconos.
+- **Paquetes de íconos** de otras barras o sistemas (.png / .ico).
+- Ocultación automática y un Dock en cada monitor.
 
-**Teclado y buscador** (0.6): la tecla Windows abre el Launchpad, Win+S abre un buscador tipo Spotlight (apps, archivos, cuentas, Configuración y web) y las teclas de volumen muestran el cartel de McBar.
+### Barra de menú
 
-**Clima** (tocando el clima de la barra o la isla): ahora, sensación, humedad, viento, 24 horas y 7 días.
+- Menú de McBar (Acerca de este equipo, Forzar salida, Suspender, Reiniciar, Apagar, Bloquear, Perfil, Modo juego…).
+- La app activa con sus menús **Archivo, Edición, Ver, Ventana y Ayuda**. Ventana incluye **Mover y cambiar tamaño** (mitades, cuartos, tercios). Si no hay ninguna app elegida, los menús se esconden, como en GNOME.
+- A la derecha: **bandeja propia** (WhatsApp, antivirus, etc. con sus menús), clima, batería, Wi-Fi, volumen, buscador, Centro de control y reloj.
 
-**Widgets** (tocando el reloj): calendario, clima (Open-Meteo, sin clave), batería, procesador y memoria, notas.
+### Isla dinámica
 
-**Launchpad** (como el de macOS): todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda, fondo desenfocado (transparencia regulable) y animación. **Carpetas**: arrastrá una app sobre otra; arrastrando al borde se reordena. Ctrl+clic para elegir varias y ocultarlas juntas; las ocultas se ven al buscar. Clic derecho → Agregar al Dock, carpetas, Ocultar, Desinstalar. Arrastrando una app hacia abajo se puede soltar en el Dock o en el escritorio.
+<img src="docs/img/isla-dinamica.svg" alt="Estados de la isla dinámica: reposo, temporizador, música, micrófono en uso y expandida" width="760">
 
-**Preferencias**: tamaño y ampliación del Dock, ocultación automática, tema claro/oscuro/automático, ocultar o no la barra de Windows, iniciar con Windows, ciudad del clima y qué widgets mostrar.
+Es una alternativa a la barra de menú: una píldora negra arriba al centro, como en el iPhone.
+
+- En reposo muestra la hora. Al pasar el mouse se agranda con todo lo de la barra.
+- Se agranda sola un momento con el volumen y el brillo, la carga de la batería, un tema nuevo y las notificaciones.
+- **Música** (Spotify, YouTube…): tapa del disco y ecualizador; tocándola aparece el reproductor con controles.
+- **Actividades en vivo**: temporizador, cronómetro y descargas en curso.
+- **Privacidad**: puntito naranja si una app usa el micrófono y verde si usa la cámara (pasando el mouse dice cuál).
+- Cada ícono abre su cajón: Wi-Fi, Bluetooth, sonido, batería, clima, notificaciones y Centro de control.
+- Se esconde con los videos y juegos en pantalla completa.
+
+### Centro de control, temporizador y conexiones
+
+<img src="docs/img/centro-de-control.svg" alt="Centro de control y panel del temporizador" width="760">
+
+- **Centro de control**: Wi-Fi, Bluetooth, modo avión, modo oscuro (cambia Windows de verdad), concentración, **modo juego**, brillo y sonido.
+- **Wi-Fi, Bluetooth y sonido propios**: conectarse a redes (con contraseña), conectar auriculares Bluetooth con un clic y elegir parlantes, auriculares o micrófono, sin abrir Configuración.
+- **Temporizador y cronómetro**: atajos de 1, 5, 10 y 25 minutos, pausa, aviso con sonido. Ahí también se ven las descargas (tamaño y velocidad) y qué app usa el micrófono o la cámara.
+
+### Launchpad
+
+<img src="docs/img/launchpad.svg" alt="Launchpad con apps y una carpeta" width="760">
+
+- Todas las apps instaladas (de escritorio y de la Store) en páginas, con búsqueda y fondo desenfocado (transparencia regulable).
+- **Carpetas**: soltá una app sobre otra. Las apps y las carpetas se reordenan arrastrándolas al borde.
+- Ctrl+clic para elegir varias y **ocultarlas** juntas (al buscar aparecen igual).
+- Clic derecho: Agregar al Dock, Ocultar, **Desinstalar**. Arrastrando una app hacia abajo se suelta en el Dock o en el escritorio.
+
+### Buscador (tipo Spotlight)
+
+<img src="docs/img/buscador.svg" alt="Buscador con un temporizador de 10 minutos como resultado" width="760">
+
+- Apps, archivos, páginas de Configuración, cuentas ("12*3+4") y búsqueda en la web.
+- Comandos: `temporizador 10`, `timer 1:30`, `cronómetro`, `modo juego` o el nombre de un perfil.
+
+### Notificaciones y widgets
+
+- **Centro de notificaciones propio**: junta los avisos de Windows agrupados por app. Opcionalmente oculta el cartelito de Windows.
+- **Widgets** (tocando el reloj y también **en el escritorio**): reloj, calendario, clima (Open-Meteo, sin clave), recordatorios, notas, batería y sistema.
+- **Calendario de Google / Outlook** con el enlace iCal, sin iniciar sesión, y aviso 10 minutos antes de cada evento.
+- **Recordatorios en lenguaje natural**: "comprar pan mañana 18:00", "llamar a Juan en 20 min".
+- **Clima** completo: ahora, sensación, humedad, viento, 24 horas y 7 días.
+
+### Ventanas estilo Mac
+
+- **Alt+Tab** como Cmd+Tab: los íconos de las apps abiertas, con la más reciente primero.
+- **Win+Tab** como Mission Control: todas las ventanas con miniaturas en vivo y una franja con los escritorios virtuales.
+- **Quick Look**: elegí un archivo en el Explorador y apretá **Espacio** para ver la vista previa (fotos, videos, PDF, texto, carpetas).
+- **Esquinas activas**: a cada esquina de la pantalla se le asigna Launchpad, Todas las ventanas, Escritorio, Buscador, Notificaciones, Centro de control o Bloquear.
+
+### Personalización
+
+<img src="docs/img/preferencias.svg" alt="Preferencias de McBar, pestaña Personalización" width="760">
+
+- **Perfiles** ("Trabajo", "Juegos"…): cada uno guarda todos los ajustes (Dock, apps fijadas, barra o isla, tema, widgets). Se cambian desde el menú de McBar, Preferencias o el buscador.
+- **Modo juego**: la tecla Windows no abre nada, las esquinas no actúan, los avisos no salen en la isla y el Dock se oculta. Un perfil lo puede prender solo.
+- **Fondo de pantalla según la hora**: una imagen para la mañana, la tarde, el atardecer y la noche.
+- **Exportar e importar** todos los ajustes en un .json.
+- Temas **Claro, Oscuro, Automático y Vidrio**.
+
+---
+
+## Instalar
+
+1. Descargá `McBar.exe` (no hace falta instalar .NET).
+2. Abrilo: aparece el **instalador estilo Mac**. Ahí elegís:
+   - iniciar con Windows;
+   - accesos directos en el menú Inicio y en el escritorio;
+   - traer las apps fijadas de la barra de Windows;
+   - usar el tema Vidrio.
+3. Listo: la barra de Windows se oculta y aparecen el Dock y la barra de menú.
+
+- Se instala **para tu usuario, sin permisos de administrador**, en `%LocalAppData%\Programs\McBar`, y figura en *Configuración → Aplicaciones instaladas*.
+- **Actualizar**: abrí el `McBar.exe` nuevo y elegí "Actualizar". Los ajustes se conservan.
+- **Probar sin instalar**: botón del instalador o `McBar.exe --portable`.
+- **Desinstalar**: *Configuración → Aplicaciones instaladas → McBar → Desinstalar* (o `McBar.exe --uninstall`). La barra de Windows vuelve como estaba.
+- **Salir**: menú de McBar (arriba a la izquierda) → *Salir de McBar*.
+
+---
+
+## Atajos de teclado
+
+| Atajo | Qué hace |
+|---|---|
+| **Win** (sola) | Abre / cierra el Launchpad |
+| **Win + S** | Buscador |
+| **Win + N** | Notificaciones y widgets |
+| **Win + A** | Centro de control |
+| **Alt + Tab** / **Alt + Mayús + Tab** | Cambiar de app (estilo Cmd+Tab) |
+| **Win + Tab** | Todas las ventanas y escritorios |
+| **Espacio** (en el Explorador) | Quick Look |
+| **Ctrl + Alt + ← / → / ↑ / ↓** | Ventana a la mitad izquierda / derecha / arriba / abajo |
+| **Ctrl + Alt + U / I / J / K** | Ventana a un cuarto de pantalla |
+| **Ctrl + Alt + Enter** / **C** / **Retroceso** | Llenar / Centrar / Volver al tamaño anterior |
+| Teclas de volumen | Cartel de volumen de McBar (o la isla) |
+
+Todos se pueden apagar en *Preferencias → Teclado*. Con **AltGr** no se activan los de Ctrl+Alt, así que no molestan para escribir @ o #.
+
+---
+
+## Preferencias
+
+Están ordenadas en pestañas: Dock, Barra superior, Isla dinámica, Notificaciones, Teclado, Esquinas activas, Launchpad, Bandeja del sistema, General, Widgets, Personalización y Diagnóstico. Cada cambio se aplica al instante.
+
+| Archivo | Dónde |
+|---|---|
+| Ajustes | `%AppData%\McBar\settings.json` |
+| Recordatorios / notas | `%AppData%\McBar\recordatorios.json`, `notas.txt` |
+| Registro | `%AppData%\McBar\mcbar.log` |
+| Informes de errores | `%AppData%\McBar\errores\` |
+
+---
 
 ## Bajo consumo
 
-- Nada se repite en un bucle en reposo: las ventanas abiertas se detectan por avisos de Windows (WinEvents), el reloj se actualiza una vez por minuto.
-- Las animaciones solo corren mientras algo se mueve.
+- Nada se repite en un bucle en reposo: las ventanas se detectan por avisos de Windows y el reloj se actualiza una vez por minuto.
+- Las animaciones corren solo mientras algo se mueve. El temporizador y las descargas se actualizan una vez por segundo y solo mientras están activos.
 - Paneles, Launchpad y Preferencias se crean al abrirse y se destruyen al cerrarse; después se devuelve la memoria al sistema.
-- Recolector de memoria simple (sin hilos extra) y compilación ReadyToRun (arranca más rápido).
+- Compilado con ReadyToRun para que arranque rápido. En *Preferencias → Diagnóstico* se ve el consumo en vivo.
 
-## Compilar (GitHub)
+---
 
-1. La primera vez, crear en el repo el archivo `.github/workflows/build.yml` (está dentro del zip) subiéndolo a mano.
-2. Subir **mc.zip** a la rama `main`.
-3. El workflow descomprime el zip, sube los archivos, borra mc.zip, corre las pruebas y compila.
-4. Descargar **McBar-win-x64** desde la pestaña *Actions* → la ejecución → *Artifacts*. Adentro está `McBar.exe` (no necesita instalar .NET).
+## Si algo sale mal
 
-> Si en el futuro cambia el workflow, hay que subirlo a mano: GitHub no deja que el propio workflow se modifique a sí mismo.
+- Si McBar se cierra por un error, **Windows lo vuelve a abrir solo**, y el informe queda en `%AppData%\McBar\errores`. Si se cae 3 veces en 10 minutos, no se reabre más.
+- Si la barra de Windows quedó oculta: ejecutá `McBar.exe --restaurar`. Devuelve la barra, el espacio de las ventanas y la animación de Windows.
 
-## Instalar (0.5.0)
+---
 
-- Abrir `McBar.exe` (por ejemplo desde Descargas): aparece el **instalador** estilo Mac. Opciones: iniciar con Windows, accesos directos en el menú Inicio y el escritorio, traer las apps fijadas de la barra de Windows y usar el tema Vidrio.
-- Se instala para el usuario, **sin permisos de administrador**, en `%LocalAppData%\Programs\McBar`, y aparece en **Configuración → Aplicaciones instaladas**.
-- Para **actualizar**: abrir el `McBar.exe` nuevo; si es más nuevo que el instalado, ofrece "Actualizar" y conserva todos los ajustes.
-- Para **desinstalar**: Configuración → Aplicaciones instaladas → McBar → Desinstalar (o `McBar.exe --uninstall`). Devuelve la barra de Windows y borra McBar; los ajustes quedan en `%AppData%\McBar`.
-- **Probar sin instalar**: botón del instalador (o `McBar.exe --portable`). Esa copia no vuelve a preguntar.
+## Compilar
 
-## Usar
+El proyecto se compila con **GitHub Actions** (no hace falta tener Visual Studio):
 
-- Abrir McBar. La barra de Windows se oculta y aparecen el Dock y la barra de menú.
-- Para salir: menú de McBar (arriba a la izquierda) → **Salir de McBar**. La barra de Windows vuelve.
-- Si algo sale mal y la barra de Windows queda oculta: ejecutar `McBar.exe --restaurar` (devuelve la barra, el espacio de las ventanas y la animación de Windows como estaban).
-- Los ajustes están en `%AppData%\McBar\settings.json`; el registro en `%AppData%\McBar\mcbar.log` y los informes de errores en `%AppData%\McBar\errores` (si McBar se cierra por un error, Windows lo vuelve a abrir solo).
+1. La primera vez, subí a mano `.github/workflows/build.yml` (está en el zip).
+2. Subí **mc.zip** a la rama `main`.
+3. El workflow descomprime el zip, sube los archivos, corre las **pruebas** (xUnit) y compila.
+4. Descargá **McBar-win-x64** desde *Actions → la ejecución → Artifacts*.
 
-## Documentación
+> Si el workflow cambia, hay que subirlo a mano: GitHub no deja que un workflow se modifique a sí mismo.
 
-- [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) — cómo está hecho.
-- [docs/ETAPAS.md](docs/ETAPAS.md) — qué se hizo y qué sigue.
-- [docs/PRUEBAS.md](docs/PRUEBAS.md) — lista de pruebas manuales para QA.
-- [CLAUDE.md](CLAUDE.md) — guía para seguir desarrollando.
+Para compilar en tu PC: .NET 8 SDK en Windows y `dotnet publish src/McBar -c Release -r win-x64`.
+
+---
+
+## Estructura del proyecto
+
+```
+src/McBar/
+  App.xaml.cs      coordina todo (monitores, paneles, atajos, recuperación)
+  Core/            lógica sin ventanas: ajustes, perfiles, calendario, temporizador, clima…
+  Native/          Win32 / COM: ventanas, teclado, audio, Bluetooth, DWM
+  Dock/            el Dock
+  MenuBar/         barra de menú e isla dinámica
+  Panels/          Launchpad, buscador, Centro de control, Preferencias, widgets…
+  Themes/          colores (Claro, Oscuro, Vidrio) y estilos
+tests/McBar.Tests/ pruebas automáticas (una clase por etapa)
+docs/              arquitectura, etapas, pruebas manuales e imágenes
+```
+
+Más detalles:
+
+- [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): cómo está hecho.
+- [docs/ETAPAS.md](docs/ETAPAS.md): qué se hizo en cada versión.
+- [docs/PRUEBAS.md](docs/PRUEBAS.md): lista de pruebas manuales.
+- [CHANGELOG.md](CHANGELOG.md): todos los cambios.
+- [CLAUDE.md](CLAUDE.md): guía para seguir desarrollando.
+
+---
+
+## Historial de versiones
+
+| Versión | Qué trajo |
+|---|---|
+| **1.3.1** | Se reinicia solo si se traba; el instalador vuelve a aparecer con una versión nueva |
+| **1.3.0** | Perfiles, modo juego, exportar/importar ajustes, fondo según la hora |
+| **1.2.0** | Temporizador y cronómetro en vivo, micrófono/cámara en uso, descargas |
+| **1.1.0** | Widgets en el escritorio, calendario Google/Outlook, recordatorios |
+| **1.0.0** | Esquinas activas, mosaico de ventanas, escritorios en Win+Tab, Quick Look |
+| **0.9.0** | Recuperación ante errores y diagnóstico de consumo |
+| **0.8.0** | Vista previa en el Dock, Alt+Tab estilo Cmd+Tab, Win+Tab estilo Mission Control |
+| **0.7.0** | Wi-Fi, Bluetooth y sonido propios |
+| **0.6.0** | Launchpad con la tecla Windows, buscador, cartel de volumen |
+| **0.5.0** | Instalador estilo Mac |
+| **0.4.x** | Notificaciones propias, carpetas en el Launchpad, clima, tema Vidrio, estilos del Dock |
+
+<div align="center">
+<sub>McBar no está relacionado con Apple ni con Microsoft. macOS y Windows son marcas de sus dueños.</sub><br>
+<sub>Creado por Andrés Londero</sub>
+</div>

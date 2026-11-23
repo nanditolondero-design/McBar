@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.3.1 — 22/11/2026 (arreglos)
+- **Si McBar se traba** (Dock e isla quietos): a los 5 segundos anota en `mcbar.log` qué estaba haciendo («La interfaz no responde hace…»), y a los 20 segundos guarda un informe en `%AppData%\McBar\errores` y **se reinicia solo**. Se puede apagar en Preferencias → Diagnóstico.
+- **Instalador**: si antes se eligió "Probar sin instalar" con un `McBar.exe` en una carpeta y después se baja una versión NUEVA al mismo lugar, ahora vuelve a aparecer el instalador (antes se salteaba siempre).
+- **Isla**: ya no deja una franja vacía de lado a lado arriba. La píldora flota sobre las ventanas (como en el iPhone) y las ventanas maximizadas usan toda la pantalla. Se aplica una sola vez al actualizar; quien prefiera la franja la vuelve a prender en Preferencias → Isla dinámica → "Dejar lugar arriba para la isla". De paso, McBar ya no "pelea" con el Explorador por el área de trabajo en ese caso.
+- **Vista previa del Dock**: las ventanas minimizadas ya no salen finitas o vacías (se usa su tamaño normal); mientras Windows entrega la miniatura (o si no la da, como con ventanas de otro escritorio) se ve el ícono de la app en vez de un cuadro vacío; se vuelve a pedir la imagen a los 0,12 y 0,45 s. Aparece más rápido (0,4 s en vez de 0,55 s) y, con una vista previa abierta, al pasar a otro ícono cambia al instante.
+- **La píldora ya no tapa los menús**: los menús que se abren desde la isla o la barra quedan por encima, y mientras hay un menú abierto McBar no vuelve a subir la isla. **Preferencias** se abre debajo de la isla/barra (y se achica si la pantalla es chica), así la parte de arriba no queda tapada.
+- **Panel del temporizador** (también el del modo juego): los atajos de minutos van en un renglón y "minutos a mano + Iniciar" en otro; antes no entraban y quedaban cortados.
+- README nuevo para GitHub con ilustraciones (`docs/img`).
+- Compilación: `App.RemoveDesktopWidget` pasa a interno (CS0051).
+
 ## 1.3.0 — 22/11/2026 (etapa 13: personalización)
 - **Perfiles** (Preferencias → Personalización): un perfil guarda TODOS los ajustes (Dock y apps fijadas, barra o isla, tema, widgets, esquinas…). Atajos "+ Trabajo" y "+ Juegos (con modo juego)", o cualquier nombre con "Guardar los ajustes actuales como perfil". Se cambia desde Preferencias ("Usar"), el menú de McBar → Perfil o el buscador (escribir el nombre del perfil). Al pasar a otro perfil, lo que cambiaste en el actual queda guardado en él. Cada perfil puede prender el **modo juego**.
 - **Modo juego**: la tecla Windows sola no abre el Launchpad ni el Inicio, las esquinas activas no hacen nada, las notificaciones no aparecen en la isla (quedan en el centro) y el Dock se oculta solo y deja toda la pantalla. Se prende desde el Centro de control, el menú de McBar, el buscador ("modo juego") o Preferencias. Mientras está prendido, la isla y la barra muestran "Juego"; tocándolo se apaga.

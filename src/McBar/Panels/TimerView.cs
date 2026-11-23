@@ -85,9 +85,16 @@ namespace McBar.Panels
                 _timerButtons.Children.Add(Btn("Cancelar", LiveStatus.CancelTimer));
                 return;
             }
+            // 1.3.1: atajos en un renglón y "minutos a mano" en otro (en el cajón de 330 px no entraban juntos)
+            var presets = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Center };
             foreach (var m in SettingsStore.Current.TimerPresets)
-                _timerButtons.Children.Add(Btn(m >= 60 && m % 60 == 0 ? $"{m / 60} h" : $"{m} min", () => LiveStatus.StartTimer(TimeSpan.FromMinutes(m))));
-            var box = new TextBox { Width = 46, Margin = new Thickness(6, 4, 0, 4), VerticalContentAlignment = VerticalAlignment.Center, ToolTip = "Minutos" };
+                presets.Children.Add(Btn(m >= 60 && m % 60 == 0 ? $"{m / 60} h" : $"{m} min", () => LiveStatus.StartTimer(TimeSpan.FromMinutes(m))));
+            var custom = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+            var both = new StackPanel();
+            both.Children.Add(presets);
+            both.Children.Add(custom);
+            _timerButtons.Children.Add(both);
+            var box = new TextBox { Width = 60, Margin = new Thickness(3, 4, 3, 4), VerticalContentAlignment = VerticalAlignment.Center, ToolTip = "Minutos" };
             box.SetResourceReference(StyleProperty, "McTextBox");
             void Go()
             {
@@ -95,8 +102,8 @@ namespace McBar.Panels
                 if (t != null) LiveStatus.StartTimer(t.Value);
             }
             box.KeyDown += (_, e) => { if (e.Key == Key.Enter) { Go(); e.Handled = true; } };
-            _timerButtons.Children.Add(box);
-            _timerButtons.Children.Add(Btn("Iniciar", Go));
+            custom.Children.Add(box);
+            custom.Children.Add(Btn("Iniciar", Go));
         }
 
         private void BuildStopwatchButtons()

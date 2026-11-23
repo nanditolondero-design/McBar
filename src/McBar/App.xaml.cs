@@ -92,7 +92,9 @@ namespace McBar
             // 0.5.0: McBar.exe es su propio instalador. Si se abre desde fuera de la carpeta instalada, ofrece
             // instalar (o actualizar). "Probar sin instalar" recuerda esa ruta y no vuelve a preguntar.
             bool portable = e.Args.Any(a => a.Equals("--portable", StringComparison.OrdinalIgnoreCase))
-                            || string.Equals(SettingsStore.Current.PortablePath, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
+                            || e.Args.Any(a => a.Equals("--reinicio", StringComparison.OrdinalIgnoreCase))
+                            || (string.Equals(SettingsStore.Current.PortablePath, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)
+                                && SettingsStore.Current.PortableVersion == Installer.CurrentVersion.ToString(3)); // 1.3.1: una versión nueva vuelve a mostrar el instalador
             if (!portable && !Installer.IsRunningInstalled && !System.Diagnostics.Debugger.IsAttached)
             {
                 var decision = Installer.Decide(Installer.CurrentVersion, Installer.InstalledVersion());
@@ -103,10 +105,17 @@ namespace McBar
                 if (setup.Result == "installed") { Installer.LaunchInstalled(); Shutdown(); return; }
                 if (setup.Result != "portable") { Shutdown(); return; }
                 SettingsStore.Current.PortablePath = Environment.ProcessPath ?? "";
+                SettingsStore.Current.PortableVersion = Installer.CurrentVersion.ToString(3);
                 SettingsStore.Save();
             }
 
             _mutex = new Mutex(true, "McBar.InstanciaUnica", out bool created);
+            if (!created && e.Args.Any(a => a.Equals("--reinicio", StringComparison.OrdinalIgnoreCase)))
+            {
+                // 1.3.1: la copia anterior se trabó y se está cerrando: esperar que suelte el candado
+                try { created = _mutex.WaitOne(TimeSpan.FromSeconds(15)); }
+                catch (AbandonedMutexException) { created = true; }
+            }
             if (!created) { Shutdown(); return; }
 
             DispatcherUnhandledException += (_, a) =>
@@ -195,6 +204,7 @@ namespace McBar
             LiveStatus.Start(); // 1.2.0: temporizador, cronómetro, micrófono/cámara y descargas
             StartPersonalization(); // 1.3.0: perfiles, modo juego y fondo según la hora
             StartWatchdog();
+            HangWatch.Start(Dispatcher); // 1.3.1: si la interfaz se traba, lo anota y McBar se reinicia solo
             ScheduleTrim(6);
         }
 
@@ -297,6 +307,29 @@ namespace McBar
             foreach (var d in Docks) d.SetFullscreen(fs.Contains(d.Monitor.Device));
             foreach (var mb in MenuBars) mb.SetFullscreen(fs.Contains(mb.Monitor.Device));
             foreach (var isl in Islands) isl.SetFullscreen(fs.Contains(isl.Monitor.Device));
+        }
+
+        /// <summary>
+        /// 1.3.1: acomoda una ventana de McBar (Preferencias) para que la isla o la barra no le tapen la parte
+        /// de arriba: la baja debajo de la barra y, si no entra, la achica.
+        /// </summary>
+        public static void KeepBelowTopBar(Window w)
+        {
+            try
+            {
+                var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
+                var m = (h != IntPtr.Zero ? Monitors.FromWindow(h) : null) ?? MonitorOrPrimary(null);
+                double top = TopInsetDip(m);
+                double bottom = m.Work.Bottom / Scale - 8;
+                if (bottom - top < w.MinHeight) return;
+                if (w.Top < top) w.Top = top;
+                if (w.Top + w.ActualHeight > bottom)
+                {
+                    w.Height = Math.Max(w.MinHeight, bottom - w.Top);
+                    if (w.Top + w.Height > bottom) w.Top = Math.Max(top, bottom - w.Height);
+                }
+            }
+            catch (Exception ex) { Log.Write("KeepBelowTopBar: " + ex.Message); }
         }
 
         /// <summary>Dónde empiezan los paneles (Centro de control, Widgets) debajo de la barra o la isla, en unidades WPF.</summary>
@@ -423,6 +456,7 @@ namespace McBar
         private static void KeepBarsOnTop()
         {
             const uint flags = Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE;
+            if (PopupGuard.AnyOpen) return; // 1.3.1: con un menú abierto, no subir la isla por encima de él
             foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
             {
                 if (!w.IsVisible) continue;
@@ -663,6 +697,9 @@ namespace McBar
             _preview.Show();
         }
 
+        /// <summary>¿Hay una vista previa del Dock a la vista? (para pasar de un ícono a otro sin esperar).</summary>
+        public static bool DockPreviewOpen => _preview != null && _preview.IsVisible;
+
         public static void HideDockPreview(bool now = false)
         {
             if (_preview == null) return;
@@ -815,6 +852,7 @@ namespace McBar
             if (_cleanedUp) return;
             _cleanedUp = true;
             _watchdog?.Stop();
+            HangWatch.Stop();
             _health?.Stop();
             HotCorners.Stop();
             _reminderTimer?.Stop();

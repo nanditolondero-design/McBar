@@ -94,6 +94,9 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Vigilante de trabadas (1.3.1)
+`Core/HangWatch`: hilo aparte que cada segundo manda un "ping" (`BeginInvoke`) al hilo de la interfaz. `Dispatcher.Hooks.OperationStarted/Completed` guardan la tarea en curso (nombre interno de `DispatcherOperation.Name` por reflexión). 5 s sin respuesta → log con la tarea; 20 s (`RestartIfHung`) → `Recovery.SaveReport` + `McBar.exe --reinicio` + `Kill()`. `--reinicio` espera hasta 15 s el mutex (abandonado = tomado) y no muestra el instalador. `Decide` es pura.
+
 ## Personalización (1.3.0)
 - `Core/Profiles`: `SettingsProfile {Name, GameMode, Data}` en `AppSettings.Profiles` + `ActiveProfile`. `Capture` (JSON sin perfiles), `SaveAs`, `Switch` (actualiza la foto del actual y copia la del nuevo con `CopyInto`, por reflexión, sobre el MISMO objeto `SettingsStore.Current`), `MachineFields` (nunca se copian) y `ProfileFields`. `Use` = Switch + `NotifyChanged` + `NotifyPinsChanged` + modo juego + evento `ProfileChanged` (App rehace tema y widgets del escritorio; Preferencias se vuelve a armar). `Export`/`ReadExport`/`ImportFrom` (archivo `{App:"McBar", Version, Exported, Settings}` o un settings.json suelto). Todo puro salvo `Use`/`ImportFrom`/`ExportTo`.
 - `Core/GameMode`: `On`, `Set`, `Toggle`, `Changed` (no se guarda). Lo miran `KeyboardHook` (Win sola), `HotCorners.Tick`, `ActivityHub` (notificaciones en la isla), `DockWindow.AutoHide` (+ `OnGameMode`), `LiveStatus.Summary` ("Juego") y `App` (`UpdateWorkAreas`).
@@ -121,7 +124,7 @@
 `Core/Recovery`: `RegisterApplicationRestart` al arrancar (salvo 3 errores en 10 min, `TooManyRecentCrashes`), `SaveReport` en `UnhandledException` (antes de `SafeCleanup`), `RecentReport` para avisar al reabrir. `Core/Diagnostics`: memoria, % CPU (`CpuPercent` puro), identificadores, GDI/USER; `App.StartHealth` lo anota cada 10 min.
 
 ## Ventanas estilo Mac (0.8.0)
-- `Native/DwmThumb`: DwmRegisterThumbnail / DwmUpdateThumbnailProperties (`Fit` puro). `Panels/ThumbHost` ubica las miniaturas sobre recuadros WPF (en píxeles) en cada `LayoutUpdated`.
+- `Native/DwmThumb`: DwmRegisterThumbnail / DwmUpdateThumbnailProperties (`Fit` puro). `Native/DwmThumb.Show` usa `Win32.NormalSize` si la ventana está minimizada (1.3.1). `Panels/ThumbHost` ubica las miniaturas sobre recuadros WPF (en píxeles) en cada `LayoutUpdated`.
 - `Core/WindowSwitch`: `AppsByRecency`, `Step`, `GridLayout` (puros, con pruebas).
 - `Panels/WindowViews`: `SwitcherWindow` (Alt+Tab), `PreviewWindow` (Dock, timer de 550 ms en `DockWindow`), `MissionControlWindow` (Win+Tab). `App.SwitcherStep/Commit/Cancel`, `App.ToggleMissionControl`, `App.ShowDockPreview/HideDockPreview`.
 - `KeyboardHook`: Alt+Tab se "come" el Tab mientras Alt está apretado (y manda 0xE8 para que soltar Alt no active el menú); al soltar Alt confirma.

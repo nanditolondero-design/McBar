@@ -48,7 +48,7 @@ namespace McBar.Dock
         private DockItem? _hoverItem;
 
         // 0.8.0: vista previa de las ventanas al dejar el mouse sobre una app abierta
-        private readonly System.Windows.Threading.DispatcherTimer _previewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(550) };
+        private readonly System.Windows.Threading.DispatcherTimer _previewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) }; // 1.3.1: antes 550
 
         private void ShowPreviewNow()
         {
@@ -313,7 +313,12 @@ namespace McBar.Dock
             _items.Insert(Math.Clamp(index, 0, _items.Count), item);
             var v = item.View;
             v.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
-            v.MouseEnter += (_, _) => { _hoverItem = item; EnsureAnimating(); _previewTimer.Stop(); _previewTimer.Start(); };
+            v.MouseEnter += (_, _) =>
+            {
+                _hoverItem = item; EnsureAnimating(); _previewTimer.Stop();
+                // 1.3.1: si ya hay una vista previa abierta (pasando de un ícono a otro), se cambia al toque
+                if (App.DockPreviewOpen) ShowPreviewNow(); else _previewTimer.Start();
+            };
             v.MouseLeave += (_, _) =>
             {
                 if (_hoverItem == item) { _hoverItem = null; EnsureAnimating(); }

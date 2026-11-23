@@ -84,7 +84,8 @@ namespace McBar.Core
         /// <summary>"menubar" (barra de menú clásica) o "island" (isla dinámica). La "gota" de la 0.4.2 se quitó en la 0.4.3 (pasa a isla).</summary>
         public string TopBarMode { get; set; } = "menubar";
         /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
-        public bool IslandReserveSpace { get; set; } = true;
+        /// <summary>Reservar una franja arriba para la isla. 1.3.1: apagado por defecto (la píldora flota sobre las ventanas, que usan toda la pantalla).</summary>
+        public bool IslandReserveSpace { get; set; } = false;
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";
@@ -116,6 +117,10 @@ namespace McBar.Core
         public string IconPackPath { get; set; } = "";
         /// <summary>Ruta del .exe que el usuario eligió "Probar sin instalar" (no se le vuelve a ofrecer instalar). 0.5.0.</summary>
         public string PortablePath { get; set; } = "";
+        /// <summary>Versión que se eligió "probar sin instalar" (una más nueva vuelve a mostrar el instalador). 1.3.1.</summary>
+        public string PortableVersion { get; set; } = "";
+        /// <summary>Si la interfaz se traba 20 s, McBar se reinicia solo (Core/HangWatch). 1.3.1.</summary>
+        public bool RestartIfHung { get; set; } = true;
         /// <summary>La tecla Windows sola abre el Launchpad (en vez del menú Inicio). 0.6.0.</summary>
         public bool WinKeyLaunchpad { get; set; } = true;
         /// <summary>Win+S abre el buscador de McBar. 0.6.0.</summary>
@@ -238,7 +243,7 @@ namespace McBar.Core
             return Current;
         }
 
-        public const int CurrentLook = 1;
+        public const int CurrentLook = 2;
 
         /// <summary>
         /// Cambios de una sola vez al actualizar (pura, se prueba).
@@ -248,9 +253,15 @@ namespace McBar.Core
         public static AppSettings Migrate(AppSettings s, bool save = true)
         {
             if (s.LookVersion >= CurrentLook) return s;
-            s.DockBackgroundStretch = true;
-            s.BackdropBlur = false;
-            if (s.Stacks.Count == 0) s.Stacks = AppSettings.DefaultStacks();
+            if (s.LookVersion < 1)
+            {
+                s.DockBackgroundStretch = true;
+                s.BackdropBlur = false;
+                if (s.Stacks.Count == 0) s.Stacks = AppSettings.DefaultStacks();
+            }
+            // 1.3.1: la franja reservada para la isla dejaba un hueco de lado a lado arriba (las ventanas
+            // maximizadas no llegaban arriba). Ahora la píldora flota sobre las ventanas, como en el iPhone.
+            if (s.LookVersion < 2) s.IslandReserveSpace = false;
             s.LookVersion = CurrentLook;
             if (save) { try { File.WriteAllText(FilePath, JsonSerializer.Serialize(s, Options)); } catch { } }
             return s;
@@ -299,6 +310,7 @@ namespace McBar.Core
             s.LaunchpadOrder ??= new List<string>();
             s.IconPackPath ??= "";
             s.PortablePath ??= "";
+            s.PortableVersion ??= "";
             s.DesktopWidgets ??= new List<DesktopWidget>();
             s.CalendarUrls ??= new List<string>();
             s.CornerTopLeft = ValidCorner(s.CornerTopLeft);

@@ -22,14 +22,14 @@ namespace McBar.Core
         public static void Attach(ContextMenu cm)
         {
             Action close = () => cm.IsOpen = false;
-            cm.Opened += (_, _) => Add(close);
+            cm.Opened += (_, _) => { Add(close); RaiseSoon(cm); };
             cm.Closed += (_, _) => Remove(close);
         }
 
         public static void Attach(Popup p)
         {
             Action close = () => p.IsOpen = false;
-            p.Opened += (_, _) => Add(close);
+            p.Opened += (_, _) => { Add(close); if (p.Child != null) RaiseSoon(p.Child); };
             p.Closed += (_, _) => Remove(close);
         }
 
@@ -41,6 +41,21 @@ namespace McBar.Core
         }
 
         public static bool AnyOpen => OpenClosers.Count > 0;
+
+        /// <summary>
+        /// 1.3.1: pone el menú por ENCIMA de la isla y la barra (que también están siempre arriba): si no,
+        /// la píldora expandida tapaba el menú que se abría desde ella.
+        /// </summary>
+        private static void RaiseSoon(System.Windows.Media.Visual v)
+        {
+            void Raise()
+            {
+                if (System.Windows.PresentationSource.FromVisual(v) is System.Windows.Interop.HwndSource src && src.Handle != IntPtr.Zero)
+                    Win32.SetWindowPos(src.Handle, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
+            }
+            Raise();
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(Raise), DispatcherPriority.Loaded);
+        }
 
         private static void Add(Action close)
         {

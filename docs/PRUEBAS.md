@@ -240,6 +240,15 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.3.1
+- [ ] Isla expandida → abrir el menú Archivo / Ventana / el de McBar: el menú se ve entero, encima de la píldora, y sigue encima después de unos segundos.
+- [ ] Abrir Preferencias en una pantalla chica: la barra de título queda debajo de la píldora (no tapada).
+- [ ] Modo juego → tocar "Juego" en la isla: el panel muestra 1/5/10/25 min completos y abajo el cuadro de minutos con "Iniciar".
+- [ ] Minimizar 2 ventanas del Explorador → mouse sobre su ícono del Dock: se ven las dos miniaturas con la proporción correcta (si tarda, primero se ve el ícono). Pasar a otro ícono con la vista previa abierta → cambia sin esperar.
+- [ ] Con la isla: maximizar una ventana → llega hasta arriba de todo (la píldora queda encima, sin franja vacía a los costados). Preferencias → Isla dinámica → "Dejar lugar arriba para la isla" la vuelve a reservar.
+- [ ] Con un McBar.exe en el Escritorio que antes se abrió con "Probar sin instalar": reemplazarlo por la 1.3.1 y abrirlo → aparece el instalador.
+- [ ] Preferencias → Diagnóstico: está "Si McBar se traba, reiniciarlo solo (a los 20 segundos)". Si alguna vez se traba: en `mcbar.log` aparece «La interfaz no responde…» con la tarea, y a los 20 s McBar vuelve solo (informe en `errores`).
+
 ### Versión 1.3.0
 - [ ] Preferencias → Personalización → "+ Trabajo": aparece "Trabajo (en uso)". Cambiar el tamaño del Dock y fijar otra app; "+ Juegos (con modo juego)".
 - [ ] Menú de McBar → Perfil → Trabajo: vuelve el Dock de Trabajo y el modo juego se apaga. → Juegos: vuelve lo que tenía Juegos y se prende el modo juego.

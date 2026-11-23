@@ -81,3 +81,6 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Modo juego (1.3.0): todo lo que "moleste" (atajos, avisos, esquinas, cosas que aparecen solas) tiene que mirar `GameMode.On`.
 - Textos en C#: no usar comillas rectas dentro de un string; usar «» (en la 1.1.0 rompieron la compilación).
 - Strings de C#: las barras invertidas van dobles (`"\;"`, `"\\n"` literal). Un `"\;"` no compila (CS1009).
+- Trabadas (1.3.1): `Core/HangWatch` anota en `mcbar.log` «La interfaz no responde… Ocupada en: X». Ante un reporte de "se traba", pedir/leer ese log primero. Nunca hacer trabajo largo (disco, red, registro grande) en el hilo de la interfaz.
+- "Probar sin instalar" se recuerda por ruta Y versión (`PortablePath` + `PortableVersion`).
+- Isla/barra y menús (1.3.1): todo menú o popup nuevo va con `PopupGuard.Attach` (además de cerrarlo con clics afuera, lo sube por encima de la isla). Ventanas propias grandes (como Preferencias): `App.KeepBelowTopBar(this)` en `Loaded`.

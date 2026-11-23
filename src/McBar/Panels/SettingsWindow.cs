@@ -39,6 +39,7 @@ namespace McBar.Panels
             Closed += (_, _) => { ThemeManager.ThemeChanged -= OnTheme; if (_apply.IsEnabled) { _apply.Stop(); SettingsStore.NotifyChanged(); } App.ScheduleTrim(); };
 
             Content = Tabbed(Build());
+            Loaded += (_, _) => App.KeepBelowTopBar(this); // 1.3.1: que la isla no tape la parte de arriba
 
             // 1.3.0: al cambiar de perfil o importar, se vuelve a armar con los ajustes nuevos (en la misma pestaña)
             Action reload = () => Dispatcher.BeginInvoke(new Action(() => { if (IsLoaded) Content = Tabbed(Build()); }));
@@ -645,6 +646,10 @@ namespace McBar.Panels
             sp.Children.Add(usage);
             sp.Children.Add(version);
             sp.Children.Add(errors);
+            var cur = SettingsStore.Current;
+            var hang = Switch("Si McBar se traba, reiniciarlo solo (a los 20 segundos)", cur.RestartIfHung, v => cur.RestartIfHung = v); // 1.3.1
+            hang.Margin = new Thickness(0, 10, 0, 0);
+            sp.Children.Add(hang);
             return sp;
         }
 
