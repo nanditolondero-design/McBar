@@ -728,7 +728,7 @@ namespace McBar
             win.Show();
         }
 
-        public static void RemoveDesktopWidget(DesktopWidgetWindow win)
+        internal static void RemoveDesktopWidget(DesktopWidgetWindow win)
         {
             SettingsStore.Current.DesktopWidgets.Remove(win.Model);
             SettingsStore.Save();
