@@ -217,6 +217,7 @@ namespace McBar.Core
             TryDelete(StartMenuLink);
             TryDelete(DesktopLink);
             try { Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, false); } catch { }
+            MacLook.RestoreAll(); // 1.8.0: cursores y sonidos como estaban antes de McBar
             var s = SettingsStore.Current;
             s.StartWithWindows = false;
             SettingsStore.Save();

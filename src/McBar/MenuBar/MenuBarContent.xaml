@@ -23,6 +23,8 @@
                 <Button x:Name="ViewButton" Style="{StaticResource McFlatButton}" Content="Ver"/>
                 <Button x:Name="WindowButton" Style="{StaticResource McFlatButton}" Content="Ventana"/>
                 <Button x:Name="HelpButton" Style="{StaticResource McFlatButton}" Content="Ayuda"/>
+                <!-- 1.8.0: menús reales de la app (si los tiene y la opción está prendida) -->
+                <StackPanel x:Name="RealMenusPanel" Orientation="Horizontal" Visibility="Collapsed"/>
             </StackPanel>
 
             <StackPanel x:Name="RightGroup" Orientation="Horizontal">

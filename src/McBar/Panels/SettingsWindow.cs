@@ -205,6 +205,12 @@ namespace McBar.Panels
             root.Children.Add(Group(DesktopWidgetsBox()));
             root.Children.Add(Group(CalendarBox(s)));
 
+            // ---------- Estilo Mac (1.8.0): todo opcional, todo apagado de fábrica ----------
+            root.Children.Add(Header("Estilo Mac"));
+            root.Children.Add(Spaced(Group(MacLookAppearance(s))));
+            root.Children.Add(Spaced(Group(MacLookWindows(s))));
+            root.Children.Add(Group(MacLookKeyboard(s)));
+
             // ---------- Personalización (1.3.0) ----------
             root.Children.Add(Header("Personalización"));
             root.Children.Add(Spaced(Group(ProfilesBox(s))));
@@ -483,7 +489,9 @@ namespace McBar.Panels
             var sp = new StackPanel();
             sp.Children.Add(BoxTitle("Fondo de pantalla según la hora"));
             sp.Children.Add(Tip("Elegí una imagen para cada momento del día (como los fondos dinámicos de macOS). Si un momento no tiene imagen, sigue la del anterior."));
-            sp.Children.Add(Switch("Cambiar el fondo de pantalla según la hora", s.WallpaperByTime, v => s.WallpaperByTime = v));
+            var byTime = Switch("Cambiar el fondo de pantalla según la hora", s.WallpaperByTime, v => s.WallpaperByTime = v);
+            sp.Children.Add(byTime);
+            var refresh = new List<Action>(); // para mostrar los nombres nuevos al usar los fondos de McBar
             for (int i = 0; i < DynamicWallpaper.Slots.Length; i++)
             {
                 int idx = i;
@@ -503,6 +511,7 @@ namespace McBar.Panels
                     file.ToolTip = string.IsNullOrWhiteSpace(path) ? null : path;
                 }
                 Show();
+                refresh.Add(Show);
                 var btns = new StackPanel { Orientation = Orientation.Horizontal };
                 btns.Children.Add(Btn("Elegir…", () =>
                 {
@@ -517,6 +526,90 @@ namespace McBar.Panels
                 g.Children.Add(btns);
                 sp.Children.Add(g);
             }
+
+            // 1.7.0: fondos propios de McBar (vienen dentro de la app) y pantalla de bloqueo
+            var status = new TextBlock { FontSize = 11.5, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap };
+            status.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+            row.Children.Add(Btn("Usar los fondos de McBar", () =>
+            {
+                if (DynamicWallpaper.UseBundled())
+                {
+                    foreach (var r in refresh) r();
+                    byTime.IsChecked = true;
+                    status.Text = "Listo: fondos «Ondas» de McBar para la mañana, la tarde, el atardecer y la noche.";
+                    Changed();
+                }
+                else status.Text = "No se pudieron copiar los fondos de McBar (mirá el registro en Diagnóstico).";
+            }, new Thickness(0)));
+            sp.Children.Add(row);
+            sp.Children.Add(status);
+            sp.Children.Add(Switch("Usar también en la pantalla de bloqueo", s.WallpaperLockScreen, v => s.WallpaperLockScreen = v));
+            sp.Children.Add(Tip("Windows la muestra también al iniciar sesión si en Configuración → Personalización → Pantalla de bloqueo está prendido «Mostrar la imagen de fondo de la pantalla de bloqueo en la pantalla de inicio de sesión»."));
+            return sp;
+        }
+
+        // ================== Estilo Mac (1.8.0) ==================
+
+        private UIElement MacLookAppearance(AppSettings s)
+        {
+            var sp = new StackPanel();
+            sp.Children.Add(BoxTitle("Apariencia"));
+            sp.Children.Add(Tip("Todo es opcional. Cursores y sonidos se pueden volver a los de antes apagando la opción."));
+            sp.Children.Add(Switch("Modo oscuro automático según la hora (Windows y las apps)", s.AutoDarkMode, v => s.AutoDarkMode = v));
+            sp.Children.Add(SliderSetting("Oscuro desde las", 0, 23, s.AutoDarkFrom, v => s.AutoDarkFrom = (int)v, 1));
+            sp.Children.Add(SliderSetting("Claro desde las", 0, 23, s.AutoLightFrom, v => s.AutoLightFrom = (int)v, 1));
+            sp.Children.Add(Switch("Cursores estilo Mac", s.MacCursors, v => s.MacCursors = v));
+            sp.Children.Add(Switch("Sacudir el mouse para encontrarlo (el puntero se agranda)", s.ShakeToFind, v => s.ShakeToFind = v));
+            sp.Children.Add(Switch("Sonidos del sistema estilo Mac", s.MacSounds, v => s.MacSounds = v));
+            return sp;
+        }
+
+        private UIElement MacLookWindows(AppSettings s)
+        {
+            var sp = new StackPanel();
+            sp.Children.Add(BoxTitle("Ventanas y escritorio"));
+            sp.Children.Add(Switch("Clic en el fondo de pantalla para ver el escritorio (otro clic las devuelve)", s.ClickWallpaperShowsDesktop, v => s.ClickWallpaperShowsDesktop = v));
+            sp.Children.Add(Switch("Organizador visual (Stage Manager)", s.StageManager, v => s.StageManager = v));
+            sp.Children.Add(Tip("La app que usás queda al centro y las demás pasan a una franja a la izquierda; tocá una para traerla."));
+            sp.Children.Add(Switch("Escritorios con la imagen del fondo en «Ver todas las ventanas»", s.MissionDesktopTiles, v => s.MissionDesktopTiles = v));
+            sp.Children.Add(Switch("Botones de colores en las ventanas (experimental)", s.TrafficLights, v => s.TrafficLights = v));
+            sp.Children.Add(Tip("Rojo cierra, amarillo minimiza y verde maximiza. Se dibujan encima de la ventana: en apps con pestañas o botones arriba a la izquierda pueden tapar algo; agregalas a esta lista (nombre del programa, separados por coma):"));
+            var box = new TextBox { Text = s.TrafficLightsExclude, Margin = new Thickness(0, 4, 0, 4), Padding = new Thickness(6, 4, 6, 4), TextWrapping = TextWrapping.Wrap };
+            box.SetResourceReference(StyleProperty, "McTextBox");
+            box.LostFocus += (_, _) => { if (box.Text != s.TrafficLightsExclude) { s.TrafficLightsExclude = box.Text; Changed(); } };
+            sp.Children.Add(box);
+            return sp;
+        }
+
+        private UIElement MacLookKeyboard(AppSettings s)
+        {
+            var sp = new StackPanel();
+            sp.Children.Add(BoxTitle("Teclado, capturas y Dock"));
+            sp.Children.Add(Switch("Capturas con Win+Mayús+3 (pantalla), 4 (zona) y 5 (opciones)", s.MacScreenshots, v => s.MacScreenshots = v));
+            var folderText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 12, Margin = new Thickness(0, 0, 8, 0) };
+            folderText.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            void ShowFolder() => folderText.Text = "Se guardan en: " + (string.IsNullOrWhiteSpace(s.ScreenshotFolder) ? "Escritorio" : s.ScreenshotFolder);
+            ShowFolder();
+            var fg = new Grid { Margin = new Thickness(0, 2, 0, 6) };
+            fg.ColumnDefinitions.Add(new ColumnDefinition());
+            fg.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var fbtns = new StackPanel { Orientation = Orientation.Horizontal };
+            fbtns.Children.Add(Btn("Elegir carpeta…", () =>
+            {
+                var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "Carpeta para las capturas" };
+                if (dlg.ShowDialog(this) == true) { s.ScreenshotFolder = dlg.FolderName; ShowFolder(); Changed(); }
+            }));
+            fbtns.Children.Add(Btn("Escritorio", () => { s.ScreenshotFolder = ""; ShowFolder(); Changed(); }, new Thickness(0)));
+            Grid.SetColumn(fbtns, 1);
+            fg.Children.Add(folderText);
+            fg.Children.Add(fbtns);
+            sp.Children.Add(fg);
+            sp.Children.Add(Switch("Alt como Cmd (Alt+C copia, Alt+V pega, Alt+Q cierra la app…)", s.MacShortcuts, v => s.MacShortcuts = v));
+            sp.Children.Add(Tip("Alt+C/V/X/Z/A/S/F/T/W/N/P/R/O hacen lo mismo que con Ctrl. Alt+Q cierra la app, Alt+M minimiza, Alt+H oculta la app y Alt+Espacio abre el buscador. Alt+Tab y Alt+F4 siguen igual."));
+            sp.Children.Add(Switch("Menús reales de la app en la barra (si la app los tiene)", s.RealAppMenus, v => s.RealAppMenus = v));
+            sp.Children.Add(Segment("Pilas del Dock", new[] { ("grid", "Cuadrícula"), ("fan", "Abanico"), ("list", "Lista") },
+                s.StackStyle, v => { s.StackStyle = v; Changed(); }));
             return sp;
         }
 
@@ -737,7 +830,7 @@ namespace McBar.Panels
             return sp;
         }
 
-        private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set)
+        private UIElement SliderSetting(string text, double min, double max, double value, Action<double> set, double tick = 2)
         {
             var g = new Grid { Margin = new Thickness(0, 6, 0, 6) };
             // 0.4.3: la columna del nombre se adapta al texto (antes era fija y cortaba "Transparencia del fondo")
@@ -748,7 +841,7 @@ namespace McBar.Panels
             label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             var val = new TextBlock { Text = ((int)value).ToString(), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
             val.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
-            var s = new Slider { Minimum = min, Maximum = max, Value = value, IsSnapToTickEnabled = true, TickFrequency = 2 };
+            var s = new Slider { Minimum = min, Maximum = max, Value = value, IsSnapToTickEnabled = true, TickFrequency = tick };
             s.SetResourceReference(StyleProperty, "McSlider");
             s.ValueChanged += (_, e) => { val.Text = ((int)e.NewValue).ToString(); set(e.NewValue); Changed(); };
             Grid.SetColumn(s, 1);

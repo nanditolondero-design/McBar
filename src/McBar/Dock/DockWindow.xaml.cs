@@ -16,6 +16,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using McBar.Core;
 using McBar.Native;
@@ -1397,6 +1398,21 @@ namespace McBar.Dock
             }
             catch { files = new List<FileSystemInfo>(); }
 
+            // 1.8.0: pilas en abanico o en lista, como en macOS (opcional; "grid" = como venía)
+            var style = SettingsStore.Current.StackStyle;
+            if (style == "fan" && files.Count > 0) { ShowStackFan(item, dir, files); return; }
+            bool asList = style == "list";
+            if (asList)
+            {
+                try
+                {
+                    files = new DirectoryInfo(dir).EnumerateFileSystemInfos()
+                        .Where(f => (f.Attributes & FileAttributes.Hidden) == 0)
+                        .OrderByDescending(f => f.LastWriteTime).Take(30).ToList();
+                }
+                catch { }
+            }
+
             const double width = 372;
             var popup = new Popup
             {
@@ -1415,7 +1431,7 @@ namespace McBar.Dock
             title.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             panel.Children.Add(title);
 
-            var wrap = new WrapPanel();
+            Panel wrap = asList ? new StackPanel() : new WrapPanel();
             if (files.Count == 0)
             {
                 var empty = new TextBlock { Text = "La carpeta está vacía", Margin = new Thickness(6, 6, 6, 12) };
@@ -1424,6 +1440,23 @@ namespace McBar.Dock
             }
             foreach (var f in files)
             {
+                if (asList)
+                {
+                    var li = new Image { Width = 22, Height = 22 };
+                    RenderOptions.SetBitmapScalingMode(li, BitmapScalingMode.HighQuality);
+                    var ln = new TextBlock { Text = f.Name, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 12.5, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+                    ln.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                    var row = new StackPanel { Orientation = Orientation.Horizontal };
+                    row.Children.Add(li);
+                    row.Children.Add(ln);
+                    var lb = new Button { Content = row, Padding = new Thickness(6, 3, 6, 3), HorizontalContentAlignment = HorizontalAlignment.Left, ToolTip = f.Name };
+                    lb.SetResourceReference(StyleProperty, "McFlatButton");
+                    var lpath = f.FullName;
+                    lb.Click += (_, _) => { popup.IsOpen = false; Launcher.Launch(lpath); };
+                    wrap.Children.Add(lb);
+                    IconLoader.Request(lpath, 48, src => li.Source = src, useCache: false);
+                    continue;
+                }
                 var img = new Image { Width = 48, Height = 48 };
                 RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
                 var name = new TextBlock { Text = f.Name, Width = 76, TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Center, FontSize = 11, Margin = new Thickness(0, 4, 0, 0) };
@@ -1438,7 +1471,8 @@ namespace McBar.Dock
                 wrap.Children.Add(b);
                 IconLoader.Request(path, 96, s => img.Source = s, useCache: false);
             }
-            panel.Children.Add(wrap);
+            if (asList) panel.Children.Add(new ScrollViewer { Content = wrap, MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+            else panel.Children.Add(wrap);
 
             var open = new Button { Content = "Abrir en el Explorador  ›", Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
             open.SetResourceReference(StyleProperty, "McButton");
@@ -1458,6 +1492,79 @@ namespace McBar.Dock
             border.SetResourceReference(Border.BackgroundProperty, "Mc.PanelBg");
             border.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
             popup.Child = border;
+            popup.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
+            popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
+            popup.IsOpen = true;
+        }
+
+        /// <summary>
+        /// 1.8.0: pila en abanico, como en macOS: los archivos más nuevos suben en una curva desde el ícono, con
+        /// el nombre en una etiqueta a la izquierda; arriba de todo, "Abrir en el Explorador".
+        /// </summary>
+        private void ShowStackFan(DockItem item, string dir, List<FileSystemInfo> files)
+        {
+            var list = files.Take(10).ToList();
+            const double step = 58, iconSz = 48, width = 360;
+            int n = list.Count;
+            double height = n * step + 70;
+            var popup = new Popup
+            {
+                PlacementTarget = item.View,
+                Placement = PlacementMode.Top,
+                AllowsTransparency = true,
+                StaysOpen = false,
+                HorizontalOffset = MaxSize / 2 - (width - 60),
+                VerticalOffset = 0
+            };
+            PopupGuard.Attach(popup);
+            var canvas = new Canvas { Width = width, Height = height, Background = Brushes.Transparent };
+            for (int i = 0; i < n; i++)
+            {
+                var f = list[i];
+                var (dx, angle) = StackFan.Position(i);
+                double cx = width - 60 + dx;             // centro del ícono
+                double cy = height - 36 - i * step;      // de abajo hacia arriba
+                var img = new Image { Width = iconSz, Height = iconSz };
+                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+                IconLoader.Request(f.FullName, 96, src => img.Source = src, useCache: false);
+                var label = new Border { CornerRadius = new CornerRadius(9), Padding = new Thickness(9, 3, 9, 4), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 220 };
+                label.Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x1E, 0x1E, 0x22));
+                label.Child = new TextBlock { Text = f.Name, Foreground = Brushes.White, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis };
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(label);
+                row.Children.Add(img);
+                var b = new Button { Content = row, Padding = new Thickness(0), Background = Brushes.Transparent, BorderThickness = new Thickness(0), ToolTip = f.Name, Cursor = Cursors.Hand };
+                b.SetResourceReference(StyleProperty, "McFlatButton");
+                var path = f.FullName;
+                b.Click += (_, _) => { popup.IsOpen = false; Launcher.Launch(path); };
+                b.Loaded += (_, _) =>
+                {
+                    // queda alineado a la derecha: el ícono en cx
+                    Canvas.SetLeft(b, cx + iconSz / 2 - b.ActualWidth);
+                    Canvas.SetTop(b, cy - iconSz / 2);
+                };
+                b.RenderTransformOrigin = new Point(1, 0.5);
+                var rot = new RotateTransform(angle);
+                var tr = new TranslateTransform(0, (i + 1) * step);
+                b.RenderTransform = new TransformGroup { Children = { rot, tr } };
+                b.Opacity = 0;
+                var delay = TimeSpan.FromMilliseconds(18 * i);
+                var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+                tr.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation((i + 1) * step, 0, TimeSpan.FromMilliseconds(220)) { BeginTime = delay, EasingFunction = ease });
+                b.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)) { BeginTime = delay });
+                canvas.Children.Add(b);
+            }
+            var open = new Button { Content = "Abrir en el Explorador  ›", Padding = new Thickness(10, 4, 10, 4) };
+            open.SetResourceReference(StyleProperty, "McButton");
+            open.Click += (_, _) => { popup.IsOpen = false; Launcher.ShowInExplorer(dir); };
+            var (odx, _) = StackFan.Position(n);
+            open.Loaded += (_, _) =>
+            {
+                Canvas.SetLeft(open, width - 60 + odx + iconSz / 2 - open.ActualWidth);
+                Canvas.SetTop(open, height - 36 - n * step - 14);
+            };
+            canvas.Children.Add(open);
+            popup.Child = canvas;
             popup.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
             popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
             popup.IsOpen = true;

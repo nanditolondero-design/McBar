@@ -229,6 +229,14 @@ namespace McBar.Native
             Win32.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Win32.INPUT>());
         }
 
+        /// <summary>1.8.0: manda una secuencia de teclas tal cual (tecla, ¿soltar?).</summary>
+        public static void SendSequence((ushort vk, bool up)[] keys)
+        {
+            var inputs = new Win32.INPUT[keys.Length];
+            for (int i = 0; i < keys.Length; i++) inputs[i] = Key(keys[i].vk, keys[i].up);
+            Win32.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Win32.INPUT>());
+        }
+
         private static Win32.INPUT Key(ushort vk, bool up)
         {
             uint flags = up ? Win32.KEYEVENTF_KEYUP : 0;

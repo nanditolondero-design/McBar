@@ -240,6 +240,28 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.0 (Estilo Mac — todo arranca apagado)
+- [ ] Abrir Preferencias → Estilo Mac: todos los interruptores apagados; Pilas del Dock en "Cuadrícula".
+- [ ] Modo oscuro automático: poner "Oscuro desde las" en la hora actual → Windows pasa a oscuro en menos de 1 min. Volver a la hora de antes → claro.
+- [ ] Cursores estilo Mac: cambia la flecha, la manito (en un link), el cursor de texto y la rueda al abrir una app. Apagar → vuelven los de antes. Probar con "Tamaño del puntero" grande.
+- [ ] Sacudir el mouse rápido de lado a lado → aparece el puntero grande ~1 s. Un movimiento normal no lo dispara.
+- [ ] Sonidos estilo Mac: vaciar la Papelera, conectar un pendrive, un aviso → suenan los nuevos. Apagar → vuelven los de antes.
+- [ ] Clic en el fondo (no en un ícono) → se ven el escritorio; otro clic → vuelven las ventanas. Clic en un ícono → no pasa nada raro.
+- [ ] Organizador visual: abrir 3 apps, pasar de una a otra → la anterior se minimiza y aparece a la izquierda con su foto e ícono; tocarla la trae. Con una ventana maximizada, la franja aparece al llevar el mouse al borde izquierdo.
+- [ ] Win+Tab con "Escritorios con la imagen del fondo": arriba se ven los escritorios con el fondo; el actual con borde de color; tocar otro cambia.
+- [ ] Botones de colores: en el Bloc de notas aparecen arriba a la izquierda; rojo cierra, amarillo minimiza, verde maximiza. En Chrome no aparecen (está en la lista). Siguen a la ventana al moverla.
+- [ ] Capturas: Win+Mayús+3 → archivo en el Escritorio + sonido + miniatura. Win+Mayús+4 → arrastrar una zona; Espacio → elegir ventana (sale con sombra); Esc cancela. Win+Mayús+5 → barrita. Miniatura: clic abre, arrastrar a WhatsApp/Word la pega, clic derecho → Copiar / Mostrar en la carpeta / Borrar.
+- [ ] Alt como Cmd: en el Bloc de notas Alt+A, Alt+C, Alt+V, Alt+Z funcionan; al soltar Alt no se activa el menú de la app. Alt+Q cierra la app; Alt+Espacio abre el buscador; Alt+Tab y Alt+F4 siguen igual.
+- [ ] Menús reales: con Notepad++ o 7-Zip al frente, la barra muestra sus menús de verdad y las opciones funcionan; con Chrome se ven Archivo, Edición… como siempre.
+- [ ] Pilas del Dock en Abanico y en Lista: tocar Descargas → se abren así; clic en un archivo lo abre.
+- [ ] Modo juego prendido: no aparecen la franja, los botones de colores ni el puntero grande, y Alt como Cmd no actúa.
+
+### Versión 1.7.0
+- [ ] Preferencias → Personalización → "Usar los fondos de McBar": aparece «Listo…», los 4 momentos muestran McBar-ondas-…-4k.jpg, se prende el interruptor y el fondo cambia al del momento actual. Existe `%AppData%\McBar\fondos` con los 4 archivos.
+- [ ] Apretar otra vez el botón: no vuelve a copiar (los archivos no cambian de fecha).
+- [ ] Prender "Usar también en la pantalla de bloqueo" → Win+L: la pantalla de bloqueo tiene la misma imagen. Con «Mostrar la imagen de fondo… en la pantalla de inicio de sesión» prendido, también al iniciar sesión.
+- [ ] Apagarlo: la pantalla de bloqueo deja de cambiar sola (queda la última imagen).
+
 ### Versión 1.6.2
 - [ ] Abrir el Launchpad (con el Dock en ocultación automática y con una ventana maximizada debajo): el Dock y la isla se ven encima; los íconos del Launchpad no quedan debajo del Dock. Tocar una app del Dock → se cierra el Launchpad y se abre la app.
 - [ ] Elegir una ventana (aparecen Archivo, Edición…) y minimizarla con su botón: los menús desaparecen solos, sin tocar el escritorio.

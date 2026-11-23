@@ -86,6 +86,38 @@ namespace McBar.Panels
             return t;
         }
 
+        private static string _wallPath = "";
+        private static ImageBrush? _wallBrush;
+
+        /// <summary>1.8.0: el fondo de pantalla actual, chiquito (para los escritorios de "Ver todas las ventanas").</summary>
+        public static ImageBrush? WallpaperBrush()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder(520);
+                if (!GetWallpaper(0x0073 /*SPI_GETDESKWALLPAPER*/, (uint)sb.Capacity, sb, 0)) return null;
+                var path = sb.ToString();
+                if (path == _wallPath) return _wallBrush;
+                _wallPath = path;
+                _wallBrush = null;
+                if (!System.IO.File.Exists(path)) return null;
+                var bi = new System.Windows.Media.Imaging.BitmapImage();
+                bi.BeginInit();
+                bi.UriSource = new Uri(path);
+                bi.DecodePixelWidth = 320;
+                bi.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bi.EndInit();
+                bi.Freeze();
+                _wallBrush = new ImageBrush(bi) { Stretch = Stretch.UniformToFill };
+                _wallBrush.Freeze();
+                return _wallBrush;
+            }
+            catch { return null; }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern bool GetWallpaper(uint action, uint param, System.Text.StringBuilder value, uint winIni);
+
         /// <summary>Ventanas visibles (no minimizadas) de un monitor, la más reciente primero.</summary>
         public static List<TrackedWindow> WindowsOn(MonitorInfo m) =>
             App.Tracker.Windows
@@ -286,9 +318,37 @@ namespace McBar.Panels
             var desks = VirtualDesktops.List();
             int cur = Math.Max(0, desks.FindIndex(d => d.Current));
             var strip = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 22, 0, 0) };
+            bool tiles = SettingsStore.Current.MissionDesktopTiles; // 1.8.0: escritorios con el fondo, como macOS
+            var wallBrush = tiles ? WinUi.WallpaperBrush() : null;
             for (int i = 0; i < desks.Count; i++)
             {
                 int target = i;
+                if (tiles)
+                {
+                    var tile = new StackPanel { Margin = new Thickness(8, 0, 8, 0), Cursor = Cursors.Hand };
+                    var pic = new Border
+                    {
+                        Width = 150, Height = 150 * m.Bounds.Height / Math.Max(1.0, m.Bounds.Width), CornerRadius = new CornerRadius(8),
+                        BorderThickness = new Thickness(desks[i].Current ? 3 : 1),
+                        Background = (Brush?)wallBrush ?? new SolidColorBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF)),
+                        Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.4 }
+                    };
+                    if (desks[i].Current) pic.SetResourceReference(Border.BorderBrushProperty, "Mc.Accent");
+                    else pic.BorderBrush = new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF));
+                    var name = WinUi.Label(desks[i].Name, 12.5, desks[i].Current);
+                    name.HorizontalAlignment = HorizontalAlignment.Center;
+                    name.Margin = new Thickness(0, 6, 0, 0);
+                    tile.Children.Add(pic);
+                    tile.Children.Add(name);
+                    tile.MouseLeftButtonUp += (_, e) =>
+                    {
+                        e.Handled = true;
+                        CloseAnimated();
+                        if (target != cur) VirtualDesktops.SwitchTo(cur, target);
+                    };
+                    strip.Children.Add(tile);
+                    continue;
+                }
                 var pill = new Border { Padding = new Thickness(16, 7, 16, 7), Margin = new Thickness(5, 0, 5, 0), CornerRadius = new CornerRadius(12), Cursor = Cursors.Hand, BorderThickness = new Thickness(1) };
                 pill.Child = WinUi.Label(desks[i].Name, 13, desks[i].Current);
                 if (desks[i].Current) pill.SetResourceReference(Border.BackgroundProperty, "Mc.Accent");
@@ -305,8 +365,10 @@ namespace McBar.Panels
             var add = new Border { Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(5, 0, 5, 0), CornerRadius = new CornerRadius(12), Cursor = Cursors.Hand, ToolTip = "Nuevo escritorio",
                                    Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), Child = WinUi.Label("+", 14, true) };
             add.MouseLeftButtonUp += (_, e) => { e.Handled = true; CloseAnimated(); VirtualDesktops.Add(); };
+            if (tiles) { add.VerticalAlignment = VerticalAlignment.Top; add.Margin = new Thickness(8, 30, 8, 0); }
             strip.Children.Add(add);
             root.Children.Add(strip);
+            if (tiles) top = 92 + 150 * m.Bounds.Height / Math.Max(1.0, m.Bounds.Width) + 20; // más lugar arriba para los escritorios
             if (windows.Count == 0)
             {
                 var t = WinUi.Label("No hay ventanas abiertas en esta pantalla", 18);

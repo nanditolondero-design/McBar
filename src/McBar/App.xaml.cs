@@ -468,6 +468,7 @@ namespace McBar
         {
             const uint flags = Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE;
             if (PopupGuard.AnyOpen) return; // 1.3.1: con un menú abierto, no subir la isla por encima de él
+            if (Screenshots.Busy) return;   // 1.8.0: eligiendo la zona de una captura
             // 1.6.2: también con el Launchpad abierto (Dock e isla quedan encima de él, como en macOS)
             foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
             {
@@ -532,6 +533,7 @@ namespace McBar
             if (s.NeedsKeyboardHook) KeyboardHook.Start(); else KeyboardHook.Stop();
             HotCorners.Apply();
             DynamicWallpaper.Apply(); // 1.3.0
+            MacLook.Apply();          // 1.8.0: opciones de Estilo Mac
             ApplyFullscreen(); // 1.6.1: por si cambió "Esconder la isla con ventanas maximizadas"
             if (IslandKey(s) != _lastIslandKey)
             {
@@ -800,6 +802,7 @@ namespace McBar
         private static void StartPersonalization()
         {
             DynamicWallpaper.Apply();
+            MacLook.Apply(); // 1.8.0
             var s = SettingsStore.Current;
             if (Profiles.Find(s, s.ActiveProfile)?.GameMode == true) GameMode.Set(true);
             GameMode.Changed += () => UpdateWorkAreas(); // el Dock se oculta y deja lugar
@@ -943,6 +946,7 @@ namespace McBar
             _reminderTimer?.Stop();
             try { LiveStatus.Stop(); } catch { }
             try { DynamicWallpaper.Stop(); } catch { }
+            try { MacLook.Stop(); } catch { }
             _macIconsTimer?.Stop();
             foreach (var w in DesktopWidgetWindows.ToList()) { try { w.Close(); } catch { } }
             foreach (var d in Docks) { try { d.Teardown(); } catch { } }

@@ -96,6 +96,7 @@ namespace McBar.Native
         private const int VK_S = 0x53, VK_VOLUME_MUTE = 0xAD, VK_VOLUME_DOWN = 0xAE, VK_VOLUME_UP = 0xAF;
         private const int VK_TAB = 0x09, VK_ESCAPE = 0x1B, VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_LMENU = 0xA4, VK_RMENU = 0xA5;
         private static bool _winDown, _winOther, _switching;
+        private static readonly System.Collections.Generic.HashSet<int> _eaten = new System.Collections.Generic.HashSet<int>(); // 1.8.0
         private const int VK_SPACE = 0x20, VK_UP = 0x26, VK_DOWN = 0x28, VK_RETURN = 0x0D, VK_BACK = 0x08,
                           VK_C = 0x43, VK_U = 0x55, VK_I = 0x49, VK_J = 0x4A, VK_K = 0x4B;
 
@@ -216,6 +217,37 @@ namespace McBar.Native
                             bool back = Down(VK_SHIFT);
                             Ui(() => App.SwitcherStep(back));
                             return (IntPtr)1; // Windows no abre su Alt+Tab
+                        }
+
+                        // ---- Capturas estilo Mac (1.8.0): Win+Mayús+3 / 4 / 5 ----
+                        if (s.MacScreenshots && down && _winDown && Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU) && vk >= 0x33 && vk <= 0x35)
+                        {
+                            if (!s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
+                            int which = vk - 0x33;
+                            Ui(() => Screenshots.Start(which));
+                            return (IntPtr)1;
+                        }
+
+                        // ---- Atajos estilo Mac (1.8.0): Alt izquierdo hace de Cmd ----
+                        if (s.MacShortcuts && !_switching)
+                        {
+                            if (up && _eaten.Remove(vk)) return (IntPtr)1; // la tecla que ya se usó como atajo
+                            if (down && !_winDown && !GameMode.On && Down(VK_LMENU) && !Down(VK_RMENU) && !Down(VK_CONTROL))
+                            {
+                                var mk = MacKeys.ActionFor(vk);
+                                if (mk != MacKeyAction.None)
+                                {
+                                    _eaten.Add(vk);
+                                    if (mk == MacKeyAction.Ctrl) MacKeys.SendAsCtrl((ushort)vk);
+                                    else
+                                    {
+                                        WindowOps.SendChord(VK_DUMMY); // que al soltar Alt la app no abra su menú
+                                        var fgw = GetForegroundWindow();
+                                        Ui(() => MacKeys.Run(mk, fgw));
+                                    }
+                                    return (IntPtr)1;
+                                }
+                            }
                         }
 
                         // ---- Quick Look (1.0.0): Espacio en la lista de archivos del Explorador ----

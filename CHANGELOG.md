@@ -1,5 +1,29 @@
 # Cambios
 
+## 1.8.0 — 23/11/2026 (etapa: Estilo Mac, pedido de Andrés: "todo, pero que sean opciones")
+Pestaña nueva **Preferencias → Estilo Mac**. **Todo es opcional y viene apagado**; cursores y sonidos vuelven a los anteriores al apagar la opción (y al desinstalar McBar).
+- **Modo oscuro automático**: Windows y las apps pasan a oscuro a la noche y a claro de día ("Oscuro desde las" 19 y "Claro desde las" 7, se cambian). Solo cambia al pasar de un horario al otro: si lo cambiás a mano en el medio, McBar no lo pisa.
+- **Cursores estilo Mac**: juego propio de McBar (dibujado por código, no son los de Apple): flecha negra con borde blanco, manito, texto, flechas de tamaño, mover, cruz, prohibido, ayuda y una rueda de colores girando para "esperando". En 32, 48 y 64 px (Windows elige según el tamaño del puntero).
+- **Sacudir el mouse para encontrarlo**: moverlo rápido de un lado a otro muestra un puntero grande un momento.
+- **Sonidos del sistema estilo Mac**: sonidos cortos y suaves, propios de McBar (aviso, alerta, error, conectar/desconectar, papelera, captura).
+- **Clic en el fondo de pantalla para ver el escritorio** (como macOS Sonoma): un clic en el fondo (no en un ícono) aparta las ventanas; otro clic las devuelve.
+- **Organizador visual (Stage Manager)**: la app que usás queda al centro y las demás pasan a una franja con miniaturas a la izquierda; tocás una y vuelve. Si la ventana tapa la franja, aparece llevando el mouse al borde izquierdo.
+- **Escritorios con la imagen del fondo** en "Ver todas las ventanas" (Win+Tab), en vez de los botoncitos con el nombre.
+- **Botones de colores en las ventanas (experimental)**: rojo cierra, amarillo minimiza, verde maximiza, arriba a la izquierda de la ventana activa. Con lista de apps donde no se ponen (de fábrica navegadores, Explorador, VS Code y Office, que tienen cosas en ese lugar).
+- **Capturas como en Mac**: Win+Mayús+3 (pantalla), Win+Mayús+4 (zona; Espacio = ventana con sombra; Esc = cancelar) y Win+Mayús+5 (barrita con las tres). Se guardan en el Escritorio (o la carpeta elegida) como "Captura de pantalla AAAA-MM-DD a las HH.MM.SS.png", con sonido de obturador y una miniatura abajo a la derecha (clic abre, arrastrar la lleva a otra app, clic derecho: abrir, copiar, mostrar en la carpeta, borrar).
+- **Alt como Cmd**: Alt+C/V/X/Z/A/S/F/T/W/N/P/R/O = Ctrl+…; Alt+Q cierra la app, Alt+M minimiza, Alt+H oculta la app, Alt+Espacio abre el buscador. Alt+Tab y Alt+F4 siguen igual.
+- **Menús reales de la app en la barra**: si la app tiene menú de Windows (programas clásicos), la barra muestra sus menús de verdad; si no (Chrome, Office, apps de la Tienda), quedan Archivo, Edición, Ver… como siempre.
+- **Pilas del Dock**: Cuadrícula (como venía), **Abanico** (los archivos suben en curva, como macOS) o **Lista**.
+- Los cursores, sonidos y el generador están en `tools/estilo-mac` (para volver a generarlos).
+
+## 1.7.0 — 23/11/2026 (pedido de Andrés: fondos y pantalla de bloqueo)
+- **Fondos de McBar "Ondas"**: cuatro fondos originales en 4K (3840×2160), hechos desde cero con inspiración en el estilo abstracto marrón y dorado de la última versión de macOS (no copian el de Apple): mañana (crema y dorado claro), tarde (dorado y ámbar), atardecer (naranja, rosado y bordó) y noche (ciruela casi negro con cintas en bronce). Misma composición en los cuatro, cambia solo la luz.
+- Vienen **dentro de McBar.exe** y se copian a `%AppData%\McBar\fondos` al usarlos. Preferencias → Personalización → Fondo de pantalla según la hora → **"Usar los fondos de McBar"**: los pone en los 4 momentos y prende el cambio según la hora.
+- **"Usar también en la pantalla de bloqueo"** (viene apagado): la misma imagen del momento va a la pantalla de bloqueo de Windows, que también se ve al iniciar sesión si está prendido «Mostrar la imagen de fondo de la pantalla de bloqueo en la pantalla de inicio de sesión». No pide administrador; si Windows lo bloquea (por ejemplo una política de empresa), solo se anota en el registro.
+
+## 1.6.3 — 23/11/2026
+- **Menús de una ventana minimizada (de nuevo)**: el arreglo de la 1.6.2 dependía de que Windows avisara al minimizar y en la PC de Andrés no alcanzó. Ahora, mientras la barra o la isla muestran los menús de una app, McBar vuelve a mirar cada 0,4 s si esa app sigue elegida, y además mira la ventana que tiene el foco en ese momento: si está minimizada, si nadie tiene el foco, o si es el escritorio o la barra de Windows, los menús se van.
+
 ## 1.6.2 — 23/11/2026
 - **Dock e isla siempre a la vista en el Launchpad** (como en macOS): al abrir el Launchpad, el Dock (aunque esté en ocultación automática) y la isla o la barra quedan encima, la isla aparece aunque haya una ventana maximizada debajo, y el Launchpad deja abajo el lugar del Dock para que no queden íconos tapados. Tocar otra cosa del Dock cierra el Launchpad. (Corrige lo de la 1.6.1, que lo había entendido al revés.)
 - **Al minimizar la app elegida, sus menús desaparecen enseguida** de la barra o la isla (antes quedaban hasta tocar el escritorio).

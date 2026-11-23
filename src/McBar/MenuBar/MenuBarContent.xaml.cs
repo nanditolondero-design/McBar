@@ -115,6 +115,19 @@ namespace McBar.MenuBar
 
         private Action? _onLive;
         private Action<IntPtr>? _onMinimized;
+        private DispatcherTimer? _appCheckTimer;
+        private DispatcherTimer _appCheck
+        {
+            get
+            {
+                if (_appCheckTimer == null)
+                {
+                    _appCheckTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(400) };
+                    _appCheckTimer.Tick += (_, _) => UpdateAppName();
+                }
+                return _appCheckTimer;
+            }
+        }
 
         /// <summary>1.2.0: chip en vivo (temporizador, cronómetro o descarga) y puntitos de micrófono/cámara.</summary>
         private void UpdateLive()
@@ -213,6 +226,7 @@ namespace McBar.MenuBar
             SettingsStore.Changed -= _onSettings;
             App.Tracker.ForegroundChanged -= _onForeground;
             if (_onMinimized != null) App.Tracker.Minimized -= _onMinimized;
+            _appCheckTimer?.Stop();
             App.Tracker.WindowsChanged -= _onWindows;
             WeatherService.Updated -= _onWeather;
             NetworkChange.NetworkAddressChanged -= _onNetwork;
@@ -417,26 +431,80 @@ namespace McBar.MenuBar
             bool has = HasActiveApp(t);
             if (has) AppNameText.Text = App.Tracker.AppNameFor(t);
             if (has != _hasApp) { _hasApp = has; ApplyRows(); }
+            // 1.6.3: mientras se muestran los menús de una app, se vuelve a mirar cada 0,4 s si sigue elegida
+            // (minimizada, cerrada, escondida…). No depende de que Windows avise: antes, al minimizar, los
+            // menús quedaban hasta tocar el escritorio.
+            if (has) { if (!_appCheck.IsEnabled) _appCheck.Start(); }
+            else _appCheck.Stop();
+            // 1.8.0: menús reales de la app (si tiene un menú de Windows); si no, los de siempre
+            bool real = has && SettingsStore.Current.RealAppMenus && ShowRealMenus(t);
+            if (!real) ClearRealMenus();
             var v = has ? Visibility.Visible : Visibility.Collapsed;
             foreach (var b in new UIElement[] { AppNameButton, FileButton, EditButton, ViewButton, WindowButton, HelpButton })
             {
-                if (b.Visibility == v) continue;
-                b.Visibility = v;
-                if (has) b.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+                var want = real && b != AppNameButton ? Visibility.Collapsed : v;
+                if (b.Visibility == want) continue;
+                b.Visibility = want;
+                if (want == Visibility.Visible) b.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
             }
         }
+
+        private string _realKey = "";
+
+        /// <summary>1.8.0: arma un botón por cada menú real de la app. Devuelve false si la app no tiene menú.</summary>
+        private bool ShowRealMenus(IntPtr t)
+        {
+            var menu = AppMenus.MainMenu(t);
+            if (menu == IntPtr.Zero) return false;
+            var top = AppMenus.Read(menu);
+            if (top.Count == 0) return false;
+            var key = t + "|" + string.Join("|", top.Select(e => e.Text));
+            if (key == _realKey && RealMenusPanel.Visibility == Visibility.Visible) return true;
+            _realKey = key;
+            RealMenusPanel.Children.Clear();
+            for (int i = 0; i < top.Count && i < 12; i++)
+            {
+                var e = top[i];
+                if (e.Separator) continue;
+                var btn = new Button { Content = e.Text.Replace("_", "__"), IsEnabled = !e.Disabled };
+                btn.SetResourceReference(StyleProperty, "McFlatButton");
+                int pos = i;
+                var sub = e.Sub;
+                uint id = e.Id;
+                btn.Click += (_, _) =>
+                {
+                    if (sub != IntPtr.Zero) OpenMenu(btn, AppMenus.Build(t, sub, pos));
+                    else { WindowOps.Activate(t); Win32.PostMessage(t, 0x0111 /*WM_COMMAND*/, (IntPtr)(id & 0xFFFF), IntPtr.Zero); }
+                };
+                RealMenusPanel.Children.Add(btn);
+            }
+            RealMenusPanel.Visibility = Visibility.Visible;
+            return true;
+        }
+
+        private void ClearRealMenus()
+        {
+            if (RealMenusPanel.Visibility == Visibility.Collapsed && RealMenusPanel.Children.Count == 0) return;
+            RealMenusPanel.Children.Clear();
+            RealMenusPanel.Visibility = Visibility.Collapsed;
+            _realKey = "";
+        }
+
+        private static readonly uint OwnPid = (uint)Environment.ProcessId;
 
         private static bool HasActiveApp(IntPtr t)
         {
             if (t == IntPtr.Zero || !Win32.IsWindow(t) || !Win32.IsWindowVisible(t) || Win32.IsIconic(t)) return false;
             var cls = WindowOps.GetClass(t);
             if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd") return false;
-            // si el foco está ahora en el escritorio (clic en el fondo), tampoco
+            // 1.6.3: se mira la ventana que tiene el foco AHORA (salvo que sea de McBar, por ejemplo al abrir un menú)
             var fg = Win32.GetForegroundWindow();
-            if (fg != IntPtr.Zero && fg != t)
+            if (fg == IntPtr.Zero) return false;                    // nadie tiene el foco (pasa al minimizar)
+            if (fg != t && Win32.ProcessOf(fg) != OwnPid)
             {
+                if (Win32.IsIconic(fg)) return false;               // la del foco está minimizada
                 var fc = WindowOps.GetClass(fg);
-                if (fc == "Progman" || fc == "WorkerW") return false;
+                if (fc == "Progman" || fc == "WorkerW" || fc == "Shell_TrayWnd" || fc == "Shell_SecondaryTrayWnd") return false; // escritorio / barra
             }
             return true;
         }

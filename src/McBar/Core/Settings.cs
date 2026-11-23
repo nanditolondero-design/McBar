@@ -161,6 +161,42 @@ namespace McBar.Core
         public bool WallpaperByTime { get; set; } = false;
         /// <summary>Imágenes de mañana, tarde, atardecer y noche (ver Core/DynamicWallpaper.Slots). 1.3.0.</summary>
         public List<string> WallpaperImages { get; set; } = new List<string> { "", "", "", "" };
+        /// <summary>Usar la misma imagen según la hora también en la pantalla de bloqueo. 1.7.0.</summary>
+        public bool WallpaperLockScreen { get; set; } = false;
+
+        // ---------- Estilo Mac (1.8.0): TODO opcional, todo apagado de fábrica ----------
+        /// <summary>Modo claro/oscuro de Windows automático según la hora.</summary>
+        public bool AutoDarkMode { get; set; } = false;
+        /// <summary>Hora en que pasa a oscuro (0..23).</summary>
+        public int AutoDarkFrom { get; set; } = 19;
+        /// <summary>Hora en que vuelve a claro (0..23).</summary>
+        public int AutoLightFrom { get; set; } = 7;
+        /// <summary>Cursores estilo Mac de McBar (se guardan los anteriores para volver).</summary>
+        public bool MacCursors { get; set; } = false;
+        /// <summary>Sacudir el mouse agranda el puntero un momento.</summary>
+        public bool ShakeToFind { get; set; } = false;
+        /// <summary>Sonidos del sistema de McBar (se guardan los anteriores para volver).</summary>
+        public bool MacSounds { get; set; } = false;
+        /// <summary>Clic en el fondo de pantalla: muestra el escritorio (otro clic vuelve).</summary>
+        public bool ClickWallpaperShowsDesktop { get; set; } = false;
+        /// <summary>Capturas estilo Mac con Win+Mayús+3/4/5.</summary>
+        public bool MacScreenshots { get; set; } = false;
+        /// <summary>Dónde se guardan las capturas ("" = Escritorio).</summary>
+        public string ScreenshotFolder { get; set; } = "";
+        /// <summary>Cómo se abren las pilas del Dock: "grid" (cuadrícula, como venía), "fan" (abanico) o "list".</summary>
+        public string StackStyle { get; set; } = "grid";
+        /// <summary>Alt hace de Cmd: Alt+C/V/X/Z… = Ctrl+…, Alt+Q cierra la app, Alt+M minimiza, Alt+Espacio buscador.</summary>
+        public bool MacShortcuts { get; set; } = false;
+        /// <summary>Menús reales de la app en la barra (si la app los tiene).</summary>
+        public bool RealAppMenus { get; set; } = false;
+        /// <summary>Organizador visual (Stage Manager).</summary>
+        public bool StageManager { get; set; } = false;
+        /// <summary>Botones rojo/amarillo/verde sobre las ventanas (experimental).</summary>
+        public bool TrafficLights { get; set; } = false;
+        /// <summary>Apps (nombre del .exe, separados por coma) donde no se ponen los botones de colores.</summary>
+        public string TrafficLightsExclude { get; set; } = "chrome, msedge, firefox, brave, opera, explorer, code, winword, excel, powerpnt, outlook";
+        /// <summary>En "Ver todas las ventanas", escritorios con la imagen del fondo (como macOS).</summary>
+        public bool MissionDesktopTiles { get; set; } = false;
         /// <summary>Clave de la API de macOSicons, cifrada con la cuenta de Windows (Native/Dpapi). 1.4.0.</summary>
         public string MacIconsKey { get; set; } = "";
         /// <summary>Buscar solos los íconos de las apps nuevas (al abrir McBar y cada 6 horas). 1.4.0.</summary>
@@ -185,7 +221,10 @@ namespace McBar.Core
         public string CornerBottomRight { get; set; } = "none";
         /// <summary>¿Hace falta el gancho de teclado?</summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        public bool NeedsKeyboardHook => OwnShortcuts || WinKeyLaunchpad || OwnSearch || OwnVolumeKeys || OwnAltTab || OwnWinTab || QuickLook || TileShortcuts;
+        public bool NeedsKeyboardHook => OwnShortcuts || WinKeyLaunchpad || OwnSearch || OwnVolumeKeys || OwnAltTab || OwnWinTab || QuickLook || TileShortcuts
+            || MacScreenshots || MacShortcuts; // 1.8.0
+        /// <summary>1.8.0: el gancho del mouse solo corre si alguna opción lo usa.</summary>
+        public bool NeedsMouseHook => ShakeToFind || ClickWallpaperShowsDesktop;
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -361,6 +400,12 @@ namespace McBar.Core
             s.WallpaperImages ??= new List<string>();
             s.WallpaperImages = s.WallpaperImages.Select(x => x ?? "").Take(4).ToList();
             while (s.WallpaperImages.Count < 4) s.WallpaperImages.Add("");
+            // 1.8.0
+            s.AutoDarkFrom = Math.Clamp(s.AutoDarkFrom, 0, 23);
+            s.AutoLightFrom = Math.Clamp(s.AutoLightFrom, 0, 23);
+            if (s.StackStyle != "fan" && s.StackStyle != "list") s.StackStyle = "grid";
+            s.ScreenshotFolder ??= "";
+            s.TrafficLightsExclude ??= "";
             return s;
         }
     }

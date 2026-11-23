@@ -150,3 +150,21 @@ Interpretación: "en el Launchpad el Dock queda siempre a la vista" se tomó com
 
 ## 1.6.2 (23/11/2026)
 Andrés: "el Dock y la píldora deben mostrarse siempre en el Launchpad" y "cuando minimizo una ventana me sigue mostrando las opciones de la ventana". `DockWindow.ShowOverLaunchpad` (sube el Dock y no se oculta solo), `App.LaunchpadBars` (Docks + `ApplyFullscreen` sin esconder la isla del monitor del Launchpad + `KeepBarsOnTop`), `LaunchpadWindow(monitor, dockHeight)` (fila extra del alto del Dock), `App.CloseLaunchpad` al tocar el Dock. `WindowTracker.Minimized` (EVENT_SYSTEM_MINIMIZESTART) → `MenuBarContent.UpdateAppName` a los 120 y 450 ms.
+
+## 1.6.3 (23/11/2026)
+Andrés: "sigue pasando lo mismo, tengo que hacer foco en el escritorio". `MenuBarContent`: temporizador `_appCheck` (400 ms, solo mientras hay menús de app a la vista) que llama a `UpdateAppName`; `HasActiveApp` mira `GetForegroundWindow` (ninguna, minimizada, escritorio o barra de Windows = sin app; las de McBar no cuentan).
+
+## 1.7.0 (23/11/2026)
+Andrés: "¿podrías hacer wallpapers en 4K para la función del fondo según la hora, de cero, basándote en los de la última versión de macOS?" y, por el inicio de sesión de Windows, pidió que McBar cambie también la pantalla de bloqueo y traiga los fondos con un botón. Fondos generados por código (cintas con brillo sobre degradé, 3840×2160, JPEG 95) en `src/McBar/Assets/Fondos`, embebidos en el .exe (`EmbeddedResource`, nombre lógico `McBar.Fondos.<archivo>`). `DynamicWallpaper`: `BundledNames`, `BundledPaths`/`UsesBundled` (puros), `ExtractBundled`, `UseBundled`, `SetLockScreenAsync` (WinRT `LockScreen.SetImageFileAsync`). Ajuste `WallpaperLockScreen` (apagado). Cambiar la disposición del inicio de sesión de Windows NO se hace (requiere tocar archivos del sistema).
+
+## 1.8.0 (23/11/2026) — Estilo Mac
+Andrés: "¿qué más podemos hacer para que Windows se vea como macOS?" → propuse 12 ideas y pidió "hacé todo pero que sean opciones, nada fijo". Todo va en Preferencias → Estilo Mac y viene apagado.
+- `Core/MacLook` (coordina; `Bundled` copia recursos del .exe; `RegBackup` guarda y devuelve valores del registro).
+- `Core/MacSystemLook`: `AutoAppearance` (Personalize, WM_SETTINGCHANGE "ImmersiveColorSet"), `MacCursors` (Control Panel\Cursors + SPI_SETCURSORS), `MacSounds` (AppEvents\Schemes + PlaySound).
+- `Core/MacInput`: `MouseHook` (WH_MOUSE_LL en hilo propio), `ShakeDetector` (puro), `ShakeOverlay`, `WallpaperClick` (WindowFromPoint + UI Automation para no actuar sobre íconos → Win+D).
+- `Core/Screenshots` + `Native/ScreenCapture` (BitBlt / PrintWindow) + `Panels/CaptureViews` (zona, barrita, miniatura).
+- `Core/MacKeys` (Alt como Cmd; `KeyboardHook` suelta Alt, manda Ctrl+tecla, vuelve a apretar Alt y la tecla vacía 0xE8).
+- `Core/AppMenus` (GetMenu/GetMenuItemInfo + WM_INITMENUPOPUP + WM_COMMAND) → `MenuBarContent.RealMenusPanel`.
+- `Core/StageManager` + `Panels/StageStrip`; `Core/TrafficLights` + `Panels/TrafficLightsWindow`; `WinUi.WallpaperBrush` para los escritorios de Win+Tab; `DockWindow.ShowStackFan` + `Core/StackFan`.
+- Recursos propios generados por código: `tools/estilo-mac/gen_cursores.py`, `gen_sonidos.py` → `Assets/Cursores`, `Assets/Sonidos` (embebidos).
+
