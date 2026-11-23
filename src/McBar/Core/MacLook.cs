@@ -6,7 +6,8 @@
 //   - RegBackup: guarda los valores del registro que McBar cambia (cursores, sonidos) para dejarlos como
 //     estaban al apagar la opción.
 // Las partes están en MacSystemLook.cs (modo oscuro, cursores, sonidos), MacInput.cs (gancho del mouse,
-// sacudir, clic en el fondo), Screenshots.cs, StageManager.cs, TrafficLights.cs y AppMenus.cs.
+// sacudir, clic en el fondo), Screenshots.cs, StageManager.cs y AppMenus.cs.
+// (Los "botones de colores" de la 1.8.0 se sacaron en la 1.8.1 a pedido de Andrés: no quedaban bien.)
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +27,6 @@ namespace McBar.Core
             Try(MacSounds.Apply, "sonidos");
             Try(MouseHook.Apply, "gancho del mouse");
             Try(StageManager.Apply, "organizador visual");
-            Try(TrafficLights.Apply, "botones de colores");
         }
 
         /// <summary>Al salir de McBar: se apagan los temporizadores y ganchos. Cursores y sonidos quedan puestos
@@ -36,7 +36,6 @@ namespace McBar.Core
             Try(AutoAppearance.Stop, "modo oscuro automático");
             Try(MouseHook.Stop, "gancho del mouse");
             Try(StageManager.Stop, "organizador visual");
-            Try(TrafficLights.Stop, "botones de colores");
         }
 
         /// <summary>Al desinstalar: deja cursores y sonidos como estaban antes de McBar.</summary>

@@ -96,6 +96,8 @@ namespace McBar.Native
         private const int VK_S = 0x53, VK_VOLUME_MUTE = 0xAD, VK_VOLUME_DOWN = 0xAE, VK_VOLUME_UP = 0xAF;
         private const int VK_TAB = 0x09, VK_ESCAPE = 0x1B, VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_LMENU = 0xA4, VK_RMENU = 0xA5;
         private static bool _winDown, _winOther, _switching;
+        private static bool _winSwallowed, _winInjected; // 1.8.1
+        private static int _winVk = VK_LWIN;
         private static readonly System.Collections.Generic.HashSet<int> _eaten = new System.Collections.Generic.HashSet<int>(); // 1.8.0
         private const int VK_SPACE = 0x20, VK_UP = 0x26, VK_DOWN = 0x28, VK_RETURN = 0x0D, VK_BACK = 0x08,
                           VK_C = 0x43, VK_U = 0x55, VK_I = 0x49, VK_J = 0x4A, VK_K = 0x4B;
@@ -173,20 +175,37 @@ namespace McBar.Native
                         var s = SettingsStore.Current;
                         int vk = (int)k.vkCode;
 
+                        // 1.8.1: la tecla Windows se "traga" entera (Windows no la ve), así Inicio nunca se abre. Antes
+                        // se mandaba la tecla vacía 0xE8, pero en algunas versiones de Windows 11 Inicio se abría igual
+                        // junto con el Launchpad. Si se aprieta otra tecla con Windows (Win+E, Win+D, Win+flechas…),
+                        // recién ahí se le manda a Windows "Windows apretada" + esa tecla (ver el final de Proc).
                         if (vk == VK_LWIN || vk == VK_RWIN)
                         {
-                            if (down && !_winDown)
+                            if (down)
                             {
-                                _winDown = true;
-                                _winOther = false;
-                                if (s.WinKeyLaunchpad || GameMode.On) WindowOps.SendChord(VK_DUMMY); // 1.3.0: en modo juego tampoco abre Inicio
+                                if (!_winDown)
+                                {
+                                    _winDown = true;
+                                    _winOther = false;
+                                    _winInjected = false;
+                                    _winVk = vk;
+                                    _winSwallowed = s.WinKeyLaunchpad || GameMode.On; // 1.3.0: en modo juego tampoco abre Inicio
+                                }
+                                if (_winSwallowed) return (IntPtr)1;
                             }
                             else if (up)
                             {
                                 bool alone = _winDown && !_winOther;
-                                _winDown = false;
+                                bool swallowed = _winSwallowed, injected = _winInjected;
+                                _winDown = false; _winSwallowed = false; _winInjected = false;
                                 if (alone && s.WinKeyLaunchpad && !GameMode.On && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
                                     Ui(() => App.ToggleLaunchpad(App.ActiveMonitor()));
+                                if (swallowed)
+                                {
+                                    // si Windows llegó a ver "Windows apretada", soltarla (con la tecla vacía antes: sin Inicio)
+                                    if (injected) WindowOps.SendSequence(new (ushort, bool)[] { (VK_DUMMY, false), (VK_DUMMY, true), ((ushort)_winVk, true) });
+                                    return (IntPtr)1;
+                                }
                             }
                         }
                         else if (down && _winDown) _winOther = true;
@@ -222,7 +241,7 @@ namespace McBar.Native
                         // ---- Capturas estilo Mac (1.8.0): Win+Mayús+3 / 4 / 5 ----
                         if (s.MacScreenshots && down && _winDown && Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU) && vk >= 0x33 && vk <= 0x35)
                         {
-                            if (!s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
+                            if (!_winSwallowed) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
                             int which = vk - 0x33;
                             Ui(() => Screenshots.Start(which));
                             return (IntPtr)1;
@@ -285,10 +304,23 @@ namespace McBar.Native
                             else if (s.OwnWinTab && vk == VK_TAB) act = () => App.ToggleMissionControl(App.ActiveMonitor());
                             if (act != null)
                             {
-                                if (!s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
+                                if (!_winSwallowed) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
                                 Ui(act);
                                 return (IntPtr)1; // Windows no abre su panel
                             }
+                        }
+
+                        // 1.8.1: Windows + otra tecla que McBar no usa → se la pasamos a Windows con "Windows apretada"
+                        if (down && _winDown && _winSwallowed && !_winInjected && !GameMode.On)
+                        {
+                            if (vk == 0x4C /*L*/ && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                            {
+                                Ui(Launcher.Lock); // Win+L: bloquear (Windows no acepta "Windows" simulada para esto)
+                                return (IntPtr)1;
+                            }
+                            _winInjected = true;
+                            WindowOps.SendSequence(new (ushort, bool)[] { ((ushort)_winVk, false), ((ushort)vk, false) });
+                            return (IntPtr)1;
                         }
                     }
                 }

@@ -240,7 +240,8 @@ namespace McBar.Native
         private static Win32.INPUT Key(ushort vk, bool up)
         {
             uint flags = up ? Win32.KEYEVENTF_KEYUP : 0;
-            if (vk == VK_LWIN || vk == VK_LEFT || vk == VK_RIGHT) flags |= Win32.KEYEVENTF_EXTENDEDKEY;
+            // teclas "extendidas" (1.8.1: también Windows derecha, flechas, Inicio/Fin, RePág/AvPág, Insert y Supr)
+            if (vk == VK_LWIN || vk == 0x5C || (vk >= 0x21 && vk <= 0x28) || vk == 0x2D || vk == 0x2E) flags |= Win32.KEYEVENTF_EXTENDEDKEY;
             return new Win32.INPUT
             {
                 type = Win32.INPUT_KEYBOARD,

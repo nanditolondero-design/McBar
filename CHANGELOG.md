@@ -1,5 +1,17 @@
 # Cambios
 
+## 1.8.2 — 23/11/2026 (pedido de Andrés)
+- **Íconos .icns de macOS**: se pueden usar en "Cambiar ícono…" (Dock y Launchpad) y en los paquetes de íconos (una carpeta con .icns funciona igual que con .png). McBar toma de adentro la imagen PNG del tamaño justo. Los .icns muy viejos (Mac OS X 10.6 o antes), que guardan el ícono en otro formato, no se leen y queda el ícono original (se anota en el registro).
+
+## 1.8.1 — 23/11/2026 (arreglos y pedidos de Andrés)
+- **La tecla Windows ya no abre Inicio junto con el Launchpad**: McBar ahora no deja que Windows vea la tecla sola (antes usaba un truco que en algunas versiones de Windows 11 ya no alcanza). Los atajos de Windows (Win+E, Win+D, Win+flechas, Win+Mayús+S, Win+V, Win+L…) siguen andando.
+- **Al minimizar, los menús de la ventana se van y el foco pasa al escritorio** (como el Finder en macOS) si no queda otra app. Además la barra solo muestra menús de ventanas de apps de verdad (Windows a veces le daba el foco a una ventana invisible).
+- **Cerrar escritorios virtuales**: en Win+Tab, al pasar el mouse por un escritorio aparece una ×, y con clic derecho "Cerrar escritorio". Sus ventanas pasan al escritorio de al lado.
+- **Cada pila del Dock con su forma**: clic derecho en Descargas o en una carpeta del Dock → **Mostrar como** → Abanico, Cuadrícula, Lista o "Como en Preferencias". En Estilo Mac se explica qué son las pilas y hay un botón **"Agregar una carpeta al Dock…"** (también se puede arrastrar una carpeta al Dock).
+- **Textos de Preferencias que se cortaban**: ahora bajan de renglón.
+- **Se sacaron los botones de colores** sobre las ventanas (no quedaban bien).
+- **Forma de los íconos "Como en Mac": cada app con su color**. La placa detrás de los íconos sueltos ya no es casi blanca para todos: toma el color principal de cada ícono (degradé suave del mismo tono), así el Dock y el Launchpad quedan de colores. Los íconos grises quedan sobre gris claro.
+
 ## 1.8.0 — 23/11/2026 (etapa: Estilo Mac, pedido de Andrés: "todo, pero que sean opciones")
 Pestaña nueva **Preferencias → Estilo Mac**. **Todo es opcional y viene apagado**; cursores y sonidos vuelven a los anteriores al apagar la opción (y al desinstalar McBar).
 - **Modo oscuro automático**: Windows y las apps pasan a oscuro a la noche y a claro de día ("Oscuro desde las" 19 y "Claro desde las" 7, se cambian). Solo cambia al pasar de un horario al otro: si lo cambiás a mano en el medio, McBar no lo pisa.

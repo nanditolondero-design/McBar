@@ -497,6 +497,10 @@ namespace McBar.MenuBar
             if (t == IntPtr.Zero || !Win32.IsWindow(t) || !Win32.IsWindowVisible(t) || Win32.IsIconic(t)) return false;
             var cls = WindowOps.GetClass(t);
             if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd") return false;
+            // 1.8.1: tiene que ser una ventana de app de verdad (de las que McBar sigue, o un diálogo de una de ellas).
+            // Al minimizar, Windows a veces le da el foco a una ventana "fantasma" de otro programa (invisible para
+            // el usuario) y los menús quedaban con esa.
+            if (!IsAppWindow(t)) return false;
             // 1.6.3: se mira la ventana que tiene el foco AHORA (salvo que sea de McBar, por ejemplo al abrir un menú)
             var fg = Win32.GetForegroundWindow();
             if (fg == IntPtr.Zero) return false;                    // nadie tiene el foco (pasa al minimizar)
@@ -505,8 +509,19 @@ namespace McBar.MenuBar
                 if (Win32.IsIconic(fg)) return false;               // la del foco está minimizada
                 var fc = WindowOps.GetClass(fg);
                 if (fc == "Progman" || fc == "WorkerW" || fc == "Shell_TrayWnd" || fc == "Shell_SecondaryTrayWnd") return false; // escritorio / barra
+                if (!IsAppWindow(fg)) return false;                 // 1.8.1: el foco lo tiene algo que no es una app
             }
             return true;
+        }
+
+        /// <summary>1.8.1: ¿es una ventana de app que McBar sigue (o un diálogo/ventana hija de una)?</summary>
+        internal static bool IsAppWindow(IntPtr h)
+        {
+            if (h == IntPtr.Zero) return false;
+            var owner = Win32.GetAncestor(h, 3 /*GA_ROOTOWNER*/);
+            foreach (var w in App.Tracker.Windows)
+                if (w.Hwnd == h || w.Hwnd == owner) return true;
+            return false;
         }
 
         // ================== Menús ==================

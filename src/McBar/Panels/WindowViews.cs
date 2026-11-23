@@ -346,7 +346,7 @@ namespace McBar.Panels
                         CloseAnimated();
                         if (target != cur) VirtualDesktops.SwitchTo(cur, target);
                     };
-                    strip.Children.Add(tile);
+                    strip.Children.Add(desks.Count > 1 ? WithCloseButton(tile, () => { CloseAnimated(); VirtualDesktops.Remove(cur, target); }) : tile);
                     continue;
                 }
                 var pill = new Border { Padding = new Thickness(16, 7, 16, 7), Margin = new Thickness(5, 0, 5, 0), CornerRadius = new CornerRadius(12), Cursor = Cursors.Hand, BorderThickness = new Thickness(1) };
@@ -360,7 +360,7 @@ namespace McBar.Panels
                     CloseAnimated();
                     if (target != cur) VirtualDesktops.SwitchTo(cur, target);
                 };
-                strip.Children.Add(pill);
+                strip.Children.Add(desks.Count > 1 ? WithCloseButton(pill, () => { CloseAnimated(); VirtualDesktops.Remove(cur, target); }) : pill);
             }
             var add = new Border { Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(5, 0, 5, 0), CornerRadius = new CornerRadius(12), Cursor = Cursors.Hand, ToolTip = "Nuevo escritorio",
                                    Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), Child = WinUi.Label("+", 14, true) };
@@ -424,6 +424,31 @@ namespace McBar.Panels
                 }
                 e.Handled = true;
             };
+        }
+
+        /// <summary>1.8.1: "×" arriba a la izquierda al pasar el mouse (como en macOS) para cerrar ese escritorio.</summary>
+        private static FrameworkElement WithCloseButton(FrameworkElement content, Action close)
+        {
+            var g = new Grid();
+            g.Children.Add(content);
+            var x = new Border
+            {
+                Width = 20, Height = 20, CornerRadius = new CornerRadius(10), Cursor = Cursors.Hand, ToolTip = "Cerrar escritorio",
+                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(-2, -8, 0, 0),
+                Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x3A, 0x3A, 0x3E)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF)),
+                BorderThickness = new Thickness(1), Visibility = Visibility.Hidden,
+                Child = new TextBlock { Text = "×", Foreground = Brushes.White, FontSize = 13, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) }
+            };
+            x.MouseLeftButtonUp += (_, e) => { e.Handled = true; close(); };
+            g.Children.Add(x);
+            g.MouseEnter += (_, _) => x.Visibility = Visibility.Visible;
+            g.MouseLeave += (_, _) => x.Visibility = Visibility.Hidden;
+            var cm = new ContextMenu();
+            var mi = new MenuItem { Header = "Cerrar escritorio" };
+            mi.Click += (_, _) => close();
+            cm.Items.Add(mi);
+            g.ContextMenu = cm;
+            return g;
         }
 
         private void Select(int i)

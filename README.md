@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.0-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.2-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -115,7 +115,7 @@ Es una alternativa a la barra de menú: una píldora negra arriba al centro, com
 - **Sacudir el mouse** para encontrarlo y **clic en el fondo** para ver el escritorio.
 - **Capturas** con Win+Mayús+3 / 4 / 5, con miniatura flotante y ventanas con sombra.
 - **Alt como Cmd** (Alt+C, Alt+V, Alt+Q…), **menús reales** de las apps clásicas en la barra.
-- **Organizador visual** (Stage Manager), **escritorios con el fondo** en Win+Tab, **botones de colores** en las ventanas (experimental) y **pilas del Dock** en abanico o lista.
+- **Organizador visual** (Stage Manager), **escritorios con el fondo** en Win+Tab (se cierran con la ×) y **pilas del Dock** en abanico o lista.
 
 ### Personalización
 
@@ -242,7 +242,9 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
-| **1.8.0** | Estilo Mac (todo opcional): modo oscuro automático, cursores y sonidos, capturas, Alt como Cmd, organizador visual, botones de colores, pilas en abanico y más |
+| **1.8.2** | Íconos .icns de macOS (ícono propio y paquetes de íconos) |
+| **1.8.1** | La tecla Windows ya no abre Inicio, foco al escritorio al minimizar, cerrar escritorios, forma propia de cada pila, textos que no se cortan, íconos "Como en Mac" de un color por app; sin los botones de colores |
+| **1.8.0** | Estilo Mac (todo opcional): modo oscuro automático, cursores y sonidos, capturas, Alt como Cmd, organizador visual, pilas en abanico y más |
 | **1.7.0** | Fondos "Ondas" de McBar en 4K y fondo según la hora también en la pantalla de bloqueo |
 | **1.6.3** | Los menús de una ventana minimizada se van solos (arreglo) |
 | **1.6.2** | Dock e isla a la vista en el Launchpad; los menús se van al minimizar |

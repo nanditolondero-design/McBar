@@ -161,11 +161,12 @@ namespace McBar.Core
             finally { Win32.DeleteObject(hbmp); }
         }
 
-        /// <summary>1.6.1: carga una imagen suelta (.png, .jpg, .ico…) como ícono, del tamaño pedido. Null si falla.</summary>
+        /// <summary>1.6.1: carga una imagen suelta (.png, .jpg, .ico, .icns…) como ícono, del tamaño pedido. Null si falla.</summary>
         public static ImageSource? FromImageFile(string path, int sizePx)
         {
             try
             {
+                if (path.EndsWith(".icns", StringComparison.OrdinalIgnoreCase)) return Icns.Load(path, sizePx); // 1.8.2
                 if (path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
                 {
                     var dec = BitmapDecoder.Create(new Uri(path), BitmapCreateOptions.IgnoreImageCache, BitmapCacheOption.OnLoad);

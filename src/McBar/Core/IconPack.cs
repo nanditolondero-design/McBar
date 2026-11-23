@@ -16,7 +16,7 @@ namespace McBar.Core
 {
     public static class IconPack
     {
-        private static readonly string[] Extensions = { ".png", ".ico", ".jpg", ".jpeg", ".bmp" };
+        private static readonly string[] Extensions = { ".png", ".ico", ".jpg", ".jpeg", ".bmp", ".icns" }; // 1.8.2: .icns de macOS
         private static Dictionary<string, string>? _index;
         private static string? _indexedFor;
         private static readonly object Lock = new object();
@@ -109,6 +109,7 @@ namespace McBar.Core
         {
             try
             {
+                if (path.EndsWith(".icns", StringComparison.OrdinalIgnoreCase)) return Icns.Load(path, sizePx); // 1.8.2
                 using var fs = File.OpenRead(path);
                 var dec = BitmapDecoder.Create(fs, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
                 BitmapSource frame = dec.Frames.OrderByDescending(f => f.PixelWidth).First();

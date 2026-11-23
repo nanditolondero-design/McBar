@@ -5,6 +5,12 @@ namespace McBar.Core
 {
     public static class StackFan
     {
+        public static bool IsStyle(string? v) => v == "grid" || v == "fan" || v == "list";
+
+        /// <summary>1.8.1: forma con la que se abre una pila: la propia si tiene, si no la general. Pura, se prueba.</summary>
+        public static string Effective(string? perStack, string general) =>
+            IsStyle(perStack) ? perStack! : (IsStyle(general) ? general : "grid");
+
         /// <summary>Corrimiento horizontal (DIP) y giro (grados) del elemento i (0 = el más cercano al Dock).</summary>
         public static (double dx, double angle) Position(int i)
         {

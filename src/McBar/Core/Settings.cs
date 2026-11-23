@@ -185,16 +185,14 @@ namespace McBar.Core
         public string ScreenshotFolder { get; set; } = "";
         /// <summary>Cómo se abren las pilas del Dock: "grid" (cuadrícula, como venía), "fan" (abanico) o "list".</summary>
         public string StackStyle { get; set; } = "grid";
+        /// <summary>1.8.1: forma propia de cada pila (ruta de la carpeta → "grid"/"fan"/"list"); si no está, StackStyle.</summary>
+        public Dictionary<string, string> StackStyles { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         /// <summary>Alt hace de Cmd: Alt+C/V/X/Z… = Ctrl+…, Alt+Q cierra la app, Alt+M minimiza, Alt+Espacio buscador.</summary>
         public bool MacShortcuts { get; set; } = false;
         /// <summary>Menús reales de la app en la barra (si la app los tiene).</summary>
         public bool RealAppMenus { get; set; } = false;
         /// <summary>Organizador visual (Stage Manager).</summary>
         public bool StageManager { get; set; } = false;
-        /// <summary>Botones rojo/amarillo/verde sobre las ventanas (experimental).</summary>
-        public bool TrafficLights { get; set; } = false;
-        /// <summary>Apps (nombre del .exe, separados por coma) donde no se ponen los botones de colores.</summary>
-        public string TrafficLightsExclude { get; set; } = "chrome, msedge, firefox, brave, opera, explorer, code, winword, excel, powerpnt, outlook";
         /// <summary>En "Ver todas las ventanas", escritorios con la imagen del fondo (como macOS).</summary>
         public bool MissionDesktopTiles { get; set; } = false;
         /// <summary>Clave de la API de macOSicons, cifrada con la cuenta de Windows (Native/Dpapi). 1.4.0.</summary>
@@ -404,8 +402,10 @@ namespace McBar.Core
             s.AutoDarkFrom = Math.Clamp(s.AutoDarkFrom, 0, 23);
             s.AutoLightFrom = Math.Clamp(s.AutoLightFrom, 0, 23);
             if (s.StackStyle != "fan" && s.StackStyle != "list") s.StackStyle = "grid";
+            s.StackStyles = new Dictionary<string, string>((s.StackStyles ?? new Dictionary<string, string>())
+                .Where(kv => !string.IsNullOrEmpty(kv.Key) && StackFan.IsStyle(kv.Value))
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
             s.ScreenshotFolder ??= "";
-            s.TrafficLightsExclude ??= "";
             return s;
         }
     }

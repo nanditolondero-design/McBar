@@ -79,5 +79,20 @@ namespace McBar.Core
 
         public static void Add() => WindowOps.SendChord(VK_CONTROL, WindowOps.VK_LWIN, VK_D);
         public static void CloseCurrent() => WindowOps.SendChord(VK_CONTROL, WindowOps.VK_LWIN, VK_F4);
+
+        /// <summary>1.8.1: cierra el escritorio <paramref name="target"/> (sus ventanas pasan al de al lado, como en
+        /// Windows). Se va a ese escritorio y lo cierra con Ctrl+Win+F4. En otro hilo para no frenar la interfaz.</summary>
+        public static void Remove(int from, int target)
+        {
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    if (target != from) { SwitchTo(from, target); Thread.Sleep(250); }
+                    CloseCurrent();
+                }
+                catch (Exception ex) { Log.Write("Cerrar escritorio: " + ex.Message); }
+            });
+        }
     }
 }

@@ -6,6 +6,9 @@
 //  - Si es un ícono "suelto" (con transparencia alrededor, como casi todos los de Windows), se lo pone al
 //    centro de una placa con esa forma, de un color muy claro sacado del propio ícono (como hace macOS
 //    con los íconos que no siguen su forma).
+//  - 1.8.1 (pedido de Andrés): la placa ya no es casi blanca para todos: toma el COLOR PRINCIPAL de cada
+//    ícono (con más peso a lo más colorido) en un degradé suave, así cada app queda de un color distinto.
+//    Los íconos grises o en blanco y negro quedan sobre una placa gris clara.
 // Corre en el hilo del Shell (STA), que es donde IconLoader carga los íconos.
 using System;
 using System.Collections.Generic;
@@ -82,11 +85,52 @@ namespace McBar.Core
                 double B = bgra[i], G = bgra[i + 1], R = bgra[i + 2];
                 double max = Math.Max(R, Math.Max(G, B)), min = Math.Min(R, Math.Min(G, B));
                 double sat = max <= 0 ? 0 : (max - min) / max;
-                double w = a * (0.15 + sat);
+                double w = a * (0.05 + sat * sat * 2); // 1.8.1: lo colorido manda más (que gane el color principal)
                 r += R * w; g += G * w; b += B * w; wsum += w;
             }
             if (wsum <= 0) return Color.FromRgb(0x8E, 0x8E, 0x93);
             return Color.FromRgb((byte)(r / wsum), (byte)(g / wsum), (byte)(b / wsum));
+        }
+
+        /// <summary>
+        /// 1.8.1: colores de la placa (arriba, abajo) a partir del color principal del ícono: mismo tono, con
+        /// saturación y luz parejas para que se vea de color pero el ícono siga resaltando. Si el ícono es gris,
+        /// placa gris clara. Pura, se prueba.
+        /// </summary>
+        public static (Color top, Color bottom) PlateColors(Color dom)
+        {
+            ToHsl(dom, out double hue, out double sat, out _);
+            if (sat < 0.12) return (Color.FromRgb(0xF4, 0xF4, 0xF6), Color.FromRgb(0xD8, 0xD8, 0xDD));
+            double s = Math.Clamp(sat, 0.45, 0.85);
+            return (FromHsl(hue, s, 0.84), FromHsl(hue, s, 0.66));
+        }
+
+        public static void ToHsl(Color c, out double h, out double s, out double l)
+        {
+            double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+            double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b));
+            l = (max + min) / 2;
+            if (max - min < 1e-9) { h = 0; s = 0; return; }
+            double d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            if (max == r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+            else if (max == g) h = ((b - r) / d + 2) / 6;
+            else h = ((r - g) / d + 4) / 6;
+        }
+
+        public static Color FromHsl(double h, double s, double l)
+        {
+            double q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+            double T(double t)
+            {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6.0) return p + (q - p) * 6 * t;
+                if (t < 0.5) return q;
+                if (t < 2 / 3.0) return p + (q - p) * (2 / 3.0 - t) * 6;
+                return p;
+            }
+            return Color.FromRgb((byte)Math.Round(T(h + 1 / 3.0) * 255), (byte)Math.Round(T(h) * 255), (byte)Math.Round(T(h - 1 / 3.0) * 255));
         }
 
         /// <summary>Mezcla un color con blanco (k = 0 el color, 1 blanco). Pura.</summary>
@@ -132,7 +176,8 @@ namespace McBar.Core
                     else
                     {
                         var dom = Dominant(px);
-                        var bg = new LinearGradientBrush(Mix(dom, 0.90), Mix(dom, 0.74), 90);
+                        var (top, bottom) = PlateColors(dom); // 1.8.1: un color por app
+                        var bg = new LinearGradientBrush(top, bottom, 90);
                         bg.Freeze();
                         dc.DrawGeometry(bg, null, geo);
                         double g = plate * GlyphScale;

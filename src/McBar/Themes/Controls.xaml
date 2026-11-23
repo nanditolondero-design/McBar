@@ -247,7 +247,14 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <ContentPresenter VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <!-- 1.8.1: los textos largos bajan de renglón en vez de cortarse -->
+                        <ContentPresenter VerticalAlignment="Center" Margin="0,0,14,0">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                         <Border x:Name="Track" Grid.Column="1" Width="38" Height="22" CornerRadius="11" Background="{DynamicResource Mc.Track}">
                             <Ellipse x:Name="Knob" Width="18" Height="18" Fill="White" HorizontalAlignment="Left" Margin="2,0,0,0">
                                 <Ellipse.RenderTransform>

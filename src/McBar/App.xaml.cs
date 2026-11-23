@@ -162,6 +162,7 @@ namespace McBar
                 Fullscreen?.OnForeground(hwnd);
             };
             Tracker.Start();
+            Tracker.Minimized += _ => FocusDesktopIfNoApp(); // 1.8.1
 
             if (s.HideWindowsTaskbar) Taskbar.Hide();
             else if (s.TaskbarModified) Taskbar.Restore(); // quedó modificada de una sesión anterior
@@ -798,6 +799,30 @@ namespace McBar
         }
 
         // ================== Personalización (1.3.0) ==================
+
+        /// <summary>
+        /// 1.8.1: al minimizar, si Windows no le da el foco a otra app (queda en nadie o en una ventana "fantasma"),
+        /// McBar se lo da al escritorio, como macOS se lo da al Finder. Así la barra y la isla dejan de mostrar
+        /// los menús de la ventana minimizada sin tener que tocar el escritorio.
+        /// </summary>
+        private static void FocusDesktopIfNoApp()
+        {
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                try
+                {
+                    var fg = Win32.GetForegroundWindow();
+                    if (fg != IntPtr.Zero && Win32.ProcessOf(fg) == (uint)Environment.ProcessId) return; // un menú o panel de McBar
+                    if (fg != IntPtr.Zero && !Win32.IsIconic(fg) && McBar.MenuBar.MenuBarContent.IsAppWindow(fg)) return; // otra app: bien
+                    var desk = Win32.FindWindow("Progman", null);
+                    if (desk != IntPtr.Zero) WindowOps.Activate(desk); // la barra y la isla lo ven solas (cada 0,4 s)
+                }
+                catch (Exception ex) { Log.Write("Foco al escritorio: " + ex.Message); }
+            };
+            t.Start();
+        }
 
         private static void StartPersonalization()
         {

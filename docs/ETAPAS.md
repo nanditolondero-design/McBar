@@ -165,6 +165,19 @@ Andrés: "¿qué más podemos hacer para que Windows se vea como macOS?" → pro
 - `Core/Screenshots` + `Native/ScreenCapture` (BitBlt / PrintWindow) + `Panels/CaptureViews` (zona, barrita, miniatura).
 - `Core/MacKeys` (Alt como Cmd; `KeyboardHook` suelta Alt, manda Ctrl+tecla, vuelve a apretar Alt y la tecla vacía 0xE8).
 - `Core/AppMenus` (GetMenu/GetMenuItemInfo + WM_INITMENUPOPUP + WM_COMMAND) → `MenuBarContent.RealMenusPanel`.
-- `Core/StageManager` + `Panels/StageStrip`; `Core/TrafficLights` + `Panels/TrafficLightsWindow`; `WinUi.WallpaperBrush` para los escritorios de Win+Tab; `DockWindow.ShowStackFan` + `Core/StackFan`.
+- `Core/StageManager` + `Panels/StageStrip`; `WinUi.WallpaperBrush` para los escritorios de Win+Tab; `DockWindow.ShowStackFan` + `Core/StackFan`.
 - Recursos propios generados por código: `tools/estilo-mac/gen_cursores.py`, `gen_sonidos.py` → `Assets/Cursores`, `Assets/Sonidos` (embebidos).
+
+## 1.8.1 (23/11/2026)
+Andrés: "lo de la ventana minimizada sigue pasando, no hace foco en el escritorio", "la tecla de Windows abre el menú Inicio y el Launchpad", "¿cómo elimino escritorios virtuales?", "pilas del Dock no sé cómo funcionan", "hay palabras que se cortan en las opciones", "poder agregar carpetas al Dock y que se abran en abanico o con otras formas" y "los botones semáforos sacalos, son feos y no van bien".
+- `KeyboardHook`: la tecla Windows se traga entera (`_winSwallowed`); con otra tecla se inyecta Windows+tecla (`_winInjected`) y al soltar, tecla vacía + Windows arriba. Win+L → `Launcher.Lock`. `WindowOps.Key`: más teclas extendidas.
+- `MenuBarContent.IsAppWindow` (la ventana o su dueña tiene que estar en `Tracker.Windows`); `App.FocusDesktopIfNoApp` al minimizar (Progman).
+- `VirtualDesktops.Remove` + × / menú "Cerrar escritorio" en Win+Tab.
+- `AppSettings.StackStyles` + `StackFan.Effective` + `DockWindow.StackStyleMenu` ("Mostrar como"); botón "Agregar una carpeta al Dock…" en Estilo Mac.
+- `McSwitch` y `Segment`: textos con `TextWrapping`.
+- Andrés: "el dibujo que le hace a los íconos para que parezcan de Mac debería pintarlos de un color distinto para cada ícono". `IconShaper.PlateColors` (tono del color principal, saturación 0,45–0,85, luz 0,84 → 0,66; gris si el ícono es gris) + `ToHsl`/`FromHsl`; `Dominant` da más peso a lo colorido (sat²).
+- Se sacaron los botones de colores (`Core/TrafficLights`, `Panels/TrafficLightsWindow`, ajustes `TrafficLights*`).
+
+## 1.8.2 (23/11/2026)
+Andrés: "¿puede usar icns para íconos la app?" → "agregalo". `Core/Icns` (lee las entradas del contenedor, elige el PNG más chico que alcance el tamaño o el más grande; `Entries`/`BestPng` puros, pruebas en Stage22Tests). Lo usan `IconLoader.FromImageFile` (ícono propio) e `IconPack` (`.icns` en `Extensions` y en `Load`). El selector de "Cambiar ícono…" acepta *.icns.
 

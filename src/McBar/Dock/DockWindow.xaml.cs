@@ -1075,7 +1075,7 @@ namespace McBar.Dock
         {
             var key = IconKey(item);
             if (key == null) return;
-            var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Elegir ícono para " + item.Name, Filter = "Imágenes|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp|Todos los archivos|*.*" };
+            var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Elegir ícono para " + item.Name, Filter = "Imágenes|*.png;*.ico;*.icns;*.jpg;*.jpeg;*.bmp;*.webp|Todos los archivos|*.*" }; // 1.8.2: también .icns
             if (dlg.ShowDialog() != true) return;
             try
             {
@@ -1276,6 +1276,7 @@ namespace McBar.Dock
                     break;
                 case DockItemKind.Downloads:
                     cm.Items.Add(Mi("Abrir carpeta Descargas", () => { var d = Win32.KnownFolder(Win32.FOLDERID_Downloads); if (d != null) Launcher.ShowInExplorer(d); }));
+                    cm.Items.Add(StackStyleMenu(item)); // 1.8.1
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
@@ -1283,6 +1284,7 @@ namespace McBar.Dock
                 case DockItemKind.File:
                     cm.Items.Add(Mi("Abrir", () => { if (item.Target != null) Launcher.Launch(item.Target); }));
                     cm.Items.Add(Mi("Mostrar en el Explorador", () => { if (item.Target != null) Launcher.ShowInExplorer(item.Target); }));
+                    if (item.Kind == DockItemKind.Folder) cm.Items.Add(StackStyleMenu(item)); // 1.8.1
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
@@ -1377,7 +1379,30 @@ namespace McBar.Dock
             else AddStack(Path.GetFileName(f), f);
         }
 
-        private void AddFolderFromDialog()
+        /// <summary>1.8.1: clic derecho en una carpeta del Dock → "Mostrar como" (abanico, cuadrícula, lista o la general).</summary>
+        private MenuItem StackStyleMenu(DockItem item)
+        {
+            var menu = new MenuItem { Header = "Mostrar como" };
+            var s = SettingsStore.Current;
+            string? own = null;
+            if (item.Target != null) s.StackStyles.TryGetValue(item.Target, out own);
+            foreach (var (key, name) in new[] { ("", "Como en Preferencias"), ("fan", "Abanico"), ("grid", "Cuadrícula"), ("list", "Lista") })
+            {
+                var k = key;
+                var mi = new MenuItem { Header = name, IsCheckable = true, IsChecked = (own ?? "") == k };
+                mi.Click += (_, _) =>
+                {
+                    if (item.Target == null) return;
+                    if (k.Length == 0) s.StackStyles.Remove(item.Target);
+                    else s.StackStyles[item.Target] = k;
+                    SettingsStore.Save();
+                };
+                menu.Items.Add(mi);
+            }
+            return menu;
+        }
+
+        internal void AddFolderFromDialog()
         {
             var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "Agregar una carpeta al Dock" };
             if (dlg.ShowDialog() != true) return;
@@ -1399,7 +1424,10 @@ namespace McBar.Dock
             catch { files = new List<FileSystemInfo>(); }
 
             // 1.8.0: pilas en abanico o en lista, como en macOS (opcional; "grid" = como venía)
-            var style = SettingsStore.Current.StackStyle;
+            var ss = SettingsStore.Current;
+            string? own = null;
+            if (item.Target != null) ss.StackStyles.TryGetValue(item.Target, out own);
+            var style = StackFan.Effective(own, ss.StackStyle); // 1.8.1: cada pila puede tener la suya
             if (style == "fan" && files.Count > 0) { ShowStackFan(item, dir, files); return; }
             bool asList = style == "list";
             if (asList)

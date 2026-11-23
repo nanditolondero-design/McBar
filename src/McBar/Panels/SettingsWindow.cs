@@ -346,7 +346,8 @@ namespace McBar.Panels
 
         private CheckBox Switch(string text, bool value, Action<bool> set)
         {
-            var c = new CheckBox { Content = text, IsChecked = value };
+            // 1.8.1: el texto baja de renglón si no entra (antes se cortaba)
+            var c = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
             c.SetResourceReference(StyleProperty, "McSwitch");
             c.Checked += (_, _) => { set(true); Changed(); };
             c.Unchecked += (_, _) => { set(false); Changed(); };
@@ -573,12 +574,6 @@ namespace McBar.Panels
             sp.Children.Add(Switch("Organizador visual (Stage Manager)", s.StageManager, v => s.StageManager = v));
             sp.Children.Add(Tip("La app que usás queda al centro y las demás pasan a una franja a la izquierda; tocá una para traerla."));
             sp.Children.Add(Switch("Escritorios con la imagen del fondo en «Ver todas las ventanas»", s.MissionDesktopTiles, v => s.MissionDesktopTiles = v));
-            sp.Children.Add(Switch("Botones de colores en las ventanas (experimental)", s.TrafficLights, v => s.TrafficLights = v));
-            sp.Children.Add(Tip("Rojo cierra, amarillo minimiza y verde maximiza. Se dibujan encima de la ventana: en apps con pestañas o botones arriba a la izquierda pueden tapar algo; agregalas a esta lista (nombre del programa, separados por coma):"));
-            var box = new TextBox { Text = s.TrafficLightsExclude, Margin = new Thickness(0, 4, 0, 4), Padding = new Thickness(6, 4, 6, 4), TextWrapping = TextWrapping.Wrap };
-            box.SetResourceReference(StyleProperty, "McTextBox");
-            box.LostFocus += (_, _) => { if (box.Text != s.TrafficLightsExclude) { s.TrafficLightsExclude = box.Text; Changed(); } };
-            sp.Children.Add(box);
             return sp;
         }
 
@@ -610,6 +605,11 @@ namespace McBar.Panels
             sp.Children.Add(Switch("Menús reales de la app en la barra (si la app los tiene)", s.RealAppMenus, v => s.RealAppMenus = v));
             sp.Children.Add(Segment("Pilas del Dock", new[] { ("grid", "Cuadrícula"), ("fan", "Abanico"), ("list", "Lista") },
                 s.StackStyle, v => { s.StackStyle = v; Changed(); }));
+            // 1.8.1: Andrés no sabía cómo se usan las pilas
+            sp.Children.Add(Tip("Las pilas son las carpetas del lado derecho del Dock (Descargas, las que agregues). Al tocarlas se abren así. Cada una puede tener su propia forma: clic derecho en la carpeta del Dock → Mostrar como. Para agregar una: arrastrá una carpeta al Dock, o con el botón de acá abajo."));
+            var addRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 2) };
+            addRow.Children.Add(Btn("Agregar una carpeta al Dock…", () => App.Dock?.AddFolderFromDialog(), new Thickness(0)));
+            sp.Children.Add(addRow);
             return sp;
         }
 
@@ -808,7 +808,7 @@ namespace McBar.Panels
             var path = new TextBlock { FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 6) };
             path.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             void Show() => path.Text = string.IsNullOrWhiteSpace(s.IconPackPath)
-                ? "Íconos de Windows. Podés elegir una carpeta con imágenes (.png, .ico) de otra barra, de un tema de Linux o de macOS convertido."
+                ? "Íconos de Windows. Podés elegir una carpeta con imágenes (.png, .ico, .icns) de otra barra, de un tema de Linux o de macOS convertido."
                 : s.IconPackPath;
             Show();
             var row = new StackPanel { Orientation = Orientation.Horizontal };
@@ -890,7 +890,7 @@ namespace McBar.Panels
             var g = new Grid { Margin = new Thickness(0, 6, 0, 4) };
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) }; // 1.8.1: sin cortarse
             label.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
             g.Children.Add(label);
             var seg = new StackPanel { Orientation = Orientation.Horizontal };

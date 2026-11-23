@@ -21,7 +21,6 @@ namespace McBar.Tests
             Assert.False(s.MacShortcuts);
             Assert.False(s.RealAppMenus);
             Assert.False(s.StageManager);
-            Assert.False(s.TrafficLights);
             Assert.False(s.MissionDesktopTiles);
             Assert.Equal("grid", s.StackStyle);
             Assert.False(s.NeedsMouseHook);
@@ -120,16 +119,14 @@ namespace McBar.Tests
             Assert.Equal(new[] { "d", "c", "a" }, l);
         }
 
-        [Fact]
-        public void Semaforos_ListaDeApps()
-        {
-            var x = TrafficLights.ParseExclude(" Chrome, msedge.exe ;; firefox\nCode ");
-            Assert.Equal(4, x.Count);
-            Assert.Contains("chrome", x);
-            Assert.Contains("msedge", x);
-            Assert.Contains("code", x);
-            Assert.Empty(TrafficLights.ParseExclude(null));
-        }
+        [Theory]
+        [InlineData(null, "grid", "grid")]
+        [InlineData(null, "fan", "fan")]
+        [InlineData("list", "fan", "list")]   // 1.8.1: la pila con su propia forma
+        [InlineData("rara", "fan", "fan")]
+        [InlineData(null, "rara", "grid")]
+        public void Pilas_FormaDeCadaUna(string? own, string general, string expected) =>
+            Assert.Equal(expected, StackFan.Effective(own, general));
 
         [Fact]
         public void CursoresYSonidos_VienenDentroDelExe()
@@ -144,15 +141,37 @@ namespace McBar.Tests
         }
 
         [Fact]
+        public void PlacaDeIcono_UnColorPorApp()
+        {
+            // 1.8.1: un ícono rojo y uno azul dan placas distintas, del mismo tono que el ícono
+            var (rt, _) = IconShaper.PlateColors(System.Windows.Media.Color.FromRgb(220, 30, 30));
+            var (bt, _) = IconShaper.PlateColors(System.Windows.Media.Color.FromRgb(20, 90, 230));
+            Assert.True(rt.R > rt.B);
+            Assert.True(bt.B > bt.R);
+            // un ícono gris queda en gris claro
+            var (gt, gb) = IconShaper.PlateColors(System.Windows.Media.Color.FromRgb(128, 128, 130));
+            Assert.True(Math.Abs(gt.R - gt.B) < 6 && gb.R < gt.R);
+        }
+
+        [Fact]
+        public void Hsl_IdaYVuelta()
+        {
+            var c = System.Windows.Media.Color.FromRgb(200, 120, 40);
+            IconShaper.ToHsl(c, out var h, out var s2, out var l);
+            var back = IconShaper.FromHsl(h, s2, l);
+            Assert.True(Math.Abs(back.R - c.R) <= 1 && Math.Abs(back.G - c.G) <= 1 && Math.Abs(back.B - c.B) <= 1);
+        }
+
+        [Fact]
         public void Sanitize_PilasYHoras()
         {
-            var s = new AppSettings { StackStyle = "rara", AutoDarkFrom = 40, AutoLightFrom = -3, ScreenshotFolder = null!, TrafficLightsExclude = null! };
+            var s = new AppSettings { StackStyle = "rara", AutoDarkFrom = 40, AutoLightFrom = -3, ScreenshotFolder = null!, StackStyles = null! };
             SettingsStore.Sanitize(s);
             Assert.Equal("grid", s.StackStyle);
             Assert.Equal(23, s.AutoDarkFrom);
             Assert.Equal(0, s.AutoLightFrom);
             Assert.Equal("", s.ScreenshotFolder);
-            Assert.Equal("", s.TrafficLightsExclude);
+            Assert.NotNull(s.StackStyles);
         }
     }
 }

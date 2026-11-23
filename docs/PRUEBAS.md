@@ -240,6 +240,20 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.2
+- [ ] Clic derecho en una app del Dock → Ícono → Cambiar ícono… → elegir un .icns (por ejemplo uno de macosicons.com): se ve nítido. Lo mismo con el Launchpad.
+- [ ] Preferencias → Dock → paquete de íconos: una carpeta con .icns (nombre como la app, p. ej. "Google Chrome.icns") cambia esos íconos.
+- [ ] Un .icns viejo o roto: queda el ícono original y en mcbar.log dice «Ícono .icns sin imágenes PNG».
+
+### Versión 1.8.1
+- [ ] Con "Tecla Windows sola: abrir el Launchpad": apretar y soltar Windows → solo el Launchpad (Inicio NO se abre). Win+E, Win+D, Win+flechas, Win+Mayús+S, Win+V y Win+L siguen funcionando.
+- [ ] Elegir una ventana (aparecen sus menús) y minimizarla con su botón: en menos de medio segundo los menús se van solos y el foco queda en el escritorio. Si hay otra app abierta, quedan los menús de esa app.
+- [ ] Win+Tab: al pasar el mouse por un escritorio aparece la × (y clic derecho → Cerrar escritorio): se cierra y sus ventanas pasan al de al lado. Con un solo escritorio no aparece.
+- [ ] Clic derecho en Descargas o en una carpeta del Dock → Mostrar como → Abanico: esa pila se abre en abanico y las otras como dice Preferencias.
+- [ ] Preferencias → Estilo Mac → "Agregar una carpeta al Dock…": aparece a la derecha del Dock.
+- [ ] Preferencias → Dock → Forma de los íconos → Como en Mac: cada ícono suelto (no de la Tienda) queda sobre una placa de su color (Chrome tirando a rojo/amarillo, Edge a azul/verde, VS Code a azul…); los grises sobre gris claro.
+- [ ] Preferencias: ningún texto de los interruptores se corta (los largos bajan de renglón). Ya no existe "Botones de colores en las ventanas".
+
 ### Versión 1.8.0 (Estilo Mac — todo arranca apagado)
 - [ ] Abrir Preferencias → Estilo Mac: todos los interruptores apagados; Pilas del Dock en "Cuadrícula".
 - [ ] Modo oscuro automático: poner "Oscuro desde las" en la hora actual → Windows pasa a oscuro en menos de 1 min. Volver a la hora de antes → claro.
@@ -249,12 +263,11 @@ Tema:
 - [ ] Clic en el fondo (no en un ícono) → se ven el escritorio; otro clic → vuelven las ventanas. Clic en un ícono → no pasa nada raro.
 - [ ] Organizador visual: abrir 3 apps, pasar de una a otra → la anterior se minimiza y aparece a la izquierda con su foto e ícono; tocarla la trae. Con una ventana maximizada, la franja aparece al llevar el mouse al borde izquierdo.
 - [ ] Win+Tab con "Escritorios con la imagen del fondo": arriba se ven los escritorios con el fondo; el actual con borde de color; tocar otro cambia.
-- [ ] Botones de colores: en el Bloc de notas aparecen arriba a la izquierda; rojo cierra, amarillo minimiza, verde maximiza. En Chrome no aparecen (está en la lista). Siguen a la ventana al moverla.
 - [ ] Capturas: Win+Mayús+3 → archivo en el Escritorio + sonido + miniatura. Win+Mayús+4 → arrastrar una zona; Espacio → elegir ventana (sale con sombra); Esc cancela. Win+Mayús+5 → barrita. Miniatura: clic abre, arrastrar a WhatsApp/Word la pega, clic derecho → Copiar / Mostrar en la carpeta / Borrar.
 - [ ] Alt como Cmd: en el Bloc de notas Alt+A, Alt+C, Alt+V, Alt+Z funcionan; al soltar Alt no se activa el menú de la app. Alt+Q cierra la app; Alt+Espacio abre el buscador; Alt+Tab y Alt+F4 siguen igual.
 - [ ] Menús reales: con Notepad++ o 7-Zip al frente, la barra muestra sus menús de verdad y las opciones funcionan; con Chrome se ven Archivo, Edición… como siempre.
 - [ ] Pilas del Dock en Abanico y en Lista: tocar Descargas → se abren así; clic en un archivo lo abre.
-- [ ] Modo juego prendido: no aparecen la franja, los botones de colores ni el puntero grande, y Alt como Cmd no actúa.
+- [ ] Modo juego prendido: no aparecen la franja ni el puntero grande, y Alt como Cmd no actúa.
 
 ### Versión 1.7.0
 - [ ] Preferencias → Personalización → "Usar los fondos de McBar": aparece «Listo…», los 4 momentos muestran McBar-ondas-…-4k.jpg, se prende el interruptor y el fondo cambia al del momento actual. Existe `%AppData%\McBar\fondos` con los 4 archivos.
