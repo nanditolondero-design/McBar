@@ -6,6 +6,7 @@
 - **Buscador**: misma sombra y brillo; la sombra va en una capa aparte y ya no se recalcula con cada letra.
 - **Menús** (barra, Dock, clic derecho): esquinas más redondeadas, sombra más grande y suave y brillo arriba.
 - Tarjetas del Centro de control con esquinas de 14 y textos un poco más livianos.
+- Compilación: `DockWindow.IconPixelSize` deja de ser `static` (usa la escala de su monitor; CS0120).
 
 ## 1.5.0 — 23/11/2026 (etapa: rendimiento)
 - **Nítido en monitores con escalas distintas** (por ejemplo notebook al 125 % y monitor al 100 %): McBar ahora usa la escala de CADA monitor (antes tomaba la del principal para todos y en el otro se veía borroso o corrido). Dock, barra, isla, Launchpad, buscador, paneles, Alt+Tab, Win+Tab, vista previa, Quick Look, cartel de volumen y el ícono que se arrastra se ubican en píxeles reales del monitor donde están. Si una ventana pasa a un monitor con otra escala, se vuelve a acomodar sola.

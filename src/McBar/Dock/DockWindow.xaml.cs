@@ -244,7 +244,7 @@ namespace McBar.Dock
             RebuildItems();
         }
 
-        private static int IconPixelSize()
+        private int IconPixelSize() // 1.5.0: ya no es static (usa la escala de su monitor)
         {
             double max = S.Magnification ? S.MagnifiedSize : S.DockIconSize;
             return (int)Math.Min(256, Math.Ceiling(max * Math.Max(1.0, _monitor.Scale) / 16.0) * 16);
