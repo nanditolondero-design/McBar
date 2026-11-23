@@ -6,6 +6,7 @@
 - **Launchpad → Dock o escritorio**: la zona para "salir" del Launchpad es más grande (abajo donde están los puntitos y el Dock, arriba la búsqueda y los costados): apenas se lleva la app ahí, el Launchpad se cierra y se la suelta en el Dock o en el escritorio.
 - **Con el Launchpad abierto el Dock ya no aparece por encima** (antes McBar lo volvía a subir a los pocos segundos).
 - **Píldora en pantalla completa**: se esconde pero deja una rayita arriba al centro; al pasar el mouse por la rayita la píldora vuelve, y al sacar el mouse se vuelve a esconder.
+- **La píldora también se esconde con una ventana maximizada** (como en pantalla completa: queda la rayita arriba y al pasar el mouse vuelve). Preferencias → Isla dinámica → "Esconder la isla con ventanas maximizadas" (viene prendido).
 - **Avisos sin abrir la píldora**: tocar el globito con el número abre las notificaciones en un panel debajo, sin agrandar la píldora.
 - **Transparencia del vidrio**: Preferencias → General → "Transparencia del vidrio" (con el tema Vidrio): 0 casi opaco, 50 como venía, 100 casi invisible. Cambia paneles, Dock, barra, tarjetas y etiquetas.
 - **Apps de la Tienda que "desaparecían" del Dock al abrirlas** (como Configuración): al abrirse, su ventana todavía no dice de qué app es y McBar la tomaba como una app desconocida sin ícono (quedaba un lugar vacío y el ícono fijo no mostraba que estaba abierta). Ahora usa también el identificador que Windows le pone a la ventana, vuelve a probar hasta reconocerla y mientras tanto no la muestra.

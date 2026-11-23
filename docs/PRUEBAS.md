@@ -246,6 +246,7 @@ Tema:
 - [ ] Launchpad: arrastrar una app hacia abajo (o arriba, o a un costado): el Launchpad se cierra; soltar en el Dock → se fija; soltar en el escritorio → acceso directo.
 - [ ] Con el Launchpad abierto 10 segundos, el Dock no aparece por encima.
 - [ ] Video en pantalla completa (YouTube F): la píldora desaparece y queda una rayita arriba al centro. Mouse a la rayita → vuelve la píldora; sacar el mouse → se esconde de nuevo.
+- [ ] Maximizar una ventana (Chrome): la píldora se esconde y queda la rayita; mouse a la rayita → vuelve; restaurar la ventana → la píldora vuelve sola. Apagar "Esconder la isla con ventanas maximizadas" → con la ventana maximizada la píldora queda.
 - [ ] Con avisos sin leer: tocar el globito con el número → se abre el panel de notificaciones debajo, la píldora no se agranda.
 - [ ] Tema Vidrio → Preferencias → General → Transparencia del vidrio: mover la barra y ver que cambian Dock, barra y paneles.
 - [ ] Preferencias → Dock: ya no está "Desenfoque detrás del Dock".

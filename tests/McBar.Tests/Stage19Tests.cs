@@ -52,6 +52,7 @@ namespace McBar.Tests
         {
             var s = new AppSettings();
             Assert.Equal(50, s.GlassTransparency);
+            Assert.True(s.IslandHideOnMaximized);
             Assert.Empty(s.CustomIcons);
         }
     }

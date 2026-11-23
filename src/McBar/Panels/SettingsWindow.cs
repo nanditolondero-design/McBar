@@ -111,6 +111,8 @@ namespace McBar.Panels
             isl.Children.Add(Switch("Mostrar el día junto a la hora", s.IslandShowDate, v => s.IslandShowDate = v));
             isl.Children.Add(Switch("Borde brillante", s.IslandGlow, v => s.IslandGlow = v));
             isl.Children.Add(Switch("Dejar lugar arriba para la isla (las ventanas no quedan debajo)", s.IslandReserveSpace, v => s.IslandReserveSpace = v));
+            // 1.6.1: como en pantalla completa: se esconde y queda la rayita arriba (al pasar el mouse vuelve)
+            isl.Children.Add(Switch("Esconder la isla con ventanas maximizadas", s.IslandHideOnMaximized, v => s.IslandHideOnMaximized = v));
             isl.Children.Add(Switch("Música y videos (con controles)", s.IslandMedia, v => s.IslandMedia = v));
             isl.Children.Add(Switch("Volumen y brillo", s.IslandVolume, v => s.IslandVolume = v));
             isl.Children.Add(Switch("Batería y carga", s.IslandBattery, v => s.IslandBattery = v));

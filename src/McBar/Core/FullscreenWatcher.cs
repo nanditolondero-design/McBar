@@ -21,6 +21,8 @@ namespace McBar.Core
 
         /// <summary>Monitores (por nombre de dispositivo) que tienen una app en pantalla completa.</summary>
         public HashSet<string> FullscreenMonitors { get; } = new HashSet<string>();
+        /// <summary>1.6.1: monitores cuya ventana de arriba está MAXIMIZADA (para esconder la isla, si se eligió).</summary>
+        public HashSet<string> MaximizedMonitors { get; } = new HashSet<string>();
 
         public event Action? Changed;
 
@@ -47,6 +49,7 @@ namespace McBar.Core
             var monitors = Monitors.All();
             var decided = new HashSet<string>();
             var now = new HashSet<string>();
+            var max = new HashSet<string>();
             Win32.EnumWindows((h, _) =>
             {
                 if (decided.Count >= monitors.Count) return false; // ya están todos resueltos
@@ -59,15 +62,19 @@ namespace McBar.Core
                 // mini) que está por encima de un video NO decide: se sigue mirando la de abajo.
                 if ((Win32.GetExStyle(h) & Win32.WS_EX_TOPMOST) != 0 && !IsLarge(rect, m.Bounds)) return true;
                 decided.Add(m.Device);
-                if (IsCovering(rect, m.Bounds) && IsFullscreenStyle(Win32.IsZoomed(h), Win32.GetStyle(h)))
+                bool zoomed = Win32.IsZoomed(h);
+                if (IsCovering(rect, m.Bounds) && IsFullscreenStyle(zoomed, Win32.GetStyle(h)))
                     now.Add(m.Device);
+                else if (zoomed) max.Add(m.Device); // 1.6.1
                 return true;
             }, IntPtr.Zero);
 
-            if (!now.SetEquals(FullscreenMonitors))
+            if (!now.SetEquals(FullscreenMonitors) || !max.SetEquals(MaximizedMonitors))
             {
                 FullscreenMonitors.Clear();
                 foreach (var d in now) FullscreenMonitors.Add(d);
+                MaximizedMonitors.Clear();
+                foreach (var d in max) MaximizedMonitors.Add(d);
                 Changed?.Invoke();
             }
         }

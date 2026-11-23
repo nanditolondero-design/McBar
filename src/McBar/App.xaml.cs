@@ -307,7 +307,10 @@ namespace McBar
             var fs = Fullscreen?.FullscreenMonitors ?? new HashSet<string>();
             foreach (var d in Docks) d.SetFullscreen(fs.Contains(d.Monitor.Device));
             foreach (var mb in MenuBars) mb.SetFullscreen(fs.Contains(mb.Monitor.Device));
-            foreach (var isl in Islands) isl.SetFullscreen(fs.Contains(isl.Monitor.Device));
+            // 1.6.1: la isla también se esconde (dejando la manijita) con una ventana maximizada, si se eligió
+            var max = Fullscreen?.MaximizedMonitors ?? new HashSet<string>();
+            bool hideMax = SettingsStore.Current.IslandHideOnMaximized;
+            foreach (var isl in Islands) isl.SetFullscreen(fs.Contains(isl.Monitor.Device) || (hideMax && max.Contains(isl.Monitor.Device)));
         }
 
         /// <summary>
@@ -526,6 +529,7 @@ namespace McBar
             if (s.NeedsKeyboardHook) KeyboardHook.Start(); else KeyboardHook.Stop();
             HotCorners.Apply();
             DynamicWallpaper.Apply(); // 1.3.0
+            ApplyFullscreen(); // 1.6.1: por si cambió "Esconder la isla con ventanas maximizadas"
             if (IslandKey(s) != _lastIslandKey)
             {
                 _lastIslandKey = IslandKey(s);

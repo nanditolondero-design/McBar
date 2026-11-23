@@ -86,6 +86,8 @@ namespace McBar.Core
         /// <summary>Reservar arriba el alto de la isla para que las ventanas maximizadas no queden debajo.</summary>
         /// <summary>Reservar una franja arriba para la isla. 1.3.1: apagado por defecto (la píldora flota sobre las ventanas, que usan toda la pantalla).</summary>
         public bool IslandReserveSpace { get; set; } = false;
+        /// <summary>Esconder la isla (queda la manijita) cuando la ventana de arriba está maximizada. 1.6.1.</summary>
+        public bool IslandHideOnMaximized { get; set; } = true;
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";
