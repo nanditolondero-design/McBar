@@ -1,0 +1,35 @@
+<!-- McBar — Creado por Andrés Londero.
+     El Dock: ventana transparente abajo de cada monitor. Las zonas transparentes dejan pasar los clics
+     a las ventanas de atrás; solo la barra y los íconos reciben el mouse. Detrás de la barra hay una
+     ventanita aparte con desenfoque real (DockBackdrop). -->
+<Window x:Class="McBar.Dock.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="McBar Dock"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ShowActivated="False" ResizeMode="NoResize"
+        AllowDrop="True" Width="1200" Height="200" Left="0" Top="0"
+        FontFamily="{StaticResource Mc.Font}">
+    <Grid x:Name="Root">
+        <Canvas x:Name="Stage">
+            <Canvas.RenderTransform>
+                <TranslateTransform x:Name="HideShift"/>
+            </Canvas.RenderTransform>
+            <!-- 0.4.1: sombra liviana dibujada con dos bordes (antes era un DropShadowEffect: costoso en cada
+                 cuadro y la forma de la ventana lo cortaba, dejando bordes duros alrededor del Dock). -->
+            <Border x:Name="BarShadow2" CornerRadius="21" Background="#14000000" IsHitTestVisible="False"/>
+            <Border x:Name="BarShadow1" CornerRadius="19" Background="#1F000000" IsHitTestVisible="False"/>
+            <Border x:Name="Bar" CornerRadius="18" BorderThickness="1"
+                    Background="{DynamicResource Mc.DockGlass}" BorderBrush="{DynamicResource Mc.DockGlassBorder}"/>
+            <!-- 0.4.3: resaltado del ícono bajo el mouse (estilo Barra o sin ampliación) -->
+            <Border x:Name="HoverPlate" CornerRadius="10" Background="{DynamicResource Mc.Hover}" Opacity="0" IsHitTestVisible="False"/>
+            <Border x:Name="Label" Panel.ZIndex="1000" IsHitTestVisible="False" Visibility="Collapsed"
+                    Padding="10,4" CornerRadius="7" BorderThickness="1"
+                    Background="{DynamicResource Mc.LabelBg}" BorderBrush="{DynamicResource Mc.PanelBorder}">
+                <TextBlock x:Name="LabelText" FontSize="13" Foreground="{DynamicResource Mc.Text}"/>
+            </Border>
+        </Canvas>
+        <!-- Franja para mostrar el Dock cuando está oculto -->
+        <Border x:Name="HotZone" VerticalAlignment="Bottom" Height="3" Background="#01000000" Visibility="Collapsed"/>
+    </Grid>
+</Window>

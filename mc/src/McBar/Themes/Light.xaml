@@ -1,0 +1,41 @@
+<!-- McBar — Creado por Andrés Londero. Tema claro. Fondos bastante opacos para que siempre se lea bien. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="Mc.BlurTint">#66F2F2F5</Color>
+    <Color x:Key="Mc.LaunchpadTint">#55303036</Color>
+    <Color x:Key="Mc.ShadowColor">#000000</Color>
+    <SolidColorBrush x:Key="Mc.Text" Color="#E6000000"/>
+    <SolidColorBrush x:Key="Mc.TextDim" Color="#8F000000"/>
+    <SolidColorBrush x:Key="Mc.PanelBg" Color="#F0F4F4F6"/>
+    <!-- Paneles con desenfoque real detrás (Centro de control, Widgets) -->
+    <SolidColorBrush x:Key="Mc.GlassBg" Color="#ABF6F6F8"/>
+    <SolidColorBrush x:Key="Mc.PanelCardBg" Color="#F4F4F4F6"/> <!-- 1.9.0 --> <!-- 1.6.0: más transparente (antes #C4F6F6F8) -->
+    <SolidColorBrush x:Key="Mc.PanelBorder" Color="#24000000"/>
+    <SolidColorBrush x:Key="Mc.WindowBg" Color="#FFF2F2F4"/>
+    <SolidColorBrush x:Key="Mc.SettingsBg" Color="#FFF2F2F4"/> <!-- 1.8.3 -->
+    <SolidColorBrush x:Key="Mc.TileBg" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="Mc.TileBorder" Color="#14000000"/>
+    <SolidColorBrush x:Key="Mc.Hover" Color="#1A000000"/>
+    <SolidColorBrush x:Key="Mc.Pressed" Color="#2B000000"/>
+    <SolidColorBrush x:Key="Mc.Accent" Color="#FF007AFF"/>
+    <SolidColorBrush x:Key="Mc.AccentText" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="Mc.Separator" Color="#21000000"/>
+    <SolidColorBrush x:Key="Mc.DockBg" Color="#85F4F4F6"/>
+    <SolidColorBrush x:Key="Mc.DockBorder" Color="#66FFFFFF"/>
+    <!-- Vidrio del Dock dibujado por McBar (0.4.1, sin desenfoque de Windows) -->
+    <LinearGradientBrush x:Key="Mc.DockGlass" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#CCFAFAFC" Offset="0"/>
+        <GradientStop Color="#C8E9E9EE" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Mc.DockGlassBorder" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#B3FFFFFF" Offset="0"/>
+        <GradientStop Color="#26000000" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Mc.MenuBarBg" Color="#99F5F5F7"/>
+    <SolidColorBrush x:Key="Mc.Track" Color="#2E000000"/>
+    <SolidColorBrush x:Key="Mc.InputBg" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="Mc.LabelBg" Color="#F5F4F4F6"/>
+    <SolidColorBrush x:Key="Mc.LaunchpadBg" Color="#40000000"/>
+    <SolidColorBrush x:Key="Mc.Danger" Color="#FFFF3B30"/>
+    <SolidColorBrush x:Key="Mc.Dot" Color="#CC000000"/>
+</ResourceDictionary>

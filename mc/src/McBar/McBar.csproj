@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- McBar — Creado por Andrés Londero -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>McBar</AssemblyName>
+    <RootNamespace>McBar</RootNamespace>
+    <Version>1.9.6</Version>
+    <FileVersion>1.9.6.0</FileVersion>
+    <Authors>Londero</Authors>
+    <Company>Londero</Company>
+    <Product>McBar</Product>
+    <Description>Dock y barra de menú estilo macOS para Windows</Description>
+    <Copyright>Creado por Andrés Londero</Copyright>
+    <ApplicationIcon>Assets\McBar.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>x64</PlatformTarget>
+    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <!-- Bajo consumo: recolector de basura simple, sin hilo de fondo extra -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <!-- La TFM con versión de Windows habilita las APIs de Windows (multimedia y notificaciones) para la isla. -->
+    <NoWarn>$(NoWarn);CA1416;CS8618</NoWarn>
+  </PropertyGroup>
+
+  <!-- 1.9.2: edición Microsoft Store (paquete MSIX). Se compila con -p:McBarStore=true (ver
+       .github/workflows/build.yml y packaging/store). El código distinto va con Edition.IsStore. -->
+  <PropertyGroup Condition="'$(McBarStore)' == 'true'">
+    <DefineConstants>$(DefineConstants);STORE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\McBar.png" />
+  </ItemGroup>
+
+  <!-- 1.7.0: los 4 fondos de McBar (originales, 3840×2160) van DENTRO del .exe y se copian a
+       %AppData%\McBar\fondos la primera vez que se usan (ver Core/DynamicWallpaper.ExtractBundled). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Fondos\*.jpg" LogicalName="McBar.Fondos.%(Filename)%(Extension)" />
+    <!-- 1.8.0: cursores y sonidos estilo Mac, propios de McBar (ver tools/estilo-mac) -->
+    <EmbeddedResource Include="Assets\Cursores\*.cur;Assets\Cursores\*.ani" LogicalName="McBar.Cursores.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Assets\Sonidos\*.wav" LogicalName="McBar.Sonidos.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="McBar.Tests" />
+  </ItemGroup>
+</Project>
