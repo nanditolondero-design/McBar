@@ -2,6 +2,7 @@
 
 ## 1.8.2 — 23/11/2026 (pedido de Andrés)
 - **Íconos .icns de macOS**: se pueden usar en "Cambiar ícono…" (Dock y Launchpad) y en los paquetes de íconos (una carpeta con .icns funciona igual que con .png). McBar toma de adentro la imagen PNG del tamaño justo. Los .icns muy viejos (Mac OS X 10.6 o antes), que guardan el ícono en otro formato, no se leen y queda el ícono original (se anota en el registro).
+- Compilación: `Core/TrafficLights.cs` y `Panels/TrafficLightsWindow.cs` quedan vacíos (el zip no borra archivos del repo y los viejos usaban ajustes que ya no existen; CS1061).
 
 ## 1.8.1 — 23/11/2026 (arreglos y pedidos de Andrés)
 - **La tecla Windows ya no abre Inicio junto con el Launchpad**: McBar ahora no deja que Windows vea la tecla sola (antes usaba un truco que en algunas versiones de Windows 11 ya no alcanza). Los atajos de Windows (Win+E, Win+D, Win+flechas, Win+Mayús+S, Win+V, Win+L…) siguen andando.
