@@ -82,6 +82,18 @@ namespace McBar.MenuBar
             _onPower = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
             SettingsStore.Changed += _onSettings;
             App.Tracker.ForegroundChanged += _onForeground;
+            // 1.6.2: al minimizar la app elegida, sus menús se van enseguida (antes había que tocar el escritorio).
+            // Se mira dos veces porque Windows termina de minimizar un momento después.
+            _onMinimized = h => Dispatcher.BeginInvoke(new Action(() =>
+            {
+                foreach (var ms in new[] { 120, 450 })
+                {
+                    var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+                    t.Tick += (_, _) => { t.Stop(); UpdateAppName(); };
+                    t.Start();
+                }
+            }));
+            App.Tracker.Minimized += _onMinimized;
             _onWindows = () => Dispatcher.BeginInvoke(new Action(UpdateAppName));
             App.Tracker.WindowsChanged += _onWindows; // minimizar / restaurar / cerrar
             WeatherService.Updated += _onWeather;
@@ -102,6 +114,7 @@ namespace McBar.MenuBar
         }
 
         private Action? _onLive;
+        private Action<IntPtr>? _onMinimized;
 
         /// <summary>1.2.0: chip en vivo (temporizador, cronómetro o descarga) y puntitos de micrófono/cámara.</summary>
         private void UpdateLive()
@@ -199,6 +212,7 @@ namespace McBar.MenuBar
             _clockTimer.Stop();
             SettingsStore.Changed -= _onSettings;
             App.Tracker.ForegroundChanged -= _onForeground;
+            if (_onMinimized != null) App.Tracker.Minimized -= _onMinimized;
             App.Tracker.WindowsChanged -= _onWindows;
             WeatherService.Updated -= _onWeather;
             NetworkChange.NetworkAddressChanged -= _onNetwork;

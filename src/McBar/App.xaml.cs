@@ -310,7 +310,11 @@ namespace McBar
             // 1.6.1: la isla también se esconde (dejando la manijita) con una ventana maximizada, si se eligió
             var max = Fullscreen?.MaximizedMonitors ?? new HashSet<string>();
             bool hideMax = SettingsStore.Current.IslandHideOnMaximized;
-            foreach (var isl in Islands) isl.SetFullscreen(fs.Contains(isl.Monitor.Device) || (hideMax && max.Contains(isl.Monitor.Device)));
+            foreach (var isl in Islands)
+            {
+                bool lpHere = _launchpadMonitor == isl.Monitor.Device; // 1.6.2: con el Launchpad abierto la isla se ve
+                isl.SetFullscreen(!lpHere && (fs.Contains(isl.Monitor.Device) || (hideMax && max.Contains(isl.Monitor.Device))));
+            }
         }
 
         /// <summary>
@@ -464,9 +468,8 @@ namespace McBar
         {
             const uint flags = Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE;
             if (PopupGuard.AnyOpen) return; // 1.3.1: con un menú abierto, no subir la isla por encima de él
-            // 1.6.1: con el Launchpad abierto, el Dock no se sube encima de él (antes aparecía por arriba a los pocos segundos)
-            bool lp = _launchpad != null && _launchpad.IsVisible;
-            foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(lp ? Enumerable.Empty<Window>() : Docks))
+            // 1.6.2: también con el Launchpad abierto (Dock e isla quedan encima de él, como en macOS)
+            foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
             {
                 if (!w.IsVisible) continue;
                 var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
@@ -568,9 +571,32 @@ namespace McBar
             if (_launchpad != null && _launchpad.IsVisible) { _launchpad.CloseAnimated(); return; }
             if (_launchpad != null && RecentlyClosed(_launchpad.ClosedAt)) return;
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            _launchpad = new LaunchpadWindow(MonitorOrPrimary(monitor));
+            var m = MonitorOrPrimary(monitor);
+            // 1.6.2: el Launchpad deja abajo el lugar del Dock, que queda a la vista encima de él
+            var dock = Docks.FirstOrDefault(d => d.Monitor.Device == m.Device);
+            _launchpad = new LaunchpadWindow(m, dock?.VisibleHeightDip ?? 0);
             _launchpad.ContentRendered += (_, _) => Perf.LaunchpadOpened(sw.Elapsed.TotalMilliseconds); // 1.5.0
+            _launchpadMonitor = m.Device;
+            var lp = _launchpad;
+            lp.Closed += (_, _) => { if (_launchpad == lp || _launchpad == null || !_launchpad.IsVisible) LaunchpadBars(false); };
             _launchpad.ShowAnimated();
+            LaunchpadBars(true);
+        }
+
+        private static string? _launchpadMonitor;
+
+        public static void CloseLaunchpad()
+        {
+            if (_launchpad != null && _launchpad.IsVisible) _launchpad.CloseAnimated(); // CloseAnimated ignora si ya se está cerrando
+        }
+
+        /// <summary>1.6.2: Dock e isla (o barra) siempre a la vista encima del Launchpad mientras está abierto.</summary>
+        private static void LaunchpadBars(bool open)
+        {
+            if (!open) _launchpadMonitor = null;
+            foreach (var d in Docks) d.ShowOverLaunchpad(open && d.Monitor.Device == _launchpadMonitor);
+            ApplyFullscreen(); // la isla vuelve aunque haya una ventana maximizada debajo
+            if (open) KeepBarsOnTop();
         }
 
         public static void ToggleControlCenter(MonitorInfo? monitor = null)

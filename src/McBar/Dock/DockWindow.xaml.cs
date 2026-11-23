@@ -532,6 +532,27 @@ namespace McBar.Dock
             OutsideDock(_pressPoint.Y - _dragPos.Y, _dragPos.X, _lastBarLeft, _lastBarW);
 
         private double _lastBarLeft, _lastBarW;
+        private bool _overLaunchpad;
+
+        /// <summary>
+        /// 1.6.2: con el Launchpad abierto el Dock se ve SIEMPRE encima de él (como en macOS), aunque esté en
+        /// ocultación automática; al cerrar el Launchpad vuelve a como estaba.
+        /// </summary>
+        public void ShowOverLaunchpad(bool on)
+        {
+            _overLaunchpad = on;
+            if (on)
+            {
+                _hideTimer.Stop();
+                if (_hidden) _hidden = false;
+                if (_hwnd != IntPtr.Zero) Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
+            }
+            else if (AutoHide && !_hover) _hideTimer.Start();
+            EnsureAnimating();
+        }
+
+        /// <summary>Alto que ocupa el Dock abajo (para que el Launchpad no ponga íconos debajo).</summary>
+        public double VisibleHeightDip => BarHeight + BottomMargin + 6;
         private DragGhost? _ghost;
         private bool _suppressPuff;
 
@@ -953,7 +974,7 @@ namespace McBar.Dock
 
         private void TryAutoHide()
         {
-            if (!AutoHide || _hover || _menuOpen || _dragging) return;
+            if (!AutoHide || _hover || _menuOpen || _dragging || _overLaunchpad) return;
             _hidden = true;
             EnsureAnimating();
         }
@@ -962,6 +983,8 @@ namespace McBar.Dock
 
         private void OnItemClick(DockItem item)
         {
+            // 1.6.2: con el Launchpad abierto, tocar otra cosa del Dock lo cierra (como en macOS)
+            if (item.Kind != DockItemKind.Launchpad) App.CloseLaunchpad();
             switch (item.Kind)
             {
                 case DockItemKind.Launchpad:

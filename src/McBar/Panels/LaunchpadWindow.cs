@@ -64,7 +64,7 @@ namespace McBar.Panels
 
         public DateTime ClosedAt { get; private set; } = DateTime.MinValue;
 
-        public LaunchpadWindow(MonitorInfo monitor)
+        public LaunchpadWindow(MonitorInfo monitor, double dockHeight = 0)
         {
             Title = "Launchpad";
             WindowStyle = WindowStyle.None;
@@ -89,6 +89,7 @@ namespace McBar.Panels
             _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(124) });
             _content.RowDefinitions.Add(new RowDefinition());
             _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(90) });
+            _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(Math.Max(0, dockHeight)) }); // 1.6.2: lugar del Dock (queda a la vista encima)
 
             // Búsqueda (píldora arriba al centro)
             // (abajo de la fila para no quedar debajo de la isla dinámica)

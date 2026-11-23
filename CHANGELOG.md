@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.6.2 — 23/11/2026
+- **Dock e isla siempre a la vista en el Launchpad** (como en macOS): al abrir el Launchpad, el Dock (aunque esté en ocultación automática) y la isla o la barra quedan encima, la isla aparece aunque haya una ventana maximizada debajo, y el Launchpad deja abajo el lugar del Dock para que no queden íconos tapados. Tocar otra cosa del Dock cierra el Launchpad. (Corrige lo de la 1.6.1, que lo había entendido al revés.)
+- **Al minimizar la app elegida, sus menús desaparecen enseguida** de la barra o la isla (antes quedaban hasta tocar el escritorio).
+
 ## 1.6.1 — 23/11/2026 (pedidos de Andrés)
 - **Cambiar el ícono del Launchpad** (y de cualquier app del Dock): clic derecho → Ícono → "Cambiar ícono…" (.png, .ico, .jpg…). Se guarda una copia en `%AppData%\McBar\iconos-propios`. "Volver al ícono original" lo deshace.
 - **Pasar una app abierta a las fijas del Dock arrastrándola**: una app abierta sin fijar se puede llevar entre las fijas; al soltarla ahí queda fijada en ese lugar.

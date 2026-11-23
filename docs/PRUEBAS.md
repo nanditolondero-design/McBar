@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.6.2
+- [ ] Abrir el Launchpad (con el Dock en ocultación automática y con una ventana maximizada debajo): el Dock y la isla se ven encima; los íconos del Launchpad no quedan debajo del Dock. Tocar una app del Dock → se cierra el Launchpad y se abre la app.
+- [ ] Elegir una ventana (aparecen Archivo, Edición…) y minimizarla con su botón: los menús desaparecen solos, sin tocar el escritorio.
+
 ### Versión 1.6.1
 - [ ] Clic derecho en el Launchpad del Dock → Ícono → Cambiar ícono… → elegir un .png: cambia al toque y queda al reiniciar. "Volver al ícono original" lo deshace. Lo mismo con una app (Opciones → Ícono).
 - [ ] Abrir una app que no está fijada; arrastrar su ícono hasta el medio de las fijas y soltar: queda fijada en ese lugar (sigue después de cerrarla).

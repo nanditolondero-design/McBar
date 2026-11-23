@@ -146,4 +146,7 @@ Andrés aprobó la vista previa ("Me gusta la vista previa de la 1.6.0, hacela a
 
 ## 1.6.1 (23/11/2026) — pedidos de Andrés
 Ícono propio (`AppSettings.CustomIcons`, `DockWindow.ChooseIcon/ResetIcon/IconMenu`, `IconLoader.FromImageFile`), fijar arrastrando (`ReorderWhileDragging` deja mover apps abiertas sin fijar entre las fijas y `PinHere`), `LaunchpadLayout.LeavesGrid` (zonas más grandes), `KeepBarsOnTop` no sube el Dock con el Launchpad abierto, `MenuBar/PeekHandle` (manijita en pantalla completa, `IslandWindow.PeekIn/PeekOut`), globito → `App.OpenWidgetsPanel(monitor, centered: true)`, `GlassTransparency` (`ThemeManager.ScaleAlpha` sobre los fondos del tema Vidrio), sin `BackdropBlur` (Sanitize lo apaga). Pruebas en `Stage19Tests`.
-Interpretación: "en el Launchpad el Dock queda siempre a la vista" se tomó como problema (el Dock aparecía encima del Launchpad); si quería lo contrario (Dock visible como en macOS), se cambia en `KeepBarsOnTop`.
+Interpretación: "en el Launchpad el Dock queda siempre a la vista" se tomó como problema; era al revés (ver 1.6.2).
+
+## 1.6.2 (23/11/2026)
+Andrés: "el Dock y la píldora deben mostrarse siempre en el Launchpad" y "cuando minimizo una ventana me sigue mostrando las opciones de la ventana". `DockWindow.ShowOverLaunchpad` (sube el Dock y no se oculta solo), `App.LaunchpadBars` (Docks + `ApplyFullscreen` sin esconder la isla del monitor del Launchpad + `KeepBarsOnTop`), `LaunchpadWindow(monitor, dockHeight)` (fila extra del alto del Dock), `App.CloseLaunchpad` al tocar el Dock. `WindowTracker.Minimized` (EVENT_SYSTEM_MINIMIZESTART) → `MenuBarContent.UpdateAppName` a los 120 y 450 ms.

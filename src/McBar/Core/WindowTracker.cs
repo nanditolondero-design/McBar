@@ -58,6 +58,7 @@ namespace McBar.Core
             uint flags = Win32.WINEVENT_OUTOFCONTEXT | Win32.WINEVENT_SKIPOWNPROCESS;
             _hooks.Add(Win32.SetWinEventHook(Win32.EVENT_SYSTEM_FOREGROUND, Win32.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _hookProc, 0, 0, flags));
             _hooks.Add(Win32.SetWinEventHook(Win32.EVENT_SYSTEM_MINIMIZEEND, Win32.EVENT_SYSTEM_MINIMIZEEND, IntPtr.Zero, _hookProc, 0, 0, flags));
+            _hooks.Add(Win32.SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZESTART, IntPtr.Zero, _hookProc, 0, 0, flags)); // 1.6.2
             _hooks.Add(Win32.SetWinEventHook(Win32.EVENT_OBJECT_DESTROY, Win32.EVENT_OBJECT_HIDE, IntPtr.Zero, _hookProc, 0, 0, flags));
             _hooks.Add(Win32.SetWinEventHook(Win32.EVENT_OBJECT_NAMECHANGE, Win32.EVENT_OBJECT_NAMECHANGE, IntPtr.Zero, _hookProc, 0, 0, flags));
             _hooks.Add(Win32.SetWinEventHook(Win32.EVENT_OBJECT_CLOAKED, Win32.EVENT_OBJECT_UNCLOAKED, IntPtr.Zero, _hookProc, 0, 0, flags));
@@ -69,6 +70,9 @@ namespace McBar.Core
         private void OnWinEvent(IntPtr hook, uint ev, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
         {
             if (hwnd == IntPtr.Zero || idObject != 0 || idChild != 0) return; // solo la ventana en sí
+
+            // 1.6.2: se minimizó una ventana: la barra/isla tiene que dejar de mostrar sus menús
+            if (ev == EVENT_SYSTEM_MINIMIZESTART) { Minimized?.Invoke(hwnd); return; }
 
             if (ev == Win32.EVENT_SYSTEM_FOREGROUND || ev == Win32.EVENT_SYSTEM_MINIMIZEEND)
             {
@@ -119,6 +123,11 @@ namespace McBar.Core
         /// <summary>Marco de una app de la Tienda que todavía no se sabe de qué app es.</summary>
         public static bool IsUnidentifiedUwp(TrackedWindow w) =>
             w.PrimaryKey.StartsWith("hwnd:", StringComparison.Ordinal) && w.ExePath.EndsWith("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase);
+
+        private const uint EVENT_SYSTEM_MINIMIZESTART = 0x0016;
+
+        /// <summary>1.6.2: una ventana se empezó a minimizar.</summary>
+        public event Action<IntPtr>? Minimized;
 
         public void Refresh()
         {
