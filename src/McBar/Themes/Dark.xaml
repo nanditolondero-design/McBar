@@ -8,7 +8,8 @@
     <SolidColorBrush x:Key="Mc.TextDim" Color="#A6FFFFFF"/>
     <SolidColorBrush x:Key="Mc.PanelBg" Color="#EB2A2A2D"/>
     <!-- Paneles con desenfoque real detrás (Centro de control, Widgets) -->
-    <SolidColorBrush x:Key="Mc.GlassBg" Color="#8F28282E"/> <!-- 1.6.0: más transparente (antes #B8262628) -->
+    <SolidColorBrush x:Key="Mc.GlassBg" Color="#8F28282E"/>
+    <SolidColorBrush x:Key="Mc.PanelCardBg" Color="#F22A2A2E"/> <!-- 1.9.0: fondo de los paneles (sin desenfoque de Windows) --> <!-- 1.6.0: más transparente (antes #B8262628) -->
     <SolidColorBrush x:Key="Mc.PanelBorder" Color="#38FFFFFF"/>
     <SolidColorBrush x:Key="Mc.WindowBg" Color="#FF242427"/>
     <SolidColorBrush x:Key="Mc.SettingsBg" Color="#FF242427"/> <!-- 1.8.3: fondo de Preferencias (en Vidrio es transparente) -->

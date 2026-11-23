@@ -309,6 +309,8 @@ namespace McBar.Dock
                 return new DockItem(DockItemKind.Launchpad, isStack) { Name = "Launchpad", Target = t, IsPinned = true };
             if (t == AppIdentity.Downloads)
                 return new DockItem(DockItemKind.Downloads, isStack) { Name = "Descargas", Target = t, IsPinned = true };
+            if (t == AppIdentity.Power) // 1.9.1
+                return new DockItem(DockItemKind.Power, isStack) { Name = "Apagar", Target = t, IsPinned = true };
             if (t == AppIdentity.Trash)
                 return new DockItem(DockItemKind.Trash, isStack) { Name = "Papelera", Target = t, IsPinned = true };
             if (!isStack && DockFolders.IsFolder(t)) // 1.8.3: carpeta de apps
@@ -401,6 +403,9 @@ namespace McBar.Dock
             {
                 case DockItemKind.AppFolder: // 1.8.3
                     LoadFolderIcon(it, px);
+                    break;
+                case DockItemKind.Power: // 1.9.1
+                    it.View.SetIcon(PowerIcon(px));
                     break;
                 case DockItemKind.Launchpad:
                     it.View.SetIcon(TryFindResource("Mc.LaunchpadIcon") as ImageSource);
@@ -1029,6 +1034,9 @@ namespace McBar.Dock
                 case DockItemKind.AppFolder: // 1.8.3
                     ShowAppFolder(item);
                     break;
+                case DockItemKind.Power: // 1.9.1
+                    ShowPowerMenu(item, false);
+                    break;
                 case DockItemKind.Downloads:
                     var dl = Win32.KnownFolder(Win32.FOLDERID_Downloads);
                     if (dl != null) ShowStack(item, dl, "Descargas");
@@ -1101,6 +1109,61 @@ namespace McBar.Dock
             _items.Remove(item);
             _items.Insert(Math.Clamp(at, 0, _items.Count), item);
             SavePins();
+        }
+
+        // ================== Botón de apagado (1.9.1) ==================
+
+        /// <summary>Ícono del botón: placa redondeada oscura con el símbolo de encendido.</summary>
+        private ImageSource PowerIcon(int px)
+        {
+            var dv = new DrawingVisual();
+            using (var dc = dv.RenderOpen())
+            {
+                double m = px * 0.06, size = px - 2 * m, r = px * 0.24;
+                var bg = new LinearGradientBrush(Color.FromRgb(0x4A, 0x4A, 0x52), Color.FromRgb(0x1E, 0x1E, 0x24), 90);
+                bg.Freeze();
+                var edge = new Pen(new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF)), Math.Max(1, px / 64.0));
+                edge.Freeze();
+                dc.DrawRoundedRectangle(bg, edge, new Rect(m, m, size, size), r, r);
+                // símbolo de encendido dibujado (arco + rayita), no depende de ninguna fuente
+                double c = px / 2.0, rad = size * 0.24, th = Math.Max(1.5, px * 0.07);
+                var pen = new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0x5F, 0x57)), th) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                pen.Freeze();
+                double a0 = -60 * Math.PI / 180, a1 = 240 * Math.PI / 180; // arco abierto arriba
+                var start = new Point(c + rad * Math.Sin(a0), c - rad * Math.Cos(a0));
+                var end = new Point(c + rad * Math.Sin(a1), c - rad * Math.Cos(a1));
+                var geo = new StreamGeometry();
+                using (var g = geo.Open())
+                {
+                    g.BeginFigure(start, false, false);
+                    g.ArcTo(end, new Size(rad, rad), 0, true, SweepDirection.Clockwise, true, true);
+                }
+                geo.Freeze();
+                dc.DrawGeometry(null, pen, geo);
+                dc.DrawLine(pen, new Point(c, c - rad * 1.2), new Point(c, c - rad * 0.15));
+            }
+            var rtb = new RenderTargetBitmap(px, px, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(dv);
+            rtb.Freeze();
+            return rtb;
+        }
+
+        /// <summary>Menú del botón de apagado (clic o clic derecho). Apagar y reiniciar piden confirmación.</summary>
+        private void ShowPowerMenu(DockItem item, bool withRemove)
+        {
+            var cm = NewMenu(item.View);
+            cm.Items.Add(Mi("Suspender", Launcher.Sleep));
+            cm.Items.Add(Mi("Reiniciar…", () => { if (McDialog.Confirm("¿Reiniciar la computadora?", "Las apps abiertas se van a cerrar.", "Reiniciar")) Launcher.Restart(); }));
+            cm.Items.Add(Mi("Apagar…", () => { if (McDialog.Confirm("¿Apagar la computadora?", "Las apps abiertas se van a cerrar.", "Apagar", true)) Launcher.Shutdown(); }));
+            cm.Items.Add(new Separator());
+            cm.Items.Add(Mi("Bloquear pantalla", Launcher.Lock));
+            cm.Items.Add(Mi("Cerrar sesión…", () => { if (McDialog.Confirm("¿Cerrar la sesión?", "Las apps abiertas se van a cerrar.", "Cerrar sesión")) Launcher.LogOff(); }));
+            if (withRemove)
+            {
+                cm.Items.Add(new Separator());
+                cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
+            }
+            cm.IsOpen = true;
         }
 
         // ================== Carpetas de apps, como en Android (1.8.3) ==================
@@ -1567,6 +1630,9 @@ namespace McBar.Dock
                     cm.Items.Add(new Separator());
                     cm.Items.Add(Mi("Quitar del Dock", () => RemoveFromDock(item, false)));
                     break;
+                case DockItemKind.Power: // 1.9.1
+                    ShowPowerMenu(item, true);
+                    return;
                 case DockItemKind.AppFolder: // 1.8.3
                     cm.Items.Add(Mi("Abrir", () => ShowAppFolder(item)));
                     cm.Items.Add(Mi("Cambiar el nombre…", () => RenameFolder(item)));
@@ -1642,6 +1708,8 @@ namespace McBar.Dock
                 add.Items.Add(Mi("Descargas", () => AddStack("Descargas", AppIdentity.Downloads)));
             if (!_items.Any(i => i.Kind == DockItemKind.Trash && !i.Removing))
                 add.Items.Add(Mi("Papelera", () => AddStack("Papelera", AppIdentity.Trash)));
+            if (!_items.Any(i => i.Kind == DockItemKind.Power && !i.Removing)) // 1.9.1
+                add.Items.Add(Mi("Botón de apagado", () => AddStack("Apagar", AppIdentity.Power)));
             if (!_items.Any(i => i.Kind == DockItemKind.Launchpad && !i.Removing))
                 add.Items.Add(Mi("Launchpad", () => PinTarget("Launchpad", AppIdentity.Launchpad)));
             cm.Items.Add(add);

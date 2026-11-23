@@ -240,6 +240,14 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.1
+- [ ] Prender "Abrir McBar al iniciar Windows" y reiniciar la PC: la barra de Windows casi no se ve (como mucho una rayita) y McBar aparece antes que antes.
+- [ ] Preferencias → Dock → "Botón de apagado en el Dock": aparece al lado de la Papelera con el símbolo rojo. Clic → Suspender / Reiniciar… / Apagar… / Bloquear / Cerrar sesión…; Reiniciar y Apagar piden confirmación (Cancelar no hace nada). Clic derecho → también "Quitar del Dock". Apagar la opción lo saca.
+
+### Versión 1.9.0
+- [ ] Tema Vidrio: abrir Notificaciones/widgets, Centro de control y Clima: sin recuadro claro alrededor, esquinas redondeadas, texto legible. Transparencia del vidrio en 100: se ve lo de atrás pero el texto se sigue leyendo.
+- [ ] Tema Claro y Oscuro: los paneles se ven casi opacos y prolijos.
+
 ### Versión 1.8.9
 - [ ] Maximizar una ventana: el Dock baja y se esconde, la ventana llega hasta abajo. Llevar el mouse al borde de abajo: el Dock aparece; al sacarlo se vuelve a esconder. Restaurar la ventana: el Dock vuelve a quedar fijo.
 - [ ] Con dos monitores: maximizar en uno solo esconde el Dock de ese monitor.

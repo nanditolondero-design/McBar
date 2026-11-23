@@ -12,7 +12,7 @@ using McBar.Core;
 
 namespace McBar.Dock
 {
-    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash, Folder, File, AppFolder /* 1.8.3: carpeta de apps */ }
+    internal enum DockItemKind { App, Launchpad, Separator, Downloads, Trash, Folder, File, AppFolder /* 1.8.3: carpeta de apps */, Power /* 1.9.1: apagar/reiniciar */ }
 
     internal sealed class DockItem
     {

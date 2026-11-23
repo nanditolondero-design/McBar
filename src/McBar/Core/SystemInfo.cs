@@ -156,6 +156,28 @@ namespace McBar.Core
         // ---------- Inicio con Windows ----------
         private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
+        // 1.9.1: Windows espera unos segundos antes de abrir los programas de inicio (para que el escritorio
+        // aparezca rápido). Mientras tanto se ve su barra de tareas. Esta clave (del usuario, sin administrador)
+        // saca esa espera. Se guarda lo que había (inicio-anterior.json) y se devuelve al apagar la opción.
+        private const string SerializeKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize";
+        private const string FastBackup = "inicio-anterior.json";
+
+        public static void SetFastStartup(bool enabled)
+        {
+            try
+            {
+                if (enabled)
+                {
+                    RegBackup.Save(FastBackup, new[] { (SerializeKey, "StartupDelayInMSec"), (SerializeKey, "WaitForIdleState") });
+                    using var k = Registry.CurrentUser.CreateSubKey(SerializeKey, true);
+                    k?.SetValue("StartupDelayInMSec", 0, RegistryValueKind.DWord);
+                    k?.SetValue("WaitForIdleState", 0, RegistryValueKind.DWord);
+                }
+                else RegBackup.Restore(FastBackup);
+            }
+            catch (Exception ex) { Log.Write("Inicio rápido: " + ex.Message); }
+        }
+
         public static void SetStartWithWindows(bool enabled)
         {
             try

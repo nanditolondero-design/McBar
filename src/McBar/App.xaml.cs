@@ -141,6 +141,12 @@ namespace McBar
             Microsoft.Win32.SystemEvents.SessionEnding += (_, _) =>
                 SafeCleanup(keepTaskbarHidden: SettingsStore.Current.StartWithWindows && SettingsStore.Current.HideWindowsTaskbar);
 
+            // 1.9.1: esconder la barra de Windows lo ANTES posible (antes se esperaba a armar el tema y el
+            // seguimiento de ventanas, y la barra se llegaba a ver unos segundos al iniciar Windows)
+            if (SettingsStore.Current.HideWindowsTaskbar) { try { Taskbar.Hide(); } catch { } }
+            // 1.9.1: también el aviso de cierre de sesión de WPF (además del de SystemEvents, más abajo), por si uno no llega
+            SessionEnding += (_, _) => SafeCleanup(keepTaskbarHidden: SettingsStore.Current.StartWithWindows && SettingsStore.Current.HideWindowsTaskbar);
+
             Scale = Win32.SystemScale();
             var s = SettingsStore.Current;
             if (!s.FirstRunDone)
@@ -167,6 +173,7 @@ namespace McBar
             if (s.HideWindowsTaskbar) Taskbar.Hide();
             else if (s.TaskbarModified) Taskbar.Restore(); // quedó modificada de una sesión anterior
             if (s.StartWithWindows) SystemInfo.SetStartWithWindows(true);
+            SystemInfo.SetFastStartup(s.StartWithWindows && s.FastStartup); // 1.9.1
             if (s.UseOwnTray) StartTray();
 
             BuildMonitors();
@@ -508,6 +515,7 @@ namespace McBar
             {
                 SystemInfo.SetStartWithWindows(s.StartWithWindows);
                 _lastStartWithWindows = s.StartWithWindows;
+                SystemInfo.SetFastStartup(s.StartWithWindows && s.FastStartup); // 1.9.1
             }
             if (s.AnimateWindows != _lastAnimate)
             {

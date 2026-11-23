@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.8.9-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.1-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -244,6 +244,8 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.9.1** | Botón de apagado en el Dock, arranque con menos barra de Windows |
+| **1.9.0** | Paneles con transparencia real, sin el recuadro claro |
 | **1.8.9** | El Dock se esconde con ventanas maximizadas, como la píldora |
 | **1.8.8** | Instalar desde McBar mientras se lo prueba |
 | **1.8.7** | Píldora de vidrio con transparencia real |

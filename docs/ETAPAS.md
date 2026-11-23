@@ -205,3 +205,9 @@ Andrés: "agregar la opción de instalar si estoy probando la app". `App.IsTryin
 ## 1.8.9 (23/11/2026)
 Andrés: "que el Dock se oculte igual que la píldora". `AppSettings.DockHideOnMaximized` (true); `DockWindow.AutoHide` deja de ser estático y suma `_maximizedHere`; `DockWindow.SetMaximized` (desde `App.ApplyFullscreen` con `FullscreenWatcher.MaximizedMonitors`) y, si cambió, `App.UpdateWorkAreas` para soltar o volver a reservar el lugar del Dock.
 
+## 1.9.0 (23/11/2026)
+Captura de Andrés: el panel de widgets con un rectángulo claro detrás y texto que no se lee (el `EnableBlur` de `PanelWindow` en ventana en capas no respeta la región redondeada en Windows 11). `PanelWindow` sin `EnableBlur`; fondo `Mc.PanelCardBg` (Dark/Light casi opaco, Glass vidrio oscuro en `GlassBackgrounds`) y `ThemeManager.MinAlpha` (mínimo 0x5C para ese fondo).
+
+## 1.9.1 (23/11/2026)
+Andrés: "cuando arranca Windows primero se ve la barra de Windows y después carga la app" y "una opción para poner un botón de apagado/reinicio en el Dock como la Papelera". `Taskbar.Hide()` al principio de OnStartup; `Application.SessionEnding` además de `SystemEvents.SessionEnding`; `AppSettings.FastStartup` + `SystemInfo.SetFastStartup` (Explorer\Serialize StartupDelayInMSec/WaitForIdleState = 0, con `RegBackup`, se devuelve al desinstalar). Botón: `AppIdentity.Power` como pila, `DockItemKind.Power`, `DockWindow.PowerIcon` (dibujado) y `ShowPowerMenu`. En su captura de 15:40 "Abrir McBar al iniciar Windows" estaba apagado.
+

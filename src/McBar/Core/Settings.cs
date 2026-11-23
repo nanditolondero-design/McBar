@@ -238,6 +238,8 @@ namespace McBar.Core
         // General
         public bool HideWindowsTaskbar { get; set; } = true;
         public bool StartWithWindows { get; set; } = false;
+        /// <summary>1.9.1: al iniciar Windows, sacar la demora que Windows pone a los programas de inicio (McBar abre antes).</summary>
+        public bool FastStartup { get; set; } = true;
         /// <summary>"auto" (sigue a Windows), "dark" o "light".</summary>
         public string Theme { get; set; } = "auto";
 

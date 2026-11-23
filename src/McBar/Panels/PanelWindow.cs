@@ -40,7 +40,7 @@ namespace McBar.Panels
             SetResourceReference(FontFamilyProperty, "Mc.Font");
             FontSize = 13;
 
-            // Tarjeta con desenfoque real detrás (acrílico) y esquinas redondeadas recortadas en la ventana.
+            // Tarjeta con esquinas redondeadas recortadas en la ventana (1.9.0: sin desenfoque de Windows, transparencia real).
             Card = new Border
             {
                 CornerRadius = new CornerRadius(CornerRadiusDip),
@@ -48,7 +48,7 @@ namespace McBar.Panels
                 Padding = new Thickness(8),
                 RenderTransform = _slide
             };
-            Card.SetResourceReference(Border.BackgroundProperty, "Mc.GlassBg");
+            Card.SetResourceReference(Border.BackgroundProperty, "Mc.PanelCardBg"); // 1.9.0
             Card.SetResourceReference(Border.BorderBrushProperty, "Mc.PanelBorder");
             // 1.6.0: brillo fino arriba, encima del borde
             var root = new Grid();
@@ -59,7 +59,8 @@ namespace McBar.Panels
             SourceInitialized += (_, _) =>
             {
                 WindowOps.MakeTool(this);
-                WindowOps.EnableBlur(this, ThemeManager.GetColor("Mc.BlurTint"));
+                // 1.9.0: sin el desenfoque de Windows: en Windows 11 no respeta las esquinas redondeadas y se veía
+                // un rectángulo claro detrás del panel (y el texto blanco no se leía). Transparencia real.
             };
             SizeChanged += (_, _) => ClipCorners();
             Deactivated += (_, _) => CloseAnimated();

@@ -17,6 +17,8 @@ namespace McBar.Core
         public const string Launchpad = "mcbar:launchpad";
         public const string Downloads = "mcbar:downloads";
         public const string Trash = "mcbar:trash";
+        /// <summary>1.9.1: botón de apagado / reinicio en el Dock (al lado de la Papelera).</summary>
+        public const string Power = "mcbar:power";
 
         private static readonly Regex KnownFolderPath = new Regex(@"^\{([0-9A-Fa-f\-]{36})\}\\(.+)$", RegexOptions.Compiled);
 

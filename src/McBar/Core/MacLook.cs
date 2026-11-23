@@ -43,6 +43,7 @@ namespace McBar.Core
         {
             Try(() => MacCursors.Restore(), "cursores");
             Try(() => MacSounds.Restore(), "sonidos");
+            Try(() => SystemInfo.SetFastStartup(false), "inicio rápido"); // 1.9.1
         }
 
         private static void Try(Action a, string what)

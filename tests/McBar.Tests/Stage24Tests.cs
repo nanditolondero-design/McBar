@@ -19,6 +19,26 @@ namespace McBar.Tests
         }
 
         [Fact]
+        public void Paneles_TienenMinimoDeOpacidad()
+        {
+            // 1.9.0: los paneles de vidrio no quedan tan transparentes que no se lea el texto
+            Assert.Contains("Mc.PanelCardBg", ThemeManager.GlassBackgrounds);
+            Assert.True(ThemeManager.MinAlpha("Mc.PanelCardBg") >= 0x50);
+            Assert.Equal(0, ThemeManager.MinAlpha("Mc.DockBg"));
+        }
+
+        [Fact]
+        public void BotonDeApagado_EsEspecial()
+        {
+            Assert.True(AppIdentity.IsSpecial(AppIdentity.Power));
+            Assert.Empty(AppIdentity.KeysForTarget(AppIdentity.Power));
+            Assert.DoesNotContain(new AppSettings().Stacks, p => p.Target == AppIdentity.Power); // viene apagado
+        }
+
+        [Fact]
+        public void InicioRapido_PrendidoDeFabrica() => Assert.True(new AppSettings().FastStartup);
+
+        [Fact]
         public void ParteVisible_Expandir_UsaTodo()
         {
             var r = WallpaperGlass.VisiblePart(160, 90, 1680, 1050, true);

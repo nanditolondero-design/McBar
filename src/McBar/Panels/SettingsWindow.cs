@@ -70,6 +70,22 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Ocultar y mostrar el Dock automáticamente", s.DockAutoHide, v => s.DockAutoHide = v));
             // 1.8.9: como la píldora
             dock.Children.Add(Switch("Esconder el Dock con ventanas maximizadas", s.DockHideOnMaximized, v => s.DockHideOnMaximized = v));
+            // 1.9.1: botón de apagado/reinicio al lado de la Papelera (es una "pila" más del Dock)
+            var power = new CheckBox { Content = "Botón de apagado en el Dock (apagar, reiniciar, suspender…)", IsChecked = s.Stacks.Any(x => x.Target == AppIdentity.Power) };
+            power.SetResourceReference(StyleProperty, "McSwitch");
+            power.Click += (_, _) =>
+            {
+                bool on = power.IsChecked == true;
+                s.Stacks.RemoveAll(x => x.Target == AppIdentity.Power);
+                if (on)
+                {
+                    int trash = s.Stacks.FindIndex(x => x.Target == AppIdentity.Trash);
+                    var pin = new PinnedApp { Name = "Apagar", Target = AppIdentity.Power };
+                    if (trash >= 0) s.Stacks.Insert(trash + 1, pin); else s.Stacks.Add(pin);
+                }
+                SettingsStore.NotifyPinsChanged(null); // guarda y rearma los Docks
+            };
+            dock.Children.Add(power);
             dock.Children.Add(Switch("Animar al abrir aplicaciones", s.BounceOnLaunch, v => s.BounceOnLaunch = v));
             dock.Children.Add(Switch("Mostrar indicadores de apps abiertas", s.ShowIndicators, v => s.ShowIndicators = v));
             dock.Children.Add(Switch("Clic en la app activa la minimiza (como Windows)", s.ClickMinimizes, v => s.ClickMinimizes = v));
@@ -188,6 +204,8 @@ namespace McBar.Panels
             var gen = new StackPanel();
             gen.Children.Add(Switch("Ocultar la barra de tareas de Windows", s.HideWindowsTaskbar, v => s.HideWindowsTaskbar = v));
             gen.Children.Add(Switch("Abrir McBar al iniciar Windows", s.StartWithWindows, v => s.StartWithWindows = v));
+            // 1.9.1: que McBar abra antes y no se vea la barra de Windows al iniciar
+            gen.Children.Add(Switch("Abrir sin la espera de Windows al iniciar (también los otros programas de inicio)", s.FastStartup, v => s.FastStartup = v));
             gen.Children.Add(ThemeSelector(s));
             // 1.6.1: cuánto se transparenta el tema Vidrio (paneles, Dock, barra)
             gen.Children.Add(SliderSetting("Transparencia del vidrio", 0, 100, s.GlassTransparency, v => s.GlassTransparency = (int)v));

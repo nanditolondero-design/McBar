@@ -48,7 +48,10 @@ namespace McBar.Core
 
         /// <summary>Fondos del tema Vidrio a los que se les cambia la transparencia (los bordes y brillos no).</summary>
         public static readonly string[] GlassBackgrounds =
-            { "Mc.GlassBg", "Mc.PanelBg", "Mc.TileBg", "Mc.DockGlass", "Mc.DockBg", "Mc.MenuBarBg", "Mc.LabelBg", "Mc.SettingsBg" }; // 1.8.3: Preferencias
+            { "Mc.GlassBg", "Mc.PanelBg", "Mc.TileBg", "Mc.DockGlass", "Mc.DockBg", "Mc.MenuBarBg", "Mc.LabelBg", "Mc.SettingsBg", "Mc.PanelCardBg" }; // 1.8.3: Preferencias; 1.9.0: paneles
+
+        /// <summary>1.9.0: opacidad mínima de algunos fondos (para que el texto se siga leyendo con mucha transparencia).</summary>
+        public static byte MinAlpha(string key) => key == "Mc.PanelCardBg" ? (byte)0x5C : (byte)0;
 
         /// <summary>
         /// Opacidad nueva de un fondo según la transparencia elegida (0..100). 50 deja el valor original;
@@ -72,11 +75,11 @@ namespace McBar.Core
                 {
                     case SolidColorBrush sb:
                         var c = sb.Color;
-                        dict[key] = Frozen(new SolidColorBrush(Color.FromArgb(ScaleAlpha(c.A, transparency), c.R, c.G, c.B)));
+                        dict[key] = Frozen(new SolidColorBrush(Color.FromArgb(Math.Max(MinAlpha(key), ScaleAlpha(c.A, transparency)), c.R, c.G, c.B)));
                         break;
                     case LinearGradientBrush lg:
                         var copy = lg.Clone();
-                        foreach (var st in copy.GradientStops) st.Color = Color.FromArgb(ScaleAlpha(st.Color.A, transparency), st.Color.R, st.Color.G, st.Color.B);
+                        foreach (var st in copy.GradientStops) st.Color = Color.FromArgb(Math.Max(MinAlpha(key), ScaleAlpha(st.Color.A, transparency)), st.Color.R, st.Color.G, st.Color.B);
                         dict[key] = Frozen(copy);
                         break;
                 }

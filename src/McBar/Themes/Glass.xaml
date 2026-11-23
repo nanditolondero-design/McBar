@@ -21,6 +21,11 @@
         <GradientStop Color="#40FFFFFF" Offset="1"/>
     </LinearGradientBrush>
     <SolidColorBrush x:Key="Mc.TileBg" Color="#2EFFFFFF"/>
+    <!-- 1.9.0: paneles de vidrio transparentes de verdad (sin el desenfoque de Windows, que se veía rectangular) -->
+    <LinearGradientBrush x:Key="Mc.PanelCardBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#B23A3A44" Offset="0"/>
+        <GradientStop Color="#C41C1C22" Offset="1"/>
+    </LinearGradientBrush>
     <!-- 1.8.3: Preferencias de vidrio (sobre el acrílico de Windows); la transparencia del vidrio la cambia -->
     <LinearGradientBrush x:Key="Mc.SettingsBg" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#7A2A2A32" Offset="0"/>

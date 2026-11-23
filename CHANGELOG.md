@@ -1,5 +1,12 @@
 # Cambios
 
+## 1.9.1 — 23/11/2026 (pedidos de Andrés)
+- **Menos barra de Windows al iniciar**: McBar esconde la barra de Windows apenas arranca (antes esperaba a cargar el tema y el seguimiento de ventanas). Nueva opción en General, prendida: **"Abrir sin la espera de Windows al iniciar"**: Windows deja de esperar unos segundos antes de abrir los programas de inicio, así McBar aparece antes (aplica también a los otros programas de inicio; se vuelve a como estaba al apagarla o al desinstalar). Para que todo esto funcione tiene que estar prendido "Abrir McBar al iniciar Windows". Además, al apagar la PC se usa también el aviso de cierre de WPF, para que la barra quede escondida para el próximo inicio.
+- **Botón de apagado en el Dock**, al lado de la Papelera (opcional): Preferencias → Dock → "Botón de apagado en el Dock", o clic derecho en el Dock → Agregar al Dock → Botón de apagado. Al tocarlo: Suspender, Reiniciar…, Apagar…, Bloquear pantalla, Cerrar sesión… (reiniciar, apagar y cerrar sesión piden confirmación).
+
+## 1.9.0 — 23/11/2026 (captura de Andrés del panel de widgets)
+- **Paneles sin el rectángulo claro**: Notificaciones y widgets, Centro de control, Clima, Wi-Fi, Bluetooth y Sonido usaban el desenfoque de Windows, que en Windows 11 no respeta las esquinas redondeadas: se veía un recuadro claro detrás del panel y el texto blanco casi no se leía. Ahora son transparentes de verdad (como la píldora): con el tema Vidrio, vidrio oscuro que "Transparencia del vidrio" regula, sin bajar de un mínimo para que se lea; con Claro u Oscuro, casi opacos.
+
 ## 1.8.9 — 23/11/2026 (pedido de Andrés)
 - **El Dock se esconde igual que la píldora**: con una ventana maximizada en ese monitor, el Dock se esconde (como en ocultación automática) y vuelve al llevar el mouse abajo; la ventana usa toda la pantalla. Al no quedar ventanas maximizadas vuelve a quedar fijo. Preferencias → Dock → **"Esconder el Dock con ventanas maximizadas"** (viene prendido). En pantalla completa ya se escondía.
 
