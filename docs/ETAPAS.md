@@ -202,3 +202,6 @@ Andrés: "¿no hay forma de que sea real la transparencia?" → opciones: (1) tr
 ## 1.8.8 (23/11/2026)
 Andrés: "agregar la opción de instalar si estoy probando la app". `App.IsTrying` / `App.InstallNow` (InstallerWindow con `fromRunning`: "Ahora no" / "Seguir probando"; al instalar abre la copia instalada con `--reinicio` y esta se cierra con `SafeCleanup(keepTaskbarHidden: true)`). "Instalar McBar…" en `MenuBarContent.BuildSystemMenu` y en el pie de Preferencias.
 
+## 1.8.9 (23/11/2026)
+Andrés: "que el Dock se oculte igual que la píldora". `AppSettings.DockHideOnMaximized` (true); `DockWindow.AutoHide` deja de ser estático y suma `_maximizedHere`; `DockWindow.SetMaximized` (desde `App.ApplyFullscreen` con `FullscreenWatcher.MaximizedMonitors`) y, si cambió, `App.UpdateWorkAreas` para soltar o volver a reservar el lugar del Dock.
+

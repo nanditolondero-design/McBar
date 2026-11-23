@@ -316,6 +316,10 @@ namespace McBar
                 bool lpHere = _launchpadMonitor == isl.Monitor.Device; // 1.6.2: con el Launchpad abierto la isla se ve
                 isl.SetFullscreen(!lpHere && (fs.Contains(isl.Monitor.Device) || (hideMax && max.Contains(isl.Monitor.Device))));
             }
+            // 1.8.9: el Dock también se esconde con una ventana maximizada (vuelve con el mouse abajo)
+            bool changed = false;
+            foreach (var d in Docks) changed |= d.SetMaximized(max.Contains(d.Monitor.Device));
+            if (changed) UpdateWorkAreas(); // deja (o vuelve a reservar) el lugar del Dock
         }
 
         /// <summary>

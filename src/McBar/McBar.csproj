@@ -11,8 +11,8 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>McBar</AssemblyName>
     <RootNamespace>McBar</RootNamespace>
-    <Version>1.8.8</Version>
-    <FileVersion>1.8.8.0</FileVersion>
+    <Version>1.8.9</Version>
+    <FileVersion>1.8.9.0</FileVersion>
     <Authors>Andrés Londero</Authors>
     <Company>Andrés Londero</Company>
     <Product>McBar</Product>

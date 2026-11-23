@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.8.9 — 23/11/2026 (pedido de Andrés)
+- **El Dock se esconde igual que la píldora**: con una ventana maximizada en ese monitor, el Dock se esconde (como en ocultación automática) y vuelve al llevar el mouse abajo; la ventana usa toda la pantalla. Al no quedar ventanas maximizadas vuelve a quedar fijo. Preferencias → Dock → **"Esconder el Dock con ventanas maximizadas"** (viene prendido). En pantalla completa ya se escondía.
+
 ## 1.8.8 — 23/11/2026 (pedido de Andrés)
 - **Instalar mientras se prueba**: si McBar se está usando "sin instalar", aparece **"Instalar McBar…"** en el menú de McBar (arriba a la izquierda o en la píldora) y como botón abajo en Preferencias. Abre el instalador (con "Ahora no" en vez de "Probar sin instalar"); al terminar, se abre la copia instalada y la de prueba se cierra sola, sin que vuelva a aparecer la barra de Windows. Los ajustes quedan iguales.
 

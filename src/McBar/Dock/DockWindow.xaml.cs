@@ -78,7 +78,27 @@ namespace McBar.Dock
 
         private static AppSettings S => SettingsStore.Current;
         /// <summary>Ocultación automática pedida en Preferencias o por el modo juego (1.3.0).</summary>
-        private static bool AutoHide => S.DockAutoHide || GameMode.On;
+        // 1.8.9: también con una ventana maximizada en este monitor, como la píldora (si está prendido)
+        private bool AutoHide => S.DockAutoHide || GameMode.On || (_maximizedHere && S.DockHideOnMaximized);
+        private bool _maximizedHere, _lastAuto;
+
+        /// <summary>
+        /// 1.8.9: hay (o no) una ventana maximizada en el monitor de este Dock. Con "Esconder el Dock con ventanas
+        /// maximizadas" se esconde como en ocultación automática (vuelve llevando el mouse abajo) y deja de
+        /// reservar lugar, así la ventana usa toda la pantalla. Devuelve true si cambió.
+        /// </summary>
+        public bool SetMaximized(bool on)
+        {
+            _maximizedHere = on;
+            bool now = AutoHide; // también cambia si se prendió/apagó la opción en Preferencias
+            if (now == _lastAuto) return false;
+            _lastAuto = now;
+            OnSettingsChanged();
+            if (AutoHide) { if (!_hover && !_menuOpen) _hideTimer.Start(); }
+            else { _hideTimer.Stop(); _hidden = false; }
+            EnsureAnimating();
+            return true;
+        }
         private double BaseSize => S.DockIconSize;
         private double MaxSize => S.Magnification && !IsTaskbar ? S.MagnifiedSize : BaseSize;
         private double Gap => Math.Round(BaseSize * 0.1);

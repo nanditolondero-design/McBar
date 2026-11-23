@@ -68,6 +68,8 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Ampliación", s.Magnification, v => s.Magnification = v));
             dock.Children.Add(SliderSetting("Tamaño ampliado", 48, 160, s.MagnifiedSize, v => s.MagnifiedSize = Math.Max((int)v, s.DockIconSize)));
             dock.Children.Add(Switch("Ocultar y mostrar el Dock automáticamente", s.DockAutoHide, v => s.DockAutoHide = v));
+            // 1.8.9: como la píldora
+            dock.Children.Add(Switch("Esconder el Dock con ventanas maximizadas", s.DockHideOnMaximized, v => s.DockHideOnMaximized = v));
             dock.Children.Add(Switch("Animar al abrir aplicaciones", s.BounceOnLaunch, v => s.BounceOnLaunch = v));
             dock.Children.Add(Switch("Mostrar indicadores de apps abiertas", s.ShowIndicators, v => s.ShowIndicators = v));
             dock.Children.Add(Switch("Clic en la app activa la minimiza (como Windows)", s.ClickMinimizes, v => s.ClickMinimizes = v));

@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.9
+- [ ] Maximizar una ventana: el Dock baja y se esconde, la ventana llega hasta abajo. Llevar el mouse al borde de abajo: el Dock aparece; al sacarlo se vuelve a esconder. Restaurar la ventana: el Dock vuelve a quedar fijo.
+- [ ] Con dos monitores: maximizar en uno solo esconde el Dock de ese monitor.
+- [ ] Apagar "Esconder el Dock con ventanas maximizadas": con la ventana maximizada el Dock queda fijo.
+
 ### Versión 1.8.8
 - [ ] Abrir McBar.exe desde Descargas → "Probar sin instalar". En el menú de McBar aparece "Instalar McBar…" y en Preferencias el botón abajo. Al tocarlo: instalador con "Instalar" y "Ahora no". Instalar → "Abrir McBar": se cierra la copia de prueba y abre la instalada, con los mismos ajustes y sin que aparezca la barra de Windows.
 - [ ] Con McBar instalado (abierto desde el menú Inicio) esas opciones NO aparecen.
