@@ -240,6 +240,9 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.4
+- [ ] Organizador visual prendido, con una app en la franja: los íconos del escritorio de la columna izquierda se pueden tocar y arrastrar; la miniatura sigue respondiendo al clic.
+
 ### Versión 1.9.3
 - [ ] Win+Tab: el fondo es el fondo de pantalla difuminado y oscuro (no negro), con las miniaturas y los escritorios arriba.
 - [ ] Maximizar una ventana con una ventanita chica abierta encima (por ejemplo un chat sin maximizar): el Dock se esconde y la ventana llega hasta abajo. Probarlo varias veces seguidas.

@@ -33,7 +33,9 @@ namespace McBar.Panels
             FontFamily = (FontFamily)FindResource("Mc.Font");
             double sc = m.Scale;
             WindowOps.PlaceOnMonitor(this, m, (m.Work.Left - m.Bounds.Left) / sc, (m.Work.Top - m.Bounds.Top) / sc, WidthDip, m.Work.Height / sc);
-            Content = new Grid { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Children = { _list } };
+            // 1.9.4: fondo 100 % transparente: solo las miniaturas reciben el mouse. Antes la franja entera (de arriba
+            // a abajo, 200 de ancho) tapaba lo que había debajo: no se podían tocar los íconos del escritorio.
+            Content = new Grid { Background = null, Children = { _list } };
             Opacity = 0;
             Visibility = Visibility.Hidden;
             SourceInitialized += (_, _) => WindowOps.MakeToolNoActivate(this);

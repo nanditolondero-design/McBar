@@ -217,3 +217,6 @@ Publicación gratis en la Store: paquete MSIX (Microsoft lo firma). `-p:McBarSto
 ## 1.9.3 (23/11/2026)
 Revisión con capturas: Win+Tab se veía negro y el Dock a veces no se escondía con una ventana maximizada. `MissionControlWindow`: fondo = `WinUi.WallpaperBrush()` (320 px estirado, queda difuminado) + capa oscura, sin `EnableBlur`. `FullscreenWatcher.Check`: "maximizada" se decide con la primera ventana GRANDE (o maximizada) de cada monitor (`decidedMax`), aparte de la pantalla completa.
 
+## 1.9.4 (23/11/2026)
+Con el Organizador visual prendido, la franja izquierda (ventana de 200 DIP de ancho y toda la altura, con fondo casi invisible #01000000) tapaba los íconos del escritorio de esa columna. `StageStrip`: fondo `null` (transparente de verdad: en las ventanas con transparencia, los píxeles con alfa 0 dejan pasar el mouse).
+

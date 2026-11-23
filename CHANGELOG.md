@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.4 — 23/11/2026 (arreglo)
+- **Organizador visual**: la franja de la izquierda ya no bloquea lo que tiene debajo. Antes, con una app en la franja, no se podía usar nada en esa columna de la pantalla (por ejemplo los íconos del escritorio); ahora solo las miniaturas reciben el mouse.
+
 ## 1.9.3 — 23/11/2026
 - **Vista de todas las ventanas (Win+Tab) sin fondo negro**: ahora el fondo es el fondo de pantalla difuminado y oscurecido. El desenfoque de Windows que usaba antes en muchas PCs no funcionaba y quedaba todo negro.
 - **El Dock (y la isla) se esconden de verdad con una ventana maximizada**: para decidir si hay una ventana maximizada ahora solo cuentan las ventanas grandes; antes una ventanita común por encima (un chat, un aviso, un diálogo) hacía que el Dock quedara fijo y la ventana maximizada dejara el lugar libre abajo.
