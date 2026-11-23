@@ -5,7 +5,7 @@ Creado por Andrés Londero.
 
 McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de menú arriba, con el aspecto y las animaciones de macOS, consumiendo lo mínimo posible.
 
-## Qué incluye (versión 0.6.0)
+## Qué incluye (versión 1.3.0)
 
 **Dock**
 - Ampliación de íconos al pasar el mouse (el ícono bajo el cursor queda fijo y los vecinos se corren, como en macOS).
@@ -24,6 +24,16 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - Las ventanas se achican **hacia su ícono del Dock** al minimizar y vuelven desde ahí.
 - **Varios monitores**: barra de menú y Dock en cada uno (se puede limitar al principal).
 
+**Isla más viva (1.2.0)**
+- Temporizador y cronómetro en vivo en la isla y la barra (también desde el buscador: "temporizador 10").
+- Puntito naranja/verde cuando una app usa el micrófono o la cámara.
+- Progreso de las descargas de la carpeta Descargas, con aviso al terminar.
+
+**Personalización (1.3.0)**
+- Perfiles (Trabajo, Juegos…) con todos los ajustes; se cambian desde el menú de McBar, Preferencias o el buscador.
+- Modo juego: sin Launchpad con la tecla Windows, sin esquinas, sin avisos en la isla y con el Dock oculto.
+- Exportar e importar los ajustes; fondo de pantalla que cambia según la hora.
+
 **Barra de menú**
 - Menú de McBar (Acerca de este equipo, Configuración, Forzar salida, Suspender, Reiniciar, Apagar, Bloquear, Cerrar sesión).
 - Nombre de la app activa con menús Archivo, Edición, Ver, Ventana y Ayuda (mandan los atajos estándar de Windows a esa app).
@@ -40,6 +50,14 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 **Centro de control**: Wi-Fi, Bluetooth, modo avión, modo oscuro (cambia Windows de verdad), concentración, brillo (notebooks) y sonido.
 
 **Notificaciones propias** (0.4): McBar junta las notificaciones de Windows en su propio centro, agrupadas por app. Con la isla se abre como cajón desde la píldora; con la barra, tocando el reloj (arriba de los widgets). Win+N y Win+A abren las de McBar en vez de los paneles de Windows. Opcional: ocultar el cartelito de Windows.
+
+**Widgets, calendario y recordatorios** (1.1): widgets en el escritorio, eventos de Google/Outlook (enlace iCal) con aviso 10 min antes, y recordatorios escritos en lenguaje natural ("comprar pan mañana 18:00").
+
+**Más cosas de Mac** (1.0): esquinas activas, ventanas en mosaico (menú Ventana o Ctrl+Alt+flechas), escritorios en Win+Tab y Quick Look con la barra espaciadora en el Explorador.
+
+**Ventanas estilo Mac** (0.8): vista previa en vivo de las ventanas al dejar el mouse sobre el Dock, Alt+Tab con los íconos de las apps (como Cmd+Tab) y Win+Tab con todas las ventanas (como Mission Control).
+
+**Wi-Fi, Bluetooth y sonido propios** (0.7): redes con contraseña, dispositivos Bluetooth (los de audio se conectan con un clic) y elegir parlantes/auriculares/micrófono, sin abrir Configuración.
 
 **Teclado y buscador** (0.6): la tecla Windows abre el Launchpad, Win+S abre un buscador tipo Spotlight (apps, archivos, cuentas, Configuración y web) y las teclas de volumen muestran el cartel de McBar.
 
@@ -80,7 +98,7 @@ McBar reemplaza la barra de tareas de Windows por un Dock abajo y una barra de m
 - Abrir McBar. La barra de Windows se oculta y aparecen el Dock y la barra de menú.
 - Para salir: menú de McBar (arriba a la izquierda) → **Salir de McBar**. La barra de Windows vuelve.
 - Si algo sale mal y la barra de Windows queda oculta: ejecutar `McBar.exe --restaurar` (devuelve la barra, el espacio de las ventanas y la animación de Windows como estaban).
-- Los ajustes están en `%AppData%\McBar\settings.json`; el registro de errores en `%AppData%\McBar\mcbar.log`.
+- Los ajustes están en `%AppData%\McBar\settings.json`; el registro en `%AppData%\McBar\mcbar.log` y los informes de errores en `%AppData%\McBar\errores` (si McBar se cierra por un error, Windows lo vuelve a abrir solo).
 
 ## Documentación
 

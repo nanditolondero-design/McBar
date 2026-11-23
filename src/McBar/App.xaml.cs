@@ -116,9 +116,17 @@ namespace McBar
             };
             AppDomain.CurrentDomain.UnhandledException += (_, a) =>
             {
+                // 0.9.0: informe + devolver todo a la normalidad; Windows lo vuelve a abrir (Recovery.Register)
                 Log.Write("Error fatal: " + a.ExceptionObject);
+                Recovery.SaveReport(a.ExceptionObject);
                 SafeCleanup();
             };
+            System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, a) =>
+            {
+                Log.Write("Error en segundo plano: " + a.Exception);
+                a.SetObserved();
+            };
+            Recovery.Register();
             // 0.5.0 (arranque sin parpadeo): al apagar o cerrar sesión la barra de Windows queda oculta si McBar
             // arranca con Windows, así al volver a entrar no aparece antes de que McBar abra.
             Microsoft.Win32.SystemEvents.SessionEnding += (_, _) =>
@@ -180,6 +188,12 @@ namespace McBar
             if (s.OwnNotifications) NotificationCenter.Start();
             if (s.NeedsKeyboardHook) KeyboardHook.Start();
             StartWeather();
+            StartHealth();
+            HotCorners.Apply();
+            StartDesktopWidgets();
+            StartReminders();
+            LiveStatus.Start(); // 1.2.0: temporizador, cronómetro, micrófono/cámara y descargas
+            StartPersonalization(); // 1.3.0: perfiles, modo juego y fondo según la hora
             StartWatchdog();
             ScheduleTrim(6);
         }
@@ -363,6 +377,27 @@ namespace McBar
         /// - pantalla completa,
         /// - el área de trabajo sigue como la dejamos (cada ~5 s).
         /// </summary>
+        // ================== Estabilidad (0.9.0) ==================
+
+        private static DispatcherTimer? _health;
+
+        /// <summary>Anota el consumo cada 10 minutos y avisa si McBar se había cerrado por un error.</summary>
+        private static void StartHealth()
+        {
+            Diagnostics.Sample(); // primera medición (para calcular el % de procesador después)
+            var report = Recovery.RecentReport();
+            if (report != null)
+                NotificationCenter.Add(new NotificationInfo
+                {
+                    App = "McBar",
+                    Title = "McBar se cerró por un error y se volvió a abrir",
+                    Body = "El detalle quedó en " + report
+                });
+            _health = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
+            _health.Tick += (_, _) => Log.Write("Consumo: " + Diagnostics.Sample().Format());
+            _health.Start();
+        }
+
         private static void StartWatchdog()
         {
             _watchdog = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(700) };
@@ -442,6 +477,8 @@ namespace McBar
             }
             if (s.OwnNotifications) NotificationCenter.Start(); else NotificationCenter.Stop();
             if (s.NeedsKeyboardHook) KeyboardHook.Start(); else KeyboardHook.Stop();
+            HotCorners.Apply();
+            DynamicWallpaper.Apply(); // 1.3.0
             if (IslandKey(s) != _lastIslandKey)
             {
                 _lastIslandKey = IslandKey(s);
@@ -549,6 +586,185 @@ namespace McBar
             return fg != IntPtr.Zero ? Monitors.FromWindow(fg) : null;
         }
 
+        private static ViewWindow? _view;
+
+        /// <summary>
+        /// Wi-Fi, Bluetooth y Sonido propios (0.7.0): con la isla se abren como cajón; con la barra, como panel.
+        /// kind: "wifi", "bluetooth" o "sound".
+        /// </summary>
+        public static void ShowConnectivity(string kind, MonitorInfo? monitor = null)
+        {
+            var isl = Islands.FirstOrDefault(i => monitor != null && i.Monitor.Device == monitor.Device) ?? Islands.FirstOrDefault();
+            if (isl != null && isl.IsVisible)
+            {
+                isl.ToggleDrawer(kind == "wifi" ? IslandWindow.DrawerKind.Wifi : kind == "bluetooth" ? IslandWindow.DrawerKind.Bluetooth
+                    : kind == "timer" ? IslandWindow.DrawerKind.Timer : IslandWindow.DrawerKind.Sound);
+                return;
+            }
+            if (_view != null && _view.IsVisible && !_view.IsClosing)
+            {
+                bool same = _view.Kind == kind;
+                _view.CloseAnimated();
+                if (same) return;
+            }
+            else if (_view != null && _view.Kind == kind && RecentlyClosed(_view.ClosedAt)) return;
+            _controlCenter?.CloseAnimated();
+            _widgets?.CloseAnimated();
+            FrameworkElement view = kind == "wifi" ? new WifiView() : kind == "bluetooth" ? new BluetoothView()
+                : kind == "timer" ? new TimerView() : new SoundView(); // 1.2.0: "timer"
+            _view = new ViewWindow(kind, view);
+            _view.ShowBelowMenuBar(MonitorOrPrimary(monitor));
+        }
+
+        // ================== Ventanas estilo Mac (0.8.0) ==================
+
+        private static SwitcherWindow? _switcher;
+        private static MissionControlWindow? _mission;
+        private static PreviewWindow? _preview;
+
+        /// <summary>Alt+Tab: abre el selector (si no está) o pasa a la siguiente app.</summary>
+        public static void SwitcherStep(bool back)
+        {
+            if (_switcher == null)
+            {
+                _switcher = new SwitcherWindow(MonitorOrPrimary(ActiveMonitor()));
+                if (!_switcher.HasApps) { _switcher = null; return; }
+                _switcher.Closed += (_, _) => _switcher = null;
+                _switcher.Show();
+                if (back) { _switcher.Step(true); _switcher.Step(true); } // Alt+Mayús+Tab: la última app
+                return;
+            }
+            _switcher.Step(back);
+        }
+
+        /// <summary>Al soltar Alt: ir a la app elegida.</summary>
+        public static void SwitcherCommit() => _switcher?.Commit();
+
+        public static void SwitcherCancel() => _switcher?.Close();
+
+        /// <summary>Win+Tab: todas las ventanas del monitor activo.</summary>
+        public static void ToggleMissionControl(MonitorInfo? monitor = null)
+        {
+            if (_mission != null && _mission.IsVisible && !_mission.IsClosing) { _mission.CloseAnimated(); return; }
+            if (_mission != null && RecentlyClosed(_mission.ClosedAt)) return;
+            HideDockPreview(now: true);
+            _mission = new MissionControlWindow(MonitorOrPrimary(monitor ?? ActiveMonitor()));
+            _mission.Show();
+        }
+
+        /// <summary>Vista previa de las ventanas de una app del Dock (posición en DIP de pantalla).</summary>
+        public static void ShowDockPreview(IReadOnlyList<TrackedWindow> windows, double centerX, double dockTopY, MonitorInfo m)
+        {
+            if (!SettingsStore.Current.DockPreviews || windows.Count == 0) return;
+            if (_preview != null && _preview.IsVisible && _preview.Sources.SequenceEqual(windows.Select(w => w.Hwnd))) { _preview.KeepOpen(); return; }
+            HideDockPreview(now: true);
+            _preview = new PreviewWindow(windows, centerX, dockTopY, m);
+            _preview.Closed += (s, _) => { if (ReferenceEquals(_preview, s)) _preview = null; };
+            _preview.Show();
+        }
+
+        public static void HideDockPreview(bool now = false)
+        {
+            if (_preview == null) return;
+            if (now) { _preview.Close(); _preview = null; }
+            else _preview.HideSoon();
+        }
+
+        // ================== Widgets en el escritorio, calendario y recordatorios (1.1.0) ==================
+
+        private static readonly List<DesktopWidgetWindow> DesktopWidgetWindows = new List<DesktopWidgetWindow>();
+        private static DispatcherTimer? _reminderTimer;
+
+        // ================== Personalización (1.3.0) ==================
+
+        private static void StartPersonalization()
+        {
+            DynamicWallpaper.Apply();
+            var s = SettingsStore.Current;
+            if (Profiles.Find(s, s.ActiveProfile)?.GameMode == true) GameMode.Set(true);
+            GameMode.Changed += () => UpdateWorkAreas(); // el Dock se oculta y deja lugar
+            Profiles.ProfileChanged += () => { ThemeManager.Apply(); ReloadDesktopWidgets(); };
+        }
+
+        /// <summary>Usar un perfil (desde el menú de McBar, Preferencias o el buscador).</summary>
+        public static void UseProfile(string name)
+        {
+            if (!Profiles.Use(name)) McDialog.Info("No se pudo usar el perfil", $"El perfil «{name}» está vacío o dañado.");
+        }
+
+        /// <summary>Al cambiar de perfil o importar ajustes, los widgets del escritorio se vuelven a armar.</summary>
+        private static void ReloadDesktopWidgets()
+        {
+            foreach (var w in DesktopWidgetWindows.ToList()) { try { w.Close(); } catch { } }
+            DesktopWidgetWindows.Clear();
+            StartDesktopWidgets();
+        }
+
+        private static void StartDesktopWidgets()
+        {
+            foreach (var w in SettingsStore.Current.DesktopWidgets.ToList())
+            {
+                var win = new DesktopWidgetWindow(w);
+                DesktopWidgetWindows.Add(win);
+                win.Show();
+            }
+        }
+
+        /// <summary>Pone un widget nuevo en el escritorio (arriba a la derecha de la pantalla principal, en cascada).</summary>
+        public static void AddDesktopWidget(string kind)
+        {
+            var m = MonitorOrPrimary(null);
+            int n = DesktopWidgetWindows.Count;
+            var model = new DesktopWidget
+            {
+                Kind = kind,
+                X = m.Work.Right / Scale - 360 - (n / 4) * 330,
+                Y = m.Work.Top / Scale + 60 + (n % 4) * 190
+            };
+            SettingsStore.Current.DesktopWidgets.Add(model);
+            SettingsStore.Save();
+            var win = new DesktopWidgetWindow(model);
+            DesktopWidgetWindows.Add(win);
+            win.Show();
+        }
+
+        public static void RemoveDesktopWidget(DesktopWidgetWindow win)
+        {
+            SettingsStore.Current.DesktopWidgets.Remove(win.Model);
+            SettingsStore.Save();
+            DesktopWidgetWindows.Remove(win);
+            win.Close();
+        }
+
+        /// <summary>Cada 30 s: recordatorios vencidos y eventos que empiezan en 10 min → notificación (e isla).</summary>
+        private static void StartReminders()
+        {
+            _ = IcsCalendar.RefreshAsync();
+            _reminderTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _reminderTimer.Tick += async (_, _) =>
+            {
+                foreach (var r in Reminders.TakeDue(DateTime.Now))
+                    NotificationCenter.Add(new NotificationInfo { App = "Recordatorios", Title = r.Text, Body = r.Due != null ? Reminders.When(r.Due.Value, DateTime.Now) : "" });
+                await IcsCalendar.RefreshAsync();
+                if (SettingsStore.Current.EventReminders)
+                    foreach (var e in IcsCalendar.DueForReminder(10))
+                        NotificationCenter.Add(new NotificationInfo
+                        {
+                            App = "Calendario",
+                            Title = e.Title,
+                            Body = $"Empieza a las {e.Start:HH:mm}" + (e.Location.Length > 0 ? " · " + e.Location : "")
+                        });
+            };
+            _reminderTimer.Start();
+        }
+
+        /// <summary>Quick Look (1.0.0): vista previa del archivo elegido en esa ventana del Explorador.</summary>
+        public static void QuickLookFromExplorer(IntPtr explorer)
+        {
+            var path = QuickLookData.SelectedInExplorer(explorer);
+            if (path != null) QuickLookWindow.Toggle(path);
+        }
+
         private static SpotlightWindow? _spotlight;
 
         /// <summary>Buscador tipo Spotlight (0.6.0): Win+S o la lupa.</summary>
@@ -599,6 +815,12 @@ namespace McBar
             if (_cleanedUp) return;
             _cleanedUp = true;
             _watchdog?.Stop();
+            _health?.Stop();
+            HotCorners.Stop();
+            _reminderTimer?.Stop();
+            try { LiveStatus.Stop(); } catch { }
+            try { DynamicWallpaper.Stop(); } catch { }
+            foreach (var w in DesktopWidgetWindows.ToList()) { try { w.Close(); } catch { } }
             foreach (var d in Docks) { try { d.Teardown(); } catch { } }
             foreach (var mb in MenuBars) { try { mb.Teardown(); } catch { } }
             foreach (var isl in Islands) { try { isl.Teardown(); } catch { } }

@@ -62,6 +62,11 @@ namespace McBar.Native
         }
 
         public static MonitorInfo? FromWindow(IntPtr hwnd) => Get(Win32.MonitorFromWindow(hwnd, Win32.MONITOR_DEFAULTTONEAREST));
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(Win32.POINT pt, uint flags);
+
+        /// <summary>Monitor que contiene el punto (píxeles de pantalla). 1.0.0: esquinas activas.</summary>
+        public static MonitorInfo? FromPoint(int x, int y) => Get(MonitorFromPoint(new Win32.POINT { x = x, y = y }, 2 /*NEAREST*/));
     }
 
     /// <summary>Administra el área de trabajo de cada monitor.</summary>

@@ -56,6 +56,11 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `AppBar`: reserva espacio arriba/abajo; el aviso de pantalla completa del escritorio se ignora (falso positivo de Windows).
 - `WindowTracker`: el delegado del hook debe quedar referenciado en un campo (si no, el GC lo borra y la app se cae).
 - Ventanas del Dock y la barra: `WS_EX_NOACTIVATE`, así la app activa no pierde el foco y los menús Archivo/Edición le mandan los atajos a ella.
+- Widgets nuevos: agregarlos a `WidgetFactory.Kinds` y `Build`; los timers se prenden en `Loaded` y se apagan en `Unloaded` (helper `Every`).
+- Atajos con Ctrl+Alt: usar Alt IZQUIERDO (`VK_LMENU`) y rechazar `VK_RMENU`: AltGr es Ctrl+Alt derecho y se usa para escribir @, #, etc.
+- Errores: `UnhandledException` guarda el informe (`Recovery.SaveReport`) y llama a `SafeCleanup`; Windows reabre McBar. No agregar actualización automática: Andrés no la quiere.
+- Miniaturas DWM: solo en ventanas NO en capas (`AllowsTransparency=false` + `MakeGlass`) y siempre liberarlas al cerrar (`ThumbHost.Dispose`).
+- WinRT (Wi-Fi, radios, medios) va solo en archivos de `Core/` sin `using System.Windows…`: los nombres chocan. Las vistas WPF usan clases simples (`WifiNet`, `BtDevice`, `AudioDevice`).
 - Teclado: el gancho tiene que contestar al instante; todo lo que haga algo va por `Ui(...)` al hilo de la interfaz. Nunca "comerse" la tecla Windows (quedaría trabada): para que no abra Inicio se manda la tecla vacía 0xE8.
 - Instalador: no tocar `Installer.InstallDir` ni la clave `Uninstall\McBar` sin migrar; `--uninstall` lo llama Windows. Lo que corre antes del mutex (instalar/desinstalar) no puede depender de ventanas de McBar ya creadas: solo `ThemeManager.Apply()` y diálogos.
 - `MenuBarContent.ApplyRows`: en la isla, sin app activa, el logo se mueve a `RightGroup` y queda una sola fila (`IsTwoRowsNow`, evento `RowsChanged` → la isla se vuelve a medir).
@@ -70,3 +75,8 @@ docs/                    arquitectura, etapas, pruebas manuales
 - `KeyboardHook` (Win+N / Win+A) corre en su propio hilo: el gancho tiene que contestar rápido, todo lo demás se manda al hilo de la interfaz.
 - Carpetas del Launchpad: toda la lógica en `Core/LaunchpadLayout.cs` (con pruebas); la ventana solo dibuja y guarda con `SettingsStore.Save()`.
 - La ampliación usa posiciones "sin ampliar" para calcular tamaños (`Core/Magnifier.cs`); no cambiar a posiciones reales porque tiembla.
+- Actividades en vivo (1.2.0): todo el estado está en `Core/LiveStatus` (temporizador, cronómetro, descargas, micrófono/cámara) y avisa con `LiveStatus.Changed` (cada segundo solo si hay algo en vivo). La isla y la barra solo dibujan (`UpdateLive`). Si se agrega otra actividad, sumarla en `LiveStatus.Summary()` y `HasLive`; si cambia el ancho de la isla en reposo, tocar `CompactNowWidth()`.
+- Micrófono/cámara: se LEE el registro de privacidad de Windows (ConsentStore); McBar nunca abre ni usa el micrófono ni la cámara.
+- Perfiles / importar (1.3.0): NUNCA reemplazar `SettingsStore.Current` por otro objeto (Preferencias, Docks y barras lo tienen agarrado): copiar con `Profiles.CopyInto`. Un ajuste nuevo propio de la PC (que no deba viajar en perfiles ni exportaciones) va en `Profiles.MachineFields`.
+- Modo juego (1.3.0): todo lo que "moleste" (atajos, avisos, esquinas, cosas que aparecen solas) tiene que mirar `GameMode.On`.
+- Textos en C#: no usar comillas rectas dentro de un string; usar «» (en la 1.1.0 rompieron la compilación).

@@ -87,11 +87,15 @@ namespace McBar.Core
             if (s.IslandNotifications)
             {
                 // Las notificaciones las junta el centro de notificaciones (funciona con barra o con isla).
-                _onNotification = e => Raised?.Invoke(new Activity
+                _onNotification = e =>
                 {
-                    Kind = ActivityKind.Notification,
-                    Notification = new NotificationInfo { App = e.App, Title = e.Title, Body = e.Body, Icon = e.Icon }
-                });
+                    if (GameMode.On) return; // 1.3.0: en modo juego no aparecen en la isla (quedan en el centro)
+                    Raised?.Invoke(new Activity
+                    {
+                        Kind = ActivityKind.Notification,
+                        Notification = new NotificationInfo { App = e.App, Title = e.Title, Body = e.Body, Icon = e.Icon }
+                    });
+                };
                 NotificationCenter.Added += _onNotification;
             }
         }

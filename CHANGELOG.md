@@ -1,5 +1,56 @@
 # Cambios
 
+## 1.3.0 — 22/11/2026 (etapa 13: personalización)
+- **Perfiles** (Preferencias → Personalización): un perfil guarda TODOS los ajustes (Dock y apps fijadas, barra o isla, tema, widgets, esquinas…). Atajos "+ Trabajo" y "+ Juegos (con modo juego)", o cualquier nombre con "Guardar los ajustes actuales como perfil". Se cambia desde Preferencias ("Usar"), el menú de McBar → Perfil o el buscador (escribir el nombre del perfil). Al pasar a otro perfil, lo que cambiaste en el actual queda guardado en él. Cada perfil puede prender el **modo juego**.
+- **Modo juego**: la tecla Windows sola no abre el Launchpad ni el Inicio, las esquinas activas no hacen nada, las notificaciones no aparecen en la isla (quedan en el centro) y el Dock se oculta solo y deja toda la pantalla. Se prende desde el Centro de control, el menú de McBar, el buscador ("modo juego") o Preferencias. Mientras está prendido, la isla y la barra muestran "Juego"; tocándolo se apaga.
+- **Exportar / importar ajustes** (Preferencias → Personalización → Copia de seguridad): un .json con todos los ajustes y los perfiles. Al importar no se pisan los datos propios de la PC (estado de la barra de Windows, arranque con Windows).
+- **Fondo de pantalla según la hora**: una imagen para la mañana (6), la tarde (12), el atardecer (18) y la noche (21). Si un momento no tiene imagen, sigue la anterior. Se revisa una vez por minuto y solo cambia cuando hace falta.
+- Arreglo: un texto de Preferencias → Calendarios tenía comillas rectas que rompían la compilación de la 1.1.0.
+
+## 1.2.0 — 22/11/2026 (etapa 12: isla más viva)
+- **Temporizador y cronómetro** (como las actividades en vivo del iPhone): mientras corren, la isla muestra la cuenta (se ensancha un poco) y la barra de menú un chip al lado del reloj. Tocándolos se abre el panel "Temporizador": atajos de 1, 5, 10 y 25 min, minutos a mano ("10", "1:30", "1,5"), Pausar / Seguir / Cancelar; cronómetro con décimas, Iniciar / Pausar / Reiniciar. Al terminar: notificación "¡Terminó el temporizador!" y tres sonidos de aviso. El temporizador sigue aunque se cierre el panel.
+- Desde el **buscador** (Win+S): "temporizador 10", "timer 5 min", "temporizador 1:30", "temporizador 1 hora" o "cronómetro" + Enter.
+- **Micrófono y cámara en uso**: puntito naranja (micrófono) o verde (cámara) en la isla y en la barra, con el nombre de la app al pasar el mouse. Se lee del registro de privacidad de Windows (el mismo de su ícono), cada 2 segundos. En el panel "Temporizador" aparece la lista y un clic lleva a la privacidad de Windows.
+- **Descargas en vivo**: mientras Chrome, Edge, Firefox u Opera bajan algo a la carpeta Descargas, la isla y la barra muestran cuánto va (y "+1" si hay más de una); el panel muestra nombre, tamaño y velocidad. Al terminar: notificación "Descarga completa".
+- Preferencias → Isla dinámica: tres interruptores nuevos (actividades en vivo, progreso de descargas, micrófono/cámara). Vienen prendidos.
+- Todo se refresca una vez por segundo solo mientras hay algo en vivo; si no, no gasta.
+
+## 1.1.0 — 22/11/2026 (etapa 11: widgets, calendario y recordatorios)
+- **Widgets en el escritorio** (como macOS Sonoma): Reloj, Calendario, Clima, Recordatorios, Notas, Batería y Sistema. Se agregan en Preferencias → Widgets ("+ Reloj", etc.), quedan detrás de las ventanas, se mueven arrastrándolos (la posición se guarda) y se quitan con clic derecho.
+- **Calendario de Google / Outlook** sin iniciar sesión: se pega el enlace iCal (Google: "Dirección secreta en formato iCal"; Outlook: enlace ICS de "Publicar calendario"). McBar lo baja cada 15 minutos y muestra los eventos: puntitos en los días del mes, "Próximos eventos" en el widget y en el panel del reloj, y **aviso 10 minutos antes** (notificación e isla). Entiende eventos de todo el día, zonas horarias y repeticiones (diaria, semanal con días, mensual, anual).
+- **Recordatorios** en lenguaje natural: "comprar pan mañana 18:00", "llamar a Juan en 20 min", "turno 25/11 9:30", "pagar la luz el miércoles", "sacar la basura a las 23". A la hora avisa con una notificación (y en la isla). Se marcan como hechos tocando el círculo; clic derecho → Borrar. Están en el panel del reloj y como widget de escritorio. Se guardan en `%AppData%\McBar\recordatorios.json`.
+
+## 1.0.0 — 22/11/2026 (etapa 10: más cosas de Mac)
+- **Esquinas activas** (Preferencias → Esquinas activas): a cada esquina de la pantalla se le puede asignar Launchpad, Todas las ventanas, Escritorio, Buscador, Notificaciones, Centro de control o Bloquear pantalla. Se dispara dejando el mouse un instante; no actúa con pantalla completa ni arrastrando algo. Vienen todas apagadas.
+- **Ventanas en mosaico**, como "Mover y cambiar tamaño" de macOS Sequoia:
+  - Menú **Ventana → Mover y cambiar tamaño**: mitades, cuartos, tercios, dos tercios, Llenar, Centrar y "Volver al tamaño anterior".
+  - Atajos: **Ctrl+Alt+flechas** (mitades), Ctrl+Alt+U/I/J/K (cuartos), Ctrl+Alt+Enter (llenar), Ctrl+Alt+C (centrar), Ctrl+Alt+Retroceso (como estaba). Con AltGr no se activan (para no molestar al escribir @ y otros signos).
+  - Deja un margen chico entre ventanas y compensa el borde invisible de Windows para que queden justas.
+- **Escritorios en Win+Tab**: arriba aparece una franja con los escritorios virtuales de Windows (el actual resaltado) para pasar de uno a otro con un clic, y "+" para crear uno nuevo.
+- **Quick Look**: con un archivo elegido en el Explorador, la **barra espaciadora** muestra una vista previa grande: fotos, videos y audio (se reproducen), PDF (primera página), texto y código, carpetas (cuántos elementos tienen) y el resto con su miniatura de Windows. Espacio o Esc cierran, Enter o "Abrir" lo abren.
+- Preferencias → Teclado: interruptores para Quick Look y los atajos de mosaico.
+- El menú Ventana: "Vista de tareas" pasa a ser "Todas las ventanas" (la de McBar).
+
+## 0.9.0 — 22/11/2026 (etapa 9: estabilidad)
+- **Si McBar se cierra por un error**: guarda un informe en `%AppData%\McBar\errores`, devuelve la barra de Windows y el espacio de las ventanas a la normalidad, y **Windows lo vuelve a abrir solo** (el mismo mecanismo que usa Office). Si se cae 3 veces en 10 minutos no se reabre más, para no quedar en un círculo.
+- Al volver a abrirse, avisa en las notificaciones que hubo un error y dónde quedó el informe.
+- Los errores de tareas en segundo plano ya no pueden tirar la app: se anotan en el registro.
+- **Consumo**: cada 10 minutos se anota en `mcbar.log` cuánta memoria, procesador, identificadores y objetos gráficos usa McBar (para encontrar pérdidas de memoria). En vivo en Preferencias → Diagnóstico, junto con la versión y un botón para abrir los informes de errores.
+- La actualización automática se descartó (pedido de Andrés).
+
+## 0.8.0 — 22/11/2026 (etapa 8: ventanas estilo Mac)
+- **Vista previa en el Dock**: dejando el mouse medio segundo sobre una app abierta aparecen miniaturas EN VIVO de sus ventanas (hasta 5) con su título; clic para ir a esa ventana, ✕ para cerrarla. Se puede apagar en Preferencias → Dock.
+- **Alt+Tab estilo Cmd+Tab**: una fila con los íconos de las apps abiertas (la usada más recientemente primero, agrupando sus ventanas) y el nombre de la elegida. Tab / Mayús+Tab o flechas para moverse, soltar Alt para ir, Esc para cancelar.
+- **Win+Tab: todas las ventanas** (como Mission Control): fondo desenfocado y las ventanas de la pantalla en una grilla con miniaturas en vivo, ícono y título. Clic o Enter para ir, flechas/Tab para elegir, Esc o clic en el fondo para salir.
+- Preferencias → Teclado: interruptores para Alt+Tab y Win+Tab propios.
+- Las miniaturas las dibuja Windows (DWM), igual que su propia barra: no consumen memoria de McBar. Las ventanas minimizadas no aparecen en Win+Tab (Windows no da su imagen).
+
+## 0.7.0 — 22/11/2026 (etapa 7: Wi-Fi, Bluetooth y sonido propios)
+Se abren tocando los íconos de la barra o de la isla, o las filas del Centro de control. Con la isla aparecen como cajón; con la barra, como panel. Ya no hace falta abrir Configuración de Windows.
+- **Wi-Fi**: interruptor para prender/apagar, red conectada arriba, redes cercanas con barras de señal y candado; clic para conectarse (si hace falta, pide la contraseña ahí mismo) o para desconectarse. Si Windows no deja ver las redes (Windows 11 24H2 pide permiso de Ubicación), ofrece abrir ese permiso.
+- **Bluetooth**: interruptor para prender/apagar y los dispositivos vinculados con su estado e ícono (auriculares, mouse, teclado, teléfono). Los de audio se conectan y desconectan con un clic. Los demás muestran su estado (se conectan solos al usarlos). "Agregar un dispositivo…" abre la vinculación de Windows.
+- **Sonido**: volumen, **salida** (parlantes, auriculares, HDMI…) y **entrada** (micrófonos) con un clic; el elegido queda como predeterminado para todo. La isla se vuelve a enganchar al dispositivo nuevo.
+
 ## 0.6.0 — 22/11/2026 (etapa 6: Inicio, buscador y avisos)
 - **Tecla Windows sola → Launchpad** en vez del menú Inicio. Los atajos con Windows (Win+E, Win+D, Win+L…) siguen funcionando: al apretar Windows McBar manda una tecla vacía, así Inicio no se abre al soltar.
 - **Buscador tipo Spotlight** (Win+S o la lupa de la barra/isla): ventana de vidrio centrada con:

@@ -46,10 +46,27 @@ namespace McBar.MenuBar
             }
         }
         private double CompactMediaWidth => CompactWidth + 100;
+
+        // 1.2.0: actividades en vivo (temporizador, cronómetro, descarga) y puntitos de micrófono/cámara.
+        private readonly StackPanel _liveChip = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, Margin = new Thickness(2, 0, 6, 0) };
+        private readonly TextBlock _liveGlyph = new TextBlock { FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x9F, 0x0A)) };
+        private readonly TextBlock _liveText = new TextBlock { FontSize = 12.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x9F, 0x0A)) };
+        private readonly System.Windows.Shapes.Ellipse _micDot = new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0x9F, 0x0A)), Visibility = Visibility.Collapsed };
+        private readonly System.Windows.Shapes.Ellipse _camDot = new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Fill = new SolidColorBrush(Color.FromRgb(0x30, 0xD1, 0x58)), Visibility = Visibility.Collapsed };
+        private Action? _onLive;
+
+        /// <summary>Ancho de la isla en reposo según lo que muestra (música, actividad en vivo, puntitos).</summary>
+        private double CompactNowWidth()
+        {
+            double w = ActivityHub.Media?.Current != null ? CompactMediaWidth : CompactWidth;
+            if (_liveChip.Visibility == Visibility.Visible) w += 84;
+            if (_micDot.Visibility == Visibility.Visible || _camDot.Visibility == Visibility.Visible) w += 18;
+            return w;
+        }
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
         private enum State { Compact, Expanded, Activity, Media, Drawer }
-        public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery, Weather }
+        public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery, Weather, Bluetooth, Timer }
         private DrawerKind _drawerKind;
         private readonly Border _badge = new Border { CornerRadius = new CornerRadius(9), MinWidth = 18, Height = 18, Padding = new Thickness(5, 0, 5, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
         private readonly TextBlock _badgeText = new TextBlock { Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -200,7 +217,8 @@ namespace McBar.MenuBar
             _compact.MouseLeftButtonUp += (_, e) =>
             {
                 _expandTimer.Stop();
-                if (ActivityHub.Media?.Current != null) GoMedia();
+                if (SettingsStore.Current.LiveActivities && (LiveStatus.TimerActive || LiveStatus.StopwatchActive || GameMode.On)) ToggleDrawer(DrawerKind.Timer);
+                else if (ActivityHub.Media?.Current != null) GoMedia();
                 else if (NotificationCenter.UnreadCount > 0) ToggleDrawer(DrawerKind.Notifications);
                 else GoExpanded();
                 e.Handled = true;
@@ -212,6 +230,8 @@ namespace McBar.MenuBar
             ActivityHub.MediaChanged += _onMedia;
             _onNotifications = () => Dispatcher.BeginInvoke(new Action(UpdateCompact));
             NotificationCenter.Changed += _onNotifications;
+            _onLive = () => Dispatcher.BeginInvoke(new Action(OnLiveChanged));
+            LiveStatus.Changed += _onLive;
 
             SourceInitialized += (_, _) =>
             {
@@ -346,6 +366,7 @@ namespace McBar.MenuBar
             ActivityHub.Raised -= _onActivity;
             ActivityHub.MediaChanged -= _onMedia;
             if (_onNotifications != null) NotificationCenter.Changed -= _onNotifications;
+            if (_onLive != null) LiveStatus.Changed -= _onLive;
             _expandTimer.Stop(); _collapseTimer.Stop(); _activityTimer.Stop(); _clockTimer.Stop(); _progressTimer.Stop();
             _eqStory?.Stop(this);
             _content.Teardown();
@@ -398,8 +419,8 @@ namespace McBar.MenuBar
             _activityKind = null;
             _progressTimer.Stop();
             ShowLayer(_compact);
-            bool media = ActivityHub.Media?.Current != null;
-            AnimateSize(media ? CompactMediaWidth : CompactWidth, CompactHeight);
+            UpdateLive();
+            AnimateSize(CompactNowWidth(), CompactHeight);
             UpdateEqualizer();
         }
 
@@ -478,36 +499,15 @@ namespace McBar.MenuBar
                 case DrawerKind.Weather:
                     return new McBar.Panels.WeatherView(360) { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 4) };
 
+                // 0.7.0: Wi-Fi, Bluetooth y Sonido propios
                 case DrawerKind.Wifi:
-                {
-                    var (net, name) = SystemInfo.Network();
-                    var sp = DrawerStack("Wi-Fi");
-                    sp.Children.Add(McBar.Panels.PanelWindow.Text(net switch
-                    {
-                        NetKind.Wifi => $"Wi-Fi: conectado ({name})",
-                        NetKind.Ethernet => $"Ethernet: conectado ({name})",
-                        NetKind.Other => $"Conectado ({name})",
-                        _ => "Sin conexión"
-                    }, 12, dim: true));
-                    sp.Children.Add(DrawerButton("Mostrar redes disponibles", () => Launcher.Open("ms-availablenetworks:")));
-                    sp.Children.Add(DrawerButton("Configuración de red…", () => Launcher.Open("ms-settings:network")));
-                    return sp;
-                }
-
+                    return new McBar.Panels.WifiView(330) { HorizontalAlignment = HorizontalAlignment.Center };
+                case DrawerKind.Bluetooth:
+                    return new McBar.Panels.BluetoothView(330) { HorizontalAlignment = HorizontalAlignment.Center };
                 case DrawerKind.Sound:
-                {
-                    var sp = DrawerStack("Sonido");
-                    var vol = CoreAudio.GetVolume();
-                    if (vol != null)
-                    {
-                        var slider = McBar.Panels.PanelWindow.McSlider(0, 100, vol.Value * 100);
-                        slider.Width = 280;
-                        slider.ValueChanged += (_, e) => CoreAudio.SetVolume((float)(e.NewValue / 100.0));
-                        sp.Children.Add(slider);
-                    }
-                    sp.Children.Add(DrawerButton("Configuración de sonido…", () => Launcher.Open("ms-settings:sound")));
-                    return sp;
-                }
+                    return new McBar.Panels.SoundView(330) { HorizontalAlignment = HorizontalAlignment.Center };
+                case DrawerKind.Timer: // 1.2.0
+                    return new McBar.Panels.TimerView(330) { HorizontalAlignment = HorizontalAlignment.Center };
 
                 default: // Batería
                 {
@@ -707,7 +707,15 @@ namespace McBar.MenuBar
             _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, 22, 22), 5, 5);
             _compactArt.VerticalAlignment = VerticalAlignment.Center;
             RenderOptions.SetBitmapScalingMode(_compactArt, BitmapScalingMode.HighQuality);
-            _compact.Children.Add(_compactArt);
+            // 1.2.0: a la izquierda va la carátula y, al lado, el chip en vivo (temporizador, cronómetro, descarga)
+            var leftRow = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            leftRow.Children.Add(_compactArt);
+            _liveGlyph.FontFamily = (FontFamily)FindResource("Mc.Icons");
+            System.Windows.Documents.Typography.SetNumeralAlignment(_liveText, FontNumeralAlignment.Tabular);
+            _liveChip.Children.Add(_liveGlyph);
+            _liveChip.Children.Add(_liveText);
+            leftRow.Children.Add(_liveChip);
+            _compact.Children.Add(leftRow);
 
             _compactTime.Foreground = Brushes.White;
             _compactTime.FontWeight = FontWeights.SemiBold;
@@ -738,6 +746,8 @@ namespace McBar.MenuBar
             _badge.Child = _badgeText;
             var rightRow = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             rightRow.Children.Add(right);
+            rightRow.Children.Add(_micDot);
+            rightRow.Children.Add(_camDot);
             rightRow.Children.Add(_badge);
             right = new Grid();
             right.Children.Add(rightRow);
@@ -765,6 +775,28 @@ namespace McBar.MenuBar
             int unread = NotificationCenter.UnreadCount;
             _badge.Visibility = unread > 0 ? Visibility.Visible : Visibility.Collapsed;
             _badgeText.Text = unread > 9 ? "9+" : unread.ToString();
+        }
+
+        /// <summary>1.2.0: actualiza el chip en vivo y los puntitos (no cambia el tamaño).</summary>
+        private void UpdateLive()
+        {
+            var s = SettingsStore.Current;
+            var sum = s.LiveActivities ? LiveStatus.Summary() : null;
+            _liveChip.Visibility = sum != null ? Visibility.Visible : Visibility.Collapsed;
+            if (sum != null) { _liveGlyph.Text = sum.Value.glyph; _liveText.Text = sum.Value.text; }
+            _micDot.Visibility = s.PrivacyDots && LiveStatus.MicApps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            _camDot.Visibility = s.PrivacyDots && LiveStatus.CamApps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            _micDot.ToolTip = _camDot.ToolTip = LiveStatus.PrivacyText();
+        }
+
+        private void OnLiveChanged()
+        {
+            bool before = _liveChip.Visibility == Visibility.Visible;
+            bool dotsBefore = _micDot.Visibility == Visibility.Visible || _camDot.Visibility == Visibility.Visible;
+            UpdateLive();
+            bool now = _liveChip.Visibility == Visibility.Visible;
+            bool dotsNow = _micDot.Visibility == Visibility.Visible || _camDot.Visibility == Visibility.Visible;
+            if (_state == State.Compact && (before != now || dotsBefore != dotsNow)) AnimateSize(CompactNowWidth(), CompactHeight);
         }
 
         private void UpdateEqualizer()
@@ -924,7 +956,7 @@ namespace McBar.MenuBar
             }
             else if (_state == State.Compact)
             {
-                AnimateSize(m != null ? CompactMediaWidth : CompactWidth, CompactHeight);
+                AnimateSize(CompactNowWidth(), CompactHeight);
             }
             UpdateEqualizer();
         }

@@ -88,11 +88,49 @@
 - `Native/KeyboardHook`: gancho de teclado de bajo nivel en su hilo; Win+N → `App.ToggleWidgets`, Win+A → `App.ToggleControlCenter`; manda la tecla vacía 0xE8 para que no se abra Inicio.
 
 ## Cajones de la isla
-`IslandWindow.ToggleDrawer(DrawerKind)`: Centro de control, Notificaciones, Wi-Fi, Sonido, Batería. `BuildDrawer` arma el contenido; se mide dos veces (al pedirlo y ya cargado) para que no quede cortado.
+`IslandWindow.ToggleDrawer(DrawerKind)`: Centro de control, Notificaciones, Wi-Fi, Sonido, Batería, Clima, Bluetooth y Temporizador (1.2.0). `BuildDrawer` arma el contenido; se mide dos veces (al pedirlo y ya cargado) para que no quede cortado.
 
 ## Launchpad y carpetas (0.4.0)
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
+
+## Personalización (1.3.0)
+- `Core/Profiles`: `SettingsProfile {Name, GameMode, Data}` en `AppSettings.Profiles` + `ActiveProfile`. `Capture` (JSON sin perfiles), `SaveAs`, `Switch` (actualiza la foto del actual y copia la del nuevo con `CopyInto`, por reflexión, sobre el MISMO objeto `SettingsStore.Current`), `MachineFields` (nunca se copian) y `ProfileFields`. `Use` = Switch + `NotifyChanged` + `NotifyPinsChanged` + modo juego + evento `ProfileChanged` (App rehace tema y widgets del escritorio; Preferencias se vuelve a armar). `Export`/`ReadExport`/`ImportFrom` (archivo `{App:"McBar", Version, Exported, Settings}` o un settings.json suelto). Todo puro salvo `Use`/`ImportFrom`/`ExportTo`.
+- `Core/GameMode`: `On`, `Set`, `Toggle`, `Changed` (no se guarda). Lo miran `KeyboardHook` (Win sola), `HotCorners.Tick`, `ActivityHub` (notificaciones en la isla), `DockWindow.AutoHide` (+ `OnGameMode`), `LiveStatus.Summary` ("Juego") y `App` (`UpdateWorkAreas`).
+- `Core/DynamicWallpaper`: `Slots` (6/12/18/21), `SlotFor` y `PathFor` puros; timer de 1 min; `SystemParametersInfo(SPI_SETDESKWALLPAPER)` en otro hilo, solo si cambió la imagen. `Apply()` desde `App.OnSettingsChanged`.
+- Preferencias → pestaña "Personalización": `ProfilesBox`, `GameModeBox`, `WallpaperBox`, `BackupBox`. Centro de control: `GameModeToggle`. Menú de McBar: submenú Perfil + Modo juego. Buscador: "modo juego" y nombres de perfiles.
+
+## Isla más viva (1.2.0)
+- `Core/LiveStatus`: estado del temporizador (`TimerEnd`/`TimerPaused`) y del cronómetro; `DispatcherTimer` de 1 s (`Tick`): fin del temporizador → `NotificationCenter.Add` + `MessageBeep`; descargas (tamaño y velocidad suavizada); cada 2 s micrófono/cámara desde `HKCU\...\CapabilityAccessManager\ConsentStore\{microphone,webcam}` (y `NonPackaged`): en uso = `LastUsedTimeStop == 0`. `FileSystemWatcher` sobre Descargas (`FinalName` reconoce .crdownload/.part/.partial/.download/.opdownload; el renombrado al nombre final = terminó). Evento `Changed`. Puras con pruebas: `Format`, `FinalName`, `AppName`, `PrivacyText`, `ParseTimerCommand`, `SizeText`.
+- `Panels/TimerView` (panel/cajón; `ParseMinutes` puro). `App.ShowConnectivity("timer")` → `DrawerKind.Timer` en la isla o `ViewWindow` debajo de la barra.
+- `IslandWindow`: `_liveChip` en la columna izquierda (al lado de la carátula), `_micDot`/`_camDot` antes del globito; `CompactNowWidth()` suma el ancho del chip (+84) y de los puntitos (+18). `MenuBarContent`: `LiveButton` y `PrivacyDots` (XAML) + `UpdateLive`.
+- Ajustes: `LiveActivities`, `LiveDownloads`, `PrivacyDots`, `TimerPresets` (Sanitize: 1..1440, sin repetir, hasta 6).
+
+## Widgets, calendario y recordatorios (1.1.0)
+- `Core/IcsCalendar`: baja los .ics (`CalendarUrls`) cada 15 min; lector propio `Parse` (puro, con pruebas: días enteros, TZID/Z, RRULE simple, EXDATE, CANCELLED, renglones partidos). `DueForReminder` para el aviso de 10 min.
+- `Core/Reminders`: lista en `recordatorios.json`, `ParseQuick` (lenguaje natural, puro) y `When`.
+- `Panels/WidgetViews`: `WidgetFactory.Build(tipo)` y `DesktopWidgetWindow` (fuerza HWND_BOTTOM en WM_WINDOWPOSCHANGING). `App.StartDesktopWidgets/AddDesktopWidget/RemoveDesktopWidget`, `App.StartReminders` (timer de 30 s → `NotificationCenter.Add`).
+
+## Más cosas de Mac (1.0.0)
+- `Core/HotCorners`: timer de 100 ms (solo si hay alguna esquina en uso), `CornerAt` puro, `Monitors.FromPoint`.
+- `Core/Tiling` (`Compute` puro) + `Native/WindowTiler` (compensa DWMWA_EXTENDED_FRAME_BOUNDS, guarda el tamaño anterior). Atajos en `KeyboardHook` (`TileFor` puro; exige Alt IZQUIERDO para no chocar con AltGr).
+- `Core/VirtualDesktops`: lista del registro (`ParseIds` puro), cambiar/crear con Ctrl+Win+flechas / Ctrl+Win+D. Franja en `MissionControlWindow`.
+- Quick Look: `KeyboardHook` se come el Espacio solo si el foco está en la lista de archivos (`DirectUIHWND`) de un `CabinetWClass`; `Core/QuickLookData` (selección con Shell.Application, PDF con Windows.Data.Pdf, `KindOf`/`Size` puros); `Panels/QuickLookWindow`.
+
+## Estabilidad (0.9.0)
+`Core/Recovery`: `RegisterApplicationRestart` al arrancar (salvo 3 errores en 10 min, `TooManyRecentCrashes`), `SaveReport` en `UnhandledException` (antes de `SafeCleanup`), `RecentReport` para avisar al reabrir. `Core/Diagnostics`: memoria, % CPU (`CpuPercent` puro), identificadores, GDI/USER; `App.StartHealth` lo anota cada 10 min.
+
+## Ventanas estilo Mac (0.8.0)
+- `Native/DwmThumb`: DwmRegisterThumbnail / DwmUpdateThumbnailProperties (`Fit` puro). `Panels/ThumbHost` ubica las miniaturas sobre recuadros WPF (en píxeles) en cada `LayoutUpdated`.
+- `Core/WindowSwitch`: `AppsByRecency`, `Step`, `GridLayout` (puros, con pruebas).
+- `Panels/WindowViews`: `SwitcherWindow` (Alt+Tab), `PreviewWindow` (Dock, timer de 550 ms en `DockWindow`), `MissionControlWindow` (Win+Tab). `App.SwitcherStep/Commit/Cancel`, `App.ToggleMissionControl`, `App.ShowDockPreview/HideDockPreview`.
+- `KeyboardHook`: Alt+Tab se "come" el Tab mientras Alt está apretado (y manda 0xE8 para que soltar Alt no active el menú); al soltar Alt confirma.
+
+## Wi-Fi, Bluetooth y sonido (0.7.0)
+- `Core/WifiService` (WinRT: WiFiAdapter, Radio) — `Arrange` puro.
+- `Native/BluetoothDevices` (bthprops: listar, `KindOf` puro, `SetAudioConnected` con BluetoothSetServiceState).
+- `Native/AudioDevices` (IMMDeviceEnumerator para listar, IPolicyConfig para el predeterminado).
+- `Panels/ConnectivityViews`: `WifiView`, `BluetoothView`, `SoundView` y `ViewWindow`. `App.ShowConnectivity(kind)` los abre como cajón de la isla (`DrawerKind.Wifi/Bluetooth/Sound`) o como panel.
 
 ## Teclado, buscador y volumen (0.6.0)
 - `Native/KeyboardHook`: un solo gancho (en su hilo) para Win sola → Launchpad, Win+S → `App.ToggleSpotlight`, Win+N/Win+A y teclas de volumen (se "comen" y van a `Core/VolumeKeys`). Se instala si `AppSettings.NeedsKeyboardHook`.

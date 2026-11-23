@@ -41,6 +41,16 @@ namespace McBar.Panels
             // Centro de notificaciones propio (reemplaza el panel lateral de Windows)
             if (s.OwnNotifications) stack.Children.Add(Tile(new NotificationListView()));
             if (s.WidgetCalendar) stack.Children.Add(Tile(BuildCalendarHost()));
+            // 1.1.0: próximos eventos (Google/Outlook) y recordatorios
+            var upcoming = IcsCalendar.Upcoming(3, 4);
+            if (s.WidgetCalendar && upcoming.Count > 0)
+            {
+                var ev = new StackPanel();
+                ev.Children.Add(Text("Próximos eventos", 12, true, true));
+                foreach (var e in upcoming) ev.Children.Add(WidgetFactory.EventRow(e));
+                stack.Children.Add(Tile(ev));
+            }
+            if (s.WidgetReminders) stack.Children.Add(Tile(WidgetFactory.RemindersView(290)));
             if (s.WidgetWeather) stack.Children.Add(Tile(BuildWeather()));
             var battery = SystemInfo.Battery();
             if (s.WidgetBattery && battery.HasBattery) stack.Children.Add(Tile(BuildBattery(battery)));

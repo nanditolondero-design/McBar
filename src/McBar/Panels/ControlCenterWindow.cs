@@ -54,8 +54,8 @@ namespace McBar.Panels
             var (kind, name) = SystemInfo.Network();
             var conn = new StackPanel();
             conn.Children.Add(ConnRow("", "Wi-Fi", kind == NetKind.Wifi ? name : kind == NetKind.Ethernet ? "Ethernet" : "Sin conexión",
-                kind != NetKind.None, () => Launcher.Open("ms-availablenetworks:")));
-            conn.Children.Add(ConnRow("", "Bluetooth", "Configurar", false, () => Launcher.Open("ms-settings:bluetooth")));
+                kind != NetKind.None, () => { _close(); App.ShowConnectivity("wifi", App.ActiveMonitor()); })); // 0.7.0
+            conn.Children.Add(ConnRow("", "Bluetooth", "Dispositivos", false, () => { _close(); App.ShowConnectivity("bluetooth", App.ActiveMonitor()); }));
             conn.Children.Add(ConnRow("", "Modo avión", "Configurar", false, () => Launcher.Open("ms-settings:network-airplanemode")));
             var connTile = Tile(conn);
             Grid.SetColumn(connTile, 0);
@@ -64,6 +64,7 @@ namespace McBar.Panels
             var right = new StackPanel();
             right.Children.Add(Tile(DarkModeToggle()));
             right.Children.Add(Tile(SimpleAction("", "Concentración", () => Launcher.Open("ms-settings:quiethours"))));
+            right.Children.Add(Tile(GameModeToggle())); // 1.3.0
             Grid.SetColumn(right, 1);
             row1.Children.Add(right);
             root.Children.Add(row1);
@@ -164,6 +165,19 @@ namespace McBar.Panels
                 dark = !dark;
                 SystemInfo.SetWindowsDark(dark);
                 SetCircleState(circle, glyph, dark);
+            });
+            btn.Margin = new Thickness(-4, -3, -4, -3);
+            return btn;
+        }
+
+        /// <summary>1.3.0: modo juego (sin Launchpad con la tecla Windows, sin esquinas, sin avisos en la isla, Dock oculto).</summary>
+        private static UIElement GameModeToggle()
+        {
+            var circle = Circle("\uE7FC", GameMode.On, out var glyph);
+            var btn = RowButton(circle, RowLabel("Modo juego"), () =>
+            {
+                GameMode.Toggle();
+                SetCircleState(circle, glyph, GameMode.On);
             });
             btn.Margin = new Thickness(-4, -3, -4, -3);
             return btn;

@@ -151,6 +151,25 @@ namespace McBar.Panels
                     var txt = Calc.Format(v);
                     items.Add(new Result { Section = "Calculadora", Title = "= " + txt, Subtitle = "Enter para copiar el resultado", Glyph = "", Open = () => { try { Clipboard.SetText(txt); } catch { } } });
                 }
+                // 1.2.0: "temporizador 10" / "cronómetro"
+                var timer = LiveStatus.ParseTimerCommand(q);
+                if (timer != null)
+                {
+                    var len = timer.Value;
+                    items.Add(new Result { Section = "Temporizador", Title = "Temporizador de " + LiveStatus.Format(len), Subtitle = "Enter para empezar", Glyph = "\uE916", Open = () => LiveStatus.StartTimer(len) });
+                }
+                else if (Strip(q).StartsWith("cronom"))
+                    items.Add(new Result { Section = "Temporizador", Title = "Iniciar el cronómetro", Subtitle = "Enter para empezar", Glyph = "\uE916", Open = LiveStatus.StartStopwatch });
+                // 1.3.0: "modo juego" y perfiles
+                if (Strip(q).StartsWith("modo j"))
+                    items.Add(new Result { Section = "McBar", Title = GameMode.On ? "Apagar el modo juego" : "Prender el modo juego", Subtitle = "Enter para cambiar", Glyph = "\uE7FC", Open = GameMode.Toggle });
+                var sq = Strip(q);
+                if (sq.Length >= 3)
+                    foreach (var p in SettingsStore.Current.Profiles.Where(p => Strip(p.Name).StartsWith(sq) || ("perfil " + Strip(p.Name)).StartsWith(sq)).Take(3))
+                    {
+                        var pn = p.Name;
+                        items.Add(new Result { Section = "McBar", Title = "Usar el perfil " + pn, Subtitle = pn == SettingsStore.Current.ActiveProfile ? "Es el que está en uso" : "Perfil de McBar", Glyph = "\uE77B", Open = () => App.UseProfile(pn) });
+                    }
                 // apps
                 foreach (var a in _apps.Where(a => a.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase))
                                        .OrderByDescending(a => a.Name.StartsWith(q, StringComparison.CurrentCultureIgnoreCase))

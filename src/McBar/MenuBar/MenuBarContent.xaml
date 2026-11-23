@@ -31,6 +31,18 @@
                 <Button x:Name="TrayButton" Style="{StaticResource McFlatButton}" ToolTip="Más íconos de la bandeja">
                     <TextBlock FontFamily="{StaticResource Mc.Icons}" Text="&#xE70E;" FontSize="11"/>
                 </Button>
+                <!-- 1.2.0: puntitos de privacidad (naranja = micrófono, verde = cámara) -->
+                <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0" Visibility="Collapsed">
+                    <Ellipse x:Name="MicDot" Width="7" Height="7" Margin="2,0" Fill="#FF9F0A" Visibility="Collapsed"/>
+                    <Ellipse x:Name="CamDot" Width="7" Height="7" Margin="2,0" Fill="#30D158" Visibility="Collapsed"/>
+                </StackPanel>
+                <!-- 1.2.0: temporizador / cronómetro / descarga en curso -->
+                <Button x:Name="LiveButton" Style="{StaticResource McFlatButton}" Visibility="Collapsed" ToolTip="Temporizador y cronómetro">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="LiveGlyph" FontFamily="{StaticResource Mc.Icons}" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="LiveText" Margin="5,0,0,0" FontSize="12.5" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button x:Name="WeatherButton" Style="{StaticResource McFlatButton}" Visibility="Collapsed">
                     <StackPanel x:Name="WeatherContent" Orientation="Horizontal">
                         <TextBlock x:Name="WeatherText" Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12.5"/>

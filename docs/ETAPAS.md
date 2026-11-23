@@ -72,6 +72,30 @@ No se puede tapar desde una app: inicio de sesión, avisos de UAC, la app Config
 ## Etapa 6 — versión 0.6.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
 Tecla Windows → Launchpad, buscador tipo Spotlight (apps, archivos, calculadora, Configuración, web), teclas de volumen con cartel propio. Sigue: 0.7.0 Wi-Fi, Bluetooth y sonido propios.
 
+## Etapa 7 — versión 0.7.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Wi-Fi (WinRT Windows.Devices.WiFi), Bluetooth (bthprops), salida/entrada de audio (Core Audio + IPolicyConfig) y radios (Windows.Devices.Radios), en cajones de la isla y paneles. Sigue: 0.8.0 ventanas estilo Mac.
+Límites: vincular un dispositivo Bluetooth nuevo sigue siendo de Windows; conectar/desconectar desde McBar funciona solo con dispositivos de audio (Windows no tiene una función pública para los demás).
+
+## Etapa 8 — versión 0.8.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Vista previa de ventanas en el Dock, Alt+Tab estilo Cmd+Tab y Win+Tab tipo Mission Control (miniaturas DWM). Con esto se completa el plan de integración acordado (0.5–0.8).
+
+## Etapa 9 — versión 0.9.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Plan acordado después de la 0.8.0 ("hacé todo en etapas"):
+1. **0.9.0 — Estabilidad** (hecho): informe y recuperación ante errores, Windows lo reabre, consumo en el registro y en Preferencias. La actualización automática se descartó: Andrés no la quiere.
+2. **1.0.0 — Más cosas de Mac**: esquinas activas, ventanas en mosaico, escritorios en Win+Tab, Quick Look.
+3. **1.1.0 — Widgets**: en el escritorio, calendario Google/Outlook, recordatorios.
+4. **1.2.0 — Isla más viva**: temporizador/cronómetro, micrófono/cámara en uso, descargas. ✅
+5. **1.3.0 — Personalización**: perfiles, modo juego, exportar/importar ajustes, fondos que cambian con la hora. ✅
+
+## Etapa 10 — versión 1.0.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Esquinas activas, mosaico (menú Ventana + Ctrl+Alt), escritorios en Win+Tab y Quick Look. Sigue: 1.1.0 widgets.
+Límites: Windows no deja mover ventanas de otras apps entre escritorios, así que eso no está; Quick Look funciona en las ventanas del Explorador (no en el escritorio); el arrastre de ventanas a los bordes lo sigue haciendo Windows (Snap).
+
+## Etapa 11 — versión 1.1.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Widgets en el escritorio, calendario iCal (Google/Outlook) con avisos y recordatorios en lenguaje natural. Sigue: 1.2.0 isla más viva.
+
+Límites: el calendario es de solo lectura (para crear eventos, en Google/Outlook); los widgets de escritorio se esconden con Win+D como el resto de las ventanas.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.
@@ -83,3 +107,11 @@ Tecla Windows → Launchpad, buscador tipo Spotlight (apps, archivos, calculador
 - **Notificaciones**: McBar las junta en su centro propio, pero no puede responderlas ni usar sus botones (Windows no da acceso); tocar una abre la app. Ocultar el cartelito de Windows es experimental.
 - **Launchpad**: mover un ícono a otra página todavía no se puede arrastrando (hay que moverlo dentro de la página). Los paquetes de íconos en .icns o .svg no se leen (convertirlos a .png).
 - Spotlight (búsqueda con atajo de teclado), "Mission Control" propio, pilas de otras carpetas, widgets de música (reproducción actual).
+
+## Etapa 12 — versión 1.2.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Temporizador y cronómetro en vivo (isla, barra, panel y buscador), puntitos de micrófono/cámara en uso y progreso de descargas. Pruebas en `Stage12Tests`. Sigue: 1.3.0 personalización (perfiles, modo juego, exportar/importar ajustes, fondos según la hora).
+
+## Etapa 13 — versión 1.3.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Perfiles (Trabajo/Juegos…) con modo juego opcional, modo juego (Centro de control, menú de McBar, buscador, Preferencias), exportar/importar ajustes y fondo de pantalla según la hora. Pruebas en `Stage13Tests`. Con esto se termina el plan de etapas acordado después de la 0.8.0.
+Arreglos: `Typography` (está en `System.Windows.Documents`) en el temporizador y la isla; en Preferencias → Widgets → Calendarios había comillas rectas dentro de un texto que rompían la compilación de la 1.1.0; ahora son «».
+Límites: el modo juego no se guarda (al reiniciar McBar arranca apagado, salvo que el perfil en uso lo tenga); el fondo cambia en todos los monitores a la vez (Windows usa una sola imagen).

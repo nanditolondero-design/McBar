@@ -66,12 +66,13 @@ namespace McBar.MenuBar
             TrayButton.Click += (_, _) => { if (TrayHost.Current != null) ShowTrayOverflow(); else Taskbar.ShowTemporarily(); };
             // 0.4.1: el clima abre su propio widget (ahora, 24 horas y 7 días)
             WeatherButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Weather); else App.ToggleWeather(_monitor); };
-            WifiButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Wifi); else OpenMenu(WifiButton, BuildNetworkMenu()); };
+            WifiButton.Click += (_, _) => App.ShowConnectivity("wifi", _monitor); // 0.7.0: Wi-Fi propio
             BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Battery); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
-            VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Sound); else ShowVolumePopup(); };
+            VolumeButton.Click += (_, _) => App.ShowConnectivity("sound", _monitor); // 0.7.0: sonido propio
             SearchButton.Click += (_, _) => App.ToggleSpotlight(_monitor); // 0.6.0: buscador tipo Spotlight
             ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
             ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
+            LiveButton.Click += (_, _) => App.ShowConnectivity("timer", _monitor); // 1.2.0
 
             _onSettings = () => { RefreshStatus(); BuildTray(); UpdateWeather(null); };
             _onTray = BuildTray;
@@ -89,12 +90,30 @@ namespace McBar.MenuBar
             App.TrayChanged += _onTray;
             _onNotif = () => Dispatcher.BeginInvoke(new Action(UpdateClockBadge));
             NotificationCenter.Changed += _onNotif;
+            _onLive = () => Dispatcher.BeginInvoke(new Action(UpdateLive));
+            LiveStatus.Changed += _onLive;
 
             UpdateClock();
+            UpdateLive();
             RefreshStatus();
             BuildTray();
             UpdateWeather(null);
             ScheduleClock();
+        }
+
+        private Action? _onLive;
+
+        /// <summary>1.2.0: chip en vivo (temporizador, cronómetro o descarga) y puntitos de micrófono/cámara.</summary>
+        private void UpdateLive()
+        {
+            var sum = SettingsStore.Current.LiveActivities ? LiveStatus.Summary() : null;
+            LiveButton.Visibility = sum != null ? Visibility.Visible : Visibility.Collapsed;
+            if (sum != null) { LiveGlyph.Text = sum.Value.glyph; LiveText.Text = sum.Value.text; }
+            bool dots = SettingsStore.Current.PrivacyDots;
+            MicDot.Visibility = dots && LiveStatus.MicApps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            CamDot.Visibility = dots && LiveStatus.CamApps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            PrivacyDots.Visibility = MicDot.Visibility == Visibility.Visible || CamDot.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+            PrivacyDots.ToolTip = LiveStatus.PrivacyText();
         }
 
         /// <summary>Puntito en el reloj cuando hay notificaciones sin leer.</summary>
@@ -186,6 +205,7 @@ namespace McBar.MenuBar
             Microsoft.Win32.SystemEvents.PowerModeChanged -= _onPower;
             App.TrayChanged -= _onTray;
             NotificationCenter.Changed -= _onNotif;
+            if (_onLive != null) LiveStatus.Changed -= _onLive;
         }
 
         // ================== Bandeja propia ==================
@@ -442,6 +462,26 @@ namespace McBar.MenuBar
             cm.Items.Add(Mi("Preferencias de McBar…", App.OpenSettings));
             cm.Items.Add(Mi("Acerca de McBar", App.ShowAbout));
             cm.Items.Add(new Separator());
+            // 1.3.0: perfiles y modo juego
+            var prof = SettingsStore.Current.Profiles;
+            if (prof.Count > 0)
+            {
+                var sub = new MenuItem { Header = "Perfil" };
+                foreach (var p in prof)
+                {
+                    var name = p.Name;
+                    var mi = Mi(name, () => App.UseProfile(name));
+                    mi.IsCheckable = true;
+                    mi.IsChecked = name == SettingsStore.Current.ActiveProfile;
+                    sub.Items.Add(mi);
+                }
+                cm.Items.Add(sub);
+            }
+            var game = Mi("Modo juego", GameMode.Toggle);
+            game.IsCheckable = true;
+            game.IsChecked = GameMode.On;
+            cm.Items.Add(game);
+            cm.Items.Add(new Separator());
             cm.Items.Add(Mi("Forzar salida…", () => Launcher.Launch("taskmgr.exe"), "Ctrl+Mayús+Esc"));
             cm.Items.Add(new Separator());
             cm.Items.Add(Mi("Suspender", Launcher.Sleep));
@@ -547,10 +587,29 @@ namespace McBar.MenuBar
             cm.Items.Add(Mi("Minimizar", () => WindowOps.Minimize(Target), null, ok));
             cm.Items.Add(Mi("Zoom", () => WindowOps.ToggleZoom(Target), null, ok));
             cm.Items.Add(new Separator());
-            cm.Items.Add(Mi("Mover a la izquierda de la pantalla", () => Keys(WindowOps.VK_LWIN, WindowOps.VK_LEFT), "Win+←", ok));
-            cm.Items.Add(Mi("Mover a la derecha de la pantalla", () => Keys(WindowOps.VK_LWIN, WindowOps.VK_RIGHT), "Win+→", ok));
+            // 1.0.0: mosaico, como "Mover y cambiar tamaño" de macOS Sequoia
+            var t = Target;
+            var tile = new MenuItem { Header = "Mover y cambiar tamaño", IsEnabled = ok };
+            foreach (var (header, layout, keys) in new (string, TileLayout, string?)[]
+            {
+                ("Mitad izquierda", TileLayout.Left, "Ctrl+Alt+←"), ("Mitad derecha", TileLayout.Right, "Ctrl+Alt+→"),
+                ("Mitad de arriba", TileLayout.Top, "Ctrl+Alt+↑"), ("Mitad de abajo", TileLayout.Bottom, "Ctrl+Alt+↓"),
+                ("Arriba a la izquierda", TileLayout.TopLeft, "Ctrl+Alt+U"), ("Arriba a la derecha", TileLayout.TopRight, "Ctrl+Alt+I"),
+                ("Abajo a la izquierda", TileLayout.BottomLeft, "Ctrl+Alt+J"), ("Abajo a la derecha", TileLayout.BottomRight, "Ctrl+Alt+K"),
+                ("Tercio izquierdo", TileLayout.LeftThird, null), ("Tercio del medio", TileLayout.CenterThird, null), ("Tercio derecho", TileLayout.RightThird, null),
+                ("Dos tercios a la izquierda", TileLayout.LeftTwoThirds, null), ("Dos tercios a la derecha", TileLayout.RightTwoThirds, null),
+                ("Llenar", TileLayout.Fill, "Ctrl+Alt+Enter"), ("Centrar", TileLayout.Center, "Ctrl+Alt+C")
+            })
+            {
+                var l = layout;
+                tile.Items.Add(Mi(header, () => WindowTiler.Apply(t, l), keys));
+                if (l == TileLayout.Bottom || l == TileLayout.BottomRight || l == TileLayout.RightTwoThirds) tile.Items.Add(new Separator());
+            }
+            tile.Items.Add(new Separator());
+            tile.Items.Add(Mi("Volver al tamaño anterior", () => WindowTiler.Restore(t), "Ctrl+Alt+Retroceso", WindowTiler.CanRestore(t)));
+            cm.Items.Add(tile);
             cm.Items.Add(new Separator());
-            cm.Items.Add(Mi("Vista de tareas", () => WindowOps.SendChord(WindowOps.VK_LWIN, 0x09 /* Tab */), "Win+Tab"));
+            cm.Items.Add(Mi("Todas las ventanas", () => App.ToggleMissionControl(_monitor), "Win+Tab"));
             cm.Items.Add(Mi("Mostrar escritorio", () => WindowOps.SendChord(WindowOps.VK_LWIN, 0x44 /* D */), "Win+D"));
             return cm;
         }

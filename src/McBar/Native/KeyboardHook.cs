@@ -94,7 +94,54 @@ namespace McBar.Native
 
         private const int WM_KEYUP = 0x101, WM_SYSKEYUP = 0x105;
         private const int VK_S = 0x53, VK_VOLUME_MUTE = 0xAD, VK_VOLUME_DOWN = 0xAE, VK_VOLUME_UP = 0xAF;
-        private static bool _winDown, _winOther;
+        private const int VK_TAB = 0x09, VK_ESCAPE = 0x1B, VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_LMENU = 0xA4, VK_RMENU = 0xA5;
+        private static bool _winDown, _winOther, _switching;
+        private const int VK_SPACE = 0x20, VK_UP = 0x26, VK_DOWN = 0x28, VK_RETURN = 0x0D, VK_BACK = 0x08,
+                          VK_C = 0x43, VK_U = 0x55, VK_I = 0x49, VK_J = 0x4A, VK_K = 0x4B;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GuiThreadInfo
+        {
+            public int cbSize, flags;
+            public IntPtr hwndActive, hwndFocus, hwndCapture, hwndMenuOwner, hwndMoveSize, hwndCaret;
+            public Win32.RECT rcCaret;
+        }
+        [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+        [DllImport("user32.dll")] private static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr h, System.Text.StringBuilder sb, int max);
+
+        private static string ClassOf(IntPtr h)
+        {
+            var sb = new System.Text.StringBuilder(64);
+            return h != IntPtr.Zero && GetClassName(h, sb, sb.Capacity) > 0 ? sb.ToString() : "";
+        }
+
+        /// <summary>¿El foco está en la lista de archivos de una ventana del Explorador? (para Quick Look)</summary>
+        private static IntPtr ExplorerWithFileFocus()
+        {
+            var fg = GetForegroundWindow();
+            if (ClassOf(fg) != "CabinetWClass") return IntPtr.Zero;
+            var gi = new GuiThreadInfo { cbSize = Marshal.SizeOf<GuiThreadInfo>() };
+            if (!GetGUIThreadInfo(GetWindowThreadProcessId(fg, out _), ref gi)) return IntPtr.Zero;
+            return ClassOf(gi.hwndFocus) == "DirectUIHWND" ? fg : IntPtr.Zero;
+        }
+
+        /// <summary>Atajos de mosaico (Ctrl+Alt izquierdo + tecla), como Rectangle en macOS. Pura.</summary>
+        public static McBar.Core.TileLayout? TileFor(int vk) => vk switch
+        {
+            0x25 => McBar.Core.TileLayout.Left,
+            0x27 => McBar.Core.TileLayout.Right,
+            0x26 => McBar.Core.TileLayout.Top,
+            0x28 => McBar.Core.TileLayout.Bottom,
+            0x55 => McBar.Core.TileLayout.TopLeft,
+            0x49 => McBar.Core.TileLayout.TopRight,
+            0x4A => McBar.Core.TileLayout.BottomLeft,
+            0x4B => McBar.Core.TileLayout.BottomRight,
+            0x0D => McBar.Core.TileLayout.Fill,
+            0x43 => McBar.Core.TileLayout.Center,
+            _ => null
+        };
 
         private static void Ui(Action a)
         {
@@ -131,17 +178,65 @@ namespace McBar.Native
                             {
                                 _winDown = true;
                                 _winOther = false;
-                                if (s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY);
+                                if (s.WinKeyLaunchpad || GameMode.On) WindowOps.SendChord(VK_DUMMY); // 1.3.0: en modo juego tampoco abre Inicio
                             }
                             else if (up)
                             {
                                 bool alone = _winDown && !_winOther;
                                 _winDown = false;
-                                if (alone && s.WinKeyLaunchpad && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                                if (alone && s.WinKeyLaunchpad && !GameMode.On && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
                                     Ui(() => App.ToggleLaunchpad(App.ActiveMonitor()));
                             }
                         }
                         else if (down && _winDown) _winOther = true;
+
+                        // ---- Alt+Tab propio (0.8.0) ----
+                        if (_switching)
+                        {
+                            if (up && (vk == VK_MENU || vk == VK_LMENU || vk == VK_RMENU))
+                            {
+                                _switching = false;
+                                Ui(App.SwitcherCommit);
+                            }
+                            else if (vk == VK_TAB || vk == VK_LEFT || vk == VK_RIGHT)
+                            {
+                                if (down) { bool back = vk == VK_LEFT || (vk == VK_TAB && Down(VK_SHIFT)); Ui(() => App.SwitcherStep(back)); }
+                                return (IntPtr)1;
+                            }
+                            else if (vk == VK_ESCAPE)
+                            {
+                                if (down) { _switching = false; Ui(App.SwitcherCancel); }
+                                return (IntPtr)1;
+                            }
+                        }
+                        else if (s.OwnAltTab && down && vk == VK_TAB && Down(VK_MENU) && !Down(VK_CONTROL) && !_winDown)
+                        {
+                            _switching = true;
+                            WindowOps.SendChord(VK_DUMMY); // que al soltar Alt no se active el menú de la app
+                            bool back = Down(VK_SHIFT);
+                            Ui(() => App.SwitcherStep(back));
+                            return (IntPtr)1; // Windows no abre su Alt+Tab
+                        }
+
+                        // ---- Quick Look (1.0.0): Espacio en la lista de archivos del Explorador ----
+                        if (s.QuickLook && down && vk == VK_SPACE && !_winDown && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                        {
+                            var ex = ExplorerWithFileFocus();
+                            if (ex != IntPtr.Zero) { Ui(() => App.QuickLookFromExplorer(ex)); return (IntPtr)1; }
+                        }
+
+                        // ---- Mosaico (1.0.0): Ctrl + Alt izquierdo + flecha/U/I/J/K/Enter/C; Retroceso = como estaba ----
+                        if (s.TileShortcuts && down && Down(VK_CONTROL) && Down(VK_LMENU) && !Down(VK_RMENU) && !_winDown)
+                        {
+                            if (vk == VK_BACK) { Ui(() => WindowTiler.Restore(GetForegroundWindow())); return (IntPtr)1; }
+                            var tile = TileFor(vk);
+                            if (tile != null)
+                            {
+                                var t = tile.Value;
+                                Ui(() => WindowTiler.Apply(GetForegroundWindow(), t));
+                                return (IntPtr)1;
+                            }
+                        }
 
                         if (s.OwnVolumeKeys && (vk == VK_VOLUME_MUTE || vk == VK_VOLUME_DOWN || vk == VK_VOLUME_UP))
                         {
@@ -155,6 +250,7 @@ namespace McBar.Native
                             if (s.OwnShortcuts && vk == VK_N) act = () => App.ToggleWidgets(App.ActiveMonitor());
                             else if (s.OwnShortcuts && vk == VK_A) act = () => App.ToggleControlCenter(App.ActiveMonitor());
                             else if (s.OwnSearch && vk == VK_S) act = () => App.ToggleSpotlight(App.ActiveMonitor());
+                            else if (s.OwnWinTab && vk == VK_TAB) act = () => App.ToggleMissionControl(App.ActiveMonitor());
                             if (act != null)
                             {
                                 if (!s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar

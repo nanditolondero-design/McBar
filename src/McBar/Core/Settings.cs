@@ -1,6 +1,7 @@
 // McBar — Creado por Andrés Londero
 // Ajustes de la app, guardados en %AppData%\McBar\settings.json.
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -12,6 +13,14 @@ namespace McBar.Core
         public string Name { get; set; } = "";
         /// <summary>Ruta a .exe o .lnk, "shell:AppsFolder\&lt;id&gt;" o un elemento especial "mcbar:launchpad".</summary>
         public string Target { get; set; } = "";
+    }
+
+    /// <summary>Widget puesto en el escritorio (1.1.0): tipo y posición (DIP de pantalla).</summary>
+    public sealed class DesktopWidget
+    {
+        public string Kind { get; set; } = "clock";
+        public double X { get; set; }
+        public double Y { get; set; }
     }
 
     public sealed class LaunchpadFolder
@@ -113,9 +122,48 @@ namespace McBar.Core
         public bool OwnSearch { get; set; } = true;
         /// <summary>Las teclas de volumen las maneja McBar (cartel propio en vez del de Windows). 0.6.0.</summary>
         public bool OwnVolumeKeys { get; set; } = true;
+        /// <summary>Alt+Tab propio estilo Cmd+Tab de macOS. 0.8.0.</summary>
+        public bool OwnAltTab { get; set; } = true;
+        /// <summary>Win+Tab: todas las ventanas (Mission Control). 0.8.0.</summary>
+        public bool OwnWinTab { get; set; } = true;
+        /// <summary>Vista previa de las ventanas al dejar el mouse sobre una app del Dock. 0.8.0.</summary>
+        public bool DockPreviews { get; set; } = true;
+        /// <summary>Quick Look con la barra espaciadora en el Explorador. 1.0.0.</summary>
+        public bool QuickLook { get; set; } = true;
+        /// <summary>Widgets en el escritorio. 1.1.0.</summary>
+        public List<DesktopWidget> DesktopWidgets { get; set; } = new List<DesktopWidget>();
+        /// <summary>Enlaces iCal (.ics) de Google Calendar / Outlook. 1.1.0.</summary>
+        public List<string> CalendarUrls { get; set; } = new List<string>();
+        /// <summary>Avisar 10 minutos antes de cada evento del calendario. 1.1.0.</summary>
+        public bool EventReminders { get; set; } = true;
+        /// <summary>Recordatorios en el panel del reloj. 1.1.0.</summary>
+        public bool WidgetReminders { get; set; } = true;
+        /// <summary>Temporizador, cronómetro y descargas en la isla y la barra. 1.2.0.</summary>
+        public bool LiveActivities { get; set; } = true;
+        /// <summary>Puntitos naranja/verde cuando una app usa el micrófono o la cámara. 1.2.0.</summary>
+        public bool PrivacyDots { get; set; } = true;
+        /// <summary>Mostrar el progreso de las descargas (carpeta Descargas). 1.2.0.</summary>
+        public bool LiveDownloads { get; set; } = true;
+        /// <summary>Últimos minutos usados en el temporizador (atajos rápidos). 1.2.0.</summary>
+        public List<int> TimerPresets { get; set; } = new List<int> { 1, 5, 10, 25 };
+        /// <summary>Perfiles guardados (Trabajo, Juegos…). 1.3.0.</summary>
+        public List<SettingsProfile> Profiles { get; set; } = new List<SettingsProfile>();
+        /// <summary>Nombre del perfil en uso ("" = ninguno). 1.3.0.</summary>
+        public string ActiveProfile { get; set; } = "";
+        /// <summary>Cambiar el fondo de pantalla según la hora. 1.3.0.</summary>
+        public bool WallpaperByTime { get; set; } = false;
+        /// <summary>Imágenes de mañana, tarde, atardecer y noche (ver Core/DynamicWallpaper.Slots). 1.3.0.</summary>
+        public List<string> WallpaperImages { get; set; } = new List<string> { "", "", "", "" };
+        /// <summary>Atajos de mosaico Ctrl+Alt+flechas. 1.0.0.</summary>
+        public bool TileShortcuts { get; set; } = true;
+        /// <summary>Esquinas activas: acción de cada esquina (ver Core/HotCorners.Actions). 1.0.0.</summary>
+        public string CornerTopLeft { get; set; } = "none";
+        public string CornerTopRight { get; set; } = "none";
+        public string CornerBottomLeft { get; set; } = "none";
+        public string CornerBottomRight { get; set; } = "none";
         /// <summary>¿Hace falta el gancho de teclado?</summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        public bool NeedsKeyboardHook => OwnShortcuts || WinKeyLaunchpad || OwnSearch || OwnVolumeKeys;
+        public bool NeedsKeyboardHook => OwnShortcuts || WinKeyLaunchpad || OwnSearch || OwnVolumeKeys || OwnAltTab || OwnWinTab || QuickLook || TileShortcuts;
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia
@@ -227,9 +275,14 @@ namespace McBar.Core
         }
 
         /// <summary>Corrige valores fuera de rango (por si el archivo se editó a mano).</summary>
+        private static string ValidCorner(string? v) =>
+            v != null && HotCorners.Actions.Any(a => a.key == v) ? v : "none";
+
         public static AppSettings Sanitize(AppSettings s)
         {
             s.DockIconSize = Math.Clamp(s.DockIconSize, 32, 96);
+            s.TimerPresets = (s.TimerPresets ?? new List<int>()).Where(m => m > 0 && m <= 24 * 60).Distinct().Take(6).ToList();
+            if (s.TimerPresets.Count == 0) s.TimerPresets = new List<int> { 1, 5, 10, 25 };
             s.MagnifiedSize = Math.Clamp(s.MagnifiedSize, s.DockIconSize, 160);
             if (s.Theme != "dark" && s.Theme != "light" && s.Theme != "glass") s.Theme = "auto";
             s.Pinned ??= new List<PinnedApp>();
@@ -246,10 +299,23 @@ namespace McBar.Core
             s.LaunchpadOrder ??= new List<string>();
             s.IconPackPath ??= "";
             s.PortablePath ??= "";
+            s.DesktopWidgets ??= new List<DesktopWidget>();
+            s.CalendarUrls ??= new List<string>();
+            s.CornerTopLeft = ValidCorner(s.CornerTopLeft);
+            s.CornerTopRight = ValidCorner(s.CornerTopRight);
+            s.CornerBottomLeft = ValidCorner(s.CornerBottomLeft);
+            s.CornerBottomRight = ValidCorner(s.CornerBottomRight);
             s.LaunchpadFolders.RemoveAll(f => f == null || f.Targets == null || f.Targets.Count == 0);
             if (s.IslandStyle != "graphite" && s.IslandStyle != "glass" && s.IslandStyle != "accent") s.IslandStyle = "black";
             if (s.IslandSize != "small" && s.IslandSize != "large") s.IslandSize = "normal";
             s.WeatherCity ??= "";
+            s.Profiles ??= new List<SettingsProfile>();
+            s.Profiles.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Name));
+            s.ActiveProfile ??= "";
+            if (s.ActiveProfile.Length > 0 && !s.Profiles.Any(p => p.Name == s.ActiveProfile)) s.ActiveProfile = "";
+            s.WallpaperImages ??= new List<string>();
+            s.WallpaperImages = s.WallpaperImages.Select(x => x ?? "").Take(4).ToList();
+            while (s.WallpaperImages.Count < 4) s.WallpaperImages.Add("");
             return s;
         }
     }

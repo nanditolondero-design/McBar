@@ -46,6 +46,20 @@ namespace McBar.Dock
         private double _mouseX;
         private double? _anchorX;
         private DockItem? _hoverItem;
+
+        // 0.8.0: vista previa de las ventanas al dejar el mouse sobre una app abierta
+        private readonly System.Windows.Threading.DispatcherTimer _previewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(550) };
+
+        private void ShowPreviewNow()
+        {
+            _previewTimer.Stop();
+            var it = _hoverItem;
+            if (it == null || it.Kind != DockItemKind.App || it.Windows.Count == 0 || _dragging || _menuOpen || it.Removing) return;
+            double sc = App.Scale;
+            double cx = _winLeftPx / sc + it.LayoutLeft + it.LayoutSize / 2;
+            double top = _winTopPx / sc + BarTop - Math.Max(0, it.LayoutSize - BaseSize);
+            App.ShowDockPreview(it.Windows.ToList(), cx, top, _monitor);
+        }
         private bool _menuOpen;
         private bool _hidden;
         private bool _fullscreen;
@@ -61,6 +75,8 @@ namespace McBar.Dock
         public MonitorInfo Monitor => _monitor;
 
         private static AppSettings S => SettingsStore.Current;
+        /// <summary>Ocultación automática pedida en Preferencias o por el modo juego (1.3.0).</summary>
+        private static bool AutoHide => S.DockAutoHide || GameMode.On;
         private double BaseSize => S.DockIconSize;
         private double MaxSize => S.Magnification && !IsTaskbar ? S.MagnifiedSize : BaseSize;
         private double Gap => Math.Round(BaseSize * 0.1);
@@ -79,7 +95,7 @@ namespace McBar.Dock
         private double IconBottom => ActualHeight - BottomMargin - Pad;
 
         /// <summary>Píxeles a reservar abajo para que las ventanas maximizadas no queden tapadas.</summary>
-        public int ReservePx => S.DockAutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * App.Scale);
+        public int ReservePx => AutoHide ? 0 : (int)Math.Ceiling((BarHeight + BottomMargin) * App.Scale);
 
         // Ventana rápida (común, con vidrio de DWM y forma recortada) en lugar de "en capas".
         private readonly bool _fast;
@@ -89,6 +105,7 @@ namespace McBar.Dock
         internal DockWindow(MonitorInfo monitor)
         {
             InitializeComponent();
+            _previewTimer.Tick += (_, _) => ShowPreviewNow();
             _monitor = monitor;
             _fast = S.FastWindows;
             if (_fast) AllowsTransparency = false;
@@ -124,6 +141,7 @@ namespace McBar.Dock
                 SyncWindows();
                 SettingsStore.Changed += OnSettingsChanged;
                 SettingsStore.PinsChanged += OnPinsChanged;
+                GameMode.Changed += OnGameMode;
             };
             Closed += (_, _) => Teardown();
         }
@@ -149,9 +167,9 @@ namespace McBar.Dock
             _winTopPx = b.Bottom - _winHeightPx;
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, _winLeftPx, _winTopPx, _winWidthPx, _winHeightPx, Win32.SWP_NOACTIVATE);
 
-            HotZone.Visibility = S.DockAutoHide ? Visibility.Visible : Visibility.Collapsed;
+            HotZone.Visibility = AutoHide ? Visibility.Visible : Visibility.Collapsed;
             if (!_fullscreen) _backdrop.Visibility = S.BackdropBlur && !NoBackground ? Visibility.Visible : Visibility.Hidden;
-            if (!S.DockAutoHide) _hidden = false;
+            if (!AutoHide) _hidden = false;
 
             Bar.CornerRadius = new CornerRadius(Radius);
             BarShadow1.CornerRadius = new CornerRadius(Radius + 1);
@@ -193,6 +211,7 @@ namespace McBar.Dock
         {
             SettingsStore.Changed -= OnSettingsChanged;
             SettingsStore.PinsChanged -= OnPinsChanged;
+            GameMode.Changed -= OnGameMode;
             App.Tracker.WindowsChanged -= SyncWindows;
             if (_animating) { CompositionTarget.Rendering -= OnRendering; _animating = false; }
             try { _backdrop.Close(); } catch { }
@@ -204,6 +223,16 @@ namespace McBar.Dock
             SyncWindows(); // por si cambió "apps por monitor"
             if (_lastIconSize != IconPixelSize()) ReloadIcons();
             EnsureAnimating();
+        }
+
+        /// <summary>1.3.0: el modo juego oculta el Dock (y al salir vuelve a como estaba).</summary>
+        private void OnGameMode()
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                OnSettingsChanged();
+                if (AutoHide && !_hover && !_menuOpen) _hideTimer.Start();
+            }));
         }
 
         private void OnPinsChanged(object? source)
@@ -284,8 +313,13 @@ namespace McBar.Dock
             _items.Insert(Math.Clamp(index, 0, _items.Count), item);
             var v = item.View;
             v.SetMaxSize(MaxSize, SeparatorWidth, BarHeight);
-            v.MouseEnter += (_, _) => { _hoverItem = item; EnsureAnimating(); };
-            v.MouseLeave += (_, _) => { if (_hoverItem == item) { _hoverItem = null; EnsureAnimating(); } };
+            v.MouseEnter += (_, _) => { _hoverItem = item; EnsureAnimating(); _previewTimer.Stop(); _previewTimer.Start(); };
+            v.MouseLeave += (_, _) =>
+            {
+                if (_hoverItem == item) { _hoverItem = null; EnsureAnimating(); }
+                _previewTimer.Stop();
+                App.HideDockPreview();
+            };
             v.MouseLeftButtonDown += (_, e) => { OnItemDown(item, e); e.Handled = true; };
             v.MouseUp += (_, e) =>
             {
@@ -713,7 +747,7 @@ namespace McBar.Dock
                 if (zr > zl && zt < barTop - 0.5)
                     rects.Add((R(zl), R(zt + hy) - 2, R(zr - zl) + 1, R(barTop - zt) + 6));
             }
-            if (S.DockAutoHide)
+            if (AutoHide)
                 rects.Add((0, R(ActualHeight) - R(3) - 1, R(ActualWidth), R(3) + 2));
             string key = string.Join(";", rects);
             if (key == _shapeKey) return;
@@ -751,11 +785,13 @@ namespace McBar.Dock
             _hover = false;
             _hoverItem = null;
             EnsureAnimating();
-            if (S.DockAutoHide) _hideTimer.Start();
+            if (AutoHide) _hideTimer.Start();
         }
 
         private void OnItemDown(DockItem item, MouseButtonEventArgs e)
         {
+            _previewTimer.Stop();
+            App.HideDockPreview(now: true);
             _pressItem = item;
             _pressPoint = e.GetPosition(Stage);
             _dragPos = _pressPoint;
@@ -784,7 +820,7 @@ namespace McBar.Dock
             {
                 OnItemClick(item);
             }
-            if (!Stage.IsMouseOver && !_menuOpen) { _hover = false; _hoverItem = null; if (S.DockAutoHide) _hideTimer.Start(); }
+            if (!Stage.IsMouseOver && !_menuOpen) { _hover = false; _hoverItem = null; if (AutoHide) _hideTimer.Start(); }
             EnsureAnimating();
         }
 
@@ -855,7 +891,7 @@ namespace McBar.Dock
 
         private void TryAutoHide()
         {
-            if (!S.DockAutoHide || _hover || _menuOpen || _dragging) return;
+            if (!AutoHide || _hover || _menuOpen || _dragging) return;
             _hidden = true;
             EnsureAnimating();
         }
@@ -1063,7 +1099,7 @@ namespace McBar.Dock
             cm.Closed += (_, _) =>
             {
                 _menuOpen = false;
-                if (!Stage.IsMouseOver) { _hover = false; _hoverItem = null; if (S.DockAutoHide) _hideTimer.Start(); }
+                if (!Stage.IsMouseOver) { _hover = false; _hoverItem = null; if (AutoHide) _hideTimer.Start(); }
                 EnsureAnimating();
             };
             return cm;

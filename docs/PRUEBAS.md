@@ -199,6 +199,55 @@ Tema:
 - [ ] Teclas de volumen (o las del teclado multimedia): en modo isla se ve en la isla; en modo barra aparece el cartel de vidrio abajo al centro. No aparece el de Windows. Silencio: ícono tachado.
 - [ ] Preferencias → Teclado: apagar cada atajo vuelve al comportamiento de Windows.
 
+### Versión 0.7.0
+- [ ] Ícono de Wi-Fi (barra y isla): lista de redes con señal y candado. Conectarse a una red guardada; a una nueva (pide contraseña; con una mala avisa); desconectarse. Apagar/prender el Wi-Fi con el interruptor.
+- [ ] Centro de control → Wi-Fi y → Bluetooth: abren los paneles de McBar.
+- [ ] Bluetooth: se ven los dispositivos vinculados; auriculares: clic conecta / clic desconecta (puede tardar unos segundos). Interruptor apaga/prende el Bluetooth.
+- [ ] Ícono de volumen: volumen, salidas y entradas; elegir los auriculares → el sonido pasa ahí y queda tildado. La isla sigue mostrando el volumen del dispositivo nuevo.
+
+### Versión 0.8.0
+- [ ] Dock: dejar el mouse sobre Chrome con 2 ventanas → aparecen 2 miniaturas en vivo (un video se ve moviéndose). Clic en una → va a esa ventana. ✕ → la cierra. Sacar el mouse → se va.
+- [ ] Alt+Tab: aparece la fila de íconos con la app anterior elegida; Tab avanza, Mayús+Tab vuelve, flechas también; soltar Alt va a esa app; Esc cancela. No se abre el menú de la app al soltar Alt. No aparece el Alt+Tab de Windows.
+- [ ] Win+Tab: todas las ventanas de la pantalla en grilla con miniaturas; clic/Enter va; Esc sale. Con varios monitores, muestra las del monitor activo.
+- [ ] Preferencias → Teclado: apagar Alt+Tab / Win+Tab devuelve los de Windows.
+
+### Versión 0.9.0
+- [ ] Preferencias → Diagnóstico: se ve el consumo (se actualiza cada 2 segundos) y la versión 0.9.0; "Abrir informes de errores" abre la carpeta.
+- [ ] Dejar McBar abierto 30 minutos: en `mcbar.log` aparecen líneas "Consumo: …" cada 10 minutos (si la memoria sube sin parar, avisar).
+- [ ] (Prueba de error, opcional) Cerrar McBar desde el Administrador de tareas → "Finalizar tarea" no cuenta como error; un cierre por error real deja un informe, la barra de Windows vuelve y McBar se reabre solo.
+
+### Versión 1.0.0
+- [ ] Preferencias → Esquinas activas: poner "Launchpad" arriba a la derecha; llevar el mouse a esa esquina → se abre. Con un video en pantalla completa → no.
+- [ ] Menú Ventana → Mover y cambiar tamaño → Mitad izquierda: la ventana queda justa a la izquierda con un margen chico. "Volver al tamaño anterior" la deja como estaba.
+- [ ] Ctrl+Alt+→ / ← / ↑ / ↓, Ctrl+Alt+U/I/J/K, Ctrl+Alt+Enter, Ctrl+Alt+C, Ctrl+Alt+Retroceso.
+- [ ] Escribir "@" con AltGr+Q (o el que use tu teclado) sigue funcionando.
+- [ ] Win+Tab: arriba la franja de escritorios; "+" crea uno; clic en otro pasa a ese.
+- [ ] Explorador: elegir una foto y apretar Espacio → vista previa; Espacio cierra. Probar video, PDF, .txt y una carpeta. Renombrar un archivo (F2) y escribir con espacios → no abre Quick Look.
+
+### Versión 1.1.0
+- [ ] Preferencias → Widgets → "+ Reloj", "+ Calendario", "+ Recordatorios": aparecen arriba a la derecha, detrás de las ventanas. Arrastrarlos; cerrar y abrir McBar: siguen ahí. Clic derecho → Quitar del escritorio.
+- [ ] Calendarios: pegar la dirección iCal de Google → "Guardar y actualizar" → dice cuántos eventos; el widget muestra puntitos y "Próximos eventos".
+- [ ] Crear en Google un evento dentro de 15 min → a los 10 min antes llega el aviso (puede tardar hasta 15 min en bajarse).
+- [ ] Recordatorios: escribir "probar en 1 min" + Enter → al minuto llega la notificación. "comprar pan mañana 18:00" muestra "mañana 18:00". Tocar el círculo lo marca hecho.
+
+### Versión 1.2.0
+- [ ] Con la isla: Win+S y escribir "temporizador 1" + Enter → la isla muestra "0:59", "0:58"… y se ensancha. Al llegar a 0: notificación "¡Terminó el temporizador!" y suenan tres avisos; la isla vuelve a su ancho.
+- [ ] Tocar la isla con el temporizador andando → se abre el panel "Temporizador": Pausar (se queda quieto), Seguir, Cancelar.
+- [ ] En el panel: escribir "1:30" en el cuadro + Enter → arranca de 1:30. Atajos 1/5/10/25 min.
+- [ ] Cronómetro: Iniciar → corre con décimas; Pausar; Reiniciar vuelve a 0.
+- [ ] Con la barra de menú (no isla): aparece el chip al lado del clima; clic → abre el panel.
+- [ ] Abrir la cámara de Windows → puntito verde; pasar el mouse dice "Cámara: WindowsCamera". Una llamada en Zoom/Meet → naranja. Al cerrar, desaparecen (hasta 2 s).
+- [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
+- [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
+
+### Versión 1.3.0
+- [ ] Preferencias → Personalización → "+ Trabajo": aparece "Trabajo (en uso)". Cambiar el tamaño del Dock y fijar otra app; "+ Juegos (con modo juego)".
+- [ ] Menú de McBar → Perfil → Trabajo: vuelve el Dock de Trabajo y el modo juego se apaga. → Juegos: vuelve lo que tenía Juegos y se prende el modo juego.
+- [ ] Modo juego prendido: el Dock se esconde (aparece al llevar el mouse abajo), Win sola no abre nada, una esquina activa no hace nada, una notificación no sale en la isla pero queda en el centro. La isla dice "Juego"; tocándola → "Modo juego activado" → apagar.
+- [ ] Centro de control → "Modo juego" prende/apaga. Buscador: "modo juego" + Enter. Escribir "trab" → "Usar el perfil Trabajo".
+- [ ] Exportar ajustes… → guardar; cambiar algo; Importar ajustes… → vuelve como estaba (también los perfiles). Importar un .json cualquiera → "No se pudo importar".
+- [ ] Fondo según la hora: prender, elegir imagen para el momento actual → cambia el fondo al toque. Cambiar la hora de Windows al momento siguiente → en menos de un minuto cambia.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.
