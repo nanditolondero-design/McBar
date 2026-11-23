@@ -70,6 +70,8 @@ namespace McBar.Panels
             dock.Children.Add(Switch("Ocultar y mostrar el Dock automáticamente", s.DockAutoHide, v => s.DockAutoHide = v));
             // 1.8.9: como la píldora
             dock.Children.Add(Switch("Esconder el Dock con ventanas maximizadas", s.DockHideOnMaximized, v => s.DockHideOnMaximized = v));
+            // 1.9.7: antes quedaban abiertas hasta hacer clic afuera
+            dock.Children.Add(Switch("Cerrar carpetas y pilas al sacar el mouse", s.DockPopupsAutoClose, v => s.DockPopupsAutoClose = v));
             // 1.9.1: botón de apagado/reinicio al lado de la Papelera (es una "pila" más del Dock)
             var power = new CheckBox { Content = "Botón de apagado en el Dock (apagar, reiniciar, suspender…)", IsChecked = s.Stacks.Any(x => x.Target == AppIdentity.Power) };
             power.SetResourceReference(StyleProperty, "McSwitch");

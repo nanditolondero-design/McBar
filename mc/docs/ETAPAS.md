@@ -225,3 +225,6 @@ El fondo de Win+Tab se veía pixelado (copia de 320 px estirada). `WinUi.Wallpap
 
 ## 1.9.6 (23/11/2026)
 Algunas apps (el Explorador) no se reacomodan cuando cambia el área de trabajo al esconderse o volver el Dock por una ventana maximizada. `Core/MaximizedFit`: `App.ApplyFullscreen` guarda las áreas de antes; a los 300 ms y a los 1000 ms se recorren las ventanas maximizadas y las que siguen pegadas al área vieja se estiran o achican (`Fit`, pura) con `SetWindowPos`. `Screenshots.CopyToClipboard`: cada captura va al portapapeles (imagen + PNG), con reintentos; "Copiar" de la miniatura usa lo mismo.
+
+## 1.9.7 (23/11/2026)
+`DockWindow`: `_dropTrash` se marca en `Window_DragOver` cuando un archivo está sobre la Papelera y `Step` muestra la etiqueta `TrashDropLabel` ("Mover a la Papelera"); se limpia en `DragLeave` y `Drop`. El efecto sigue siendo `Link` (con `Move` el Explorador podría borrar el original por su cuenta). `CloseWhenAway(popup, contenido, ocupado)`: cada 150 ms mira el mouse (`GetCursorPos`) contra el contenido de la carpeta o pila y la barra del Dock (con 24 px de margen, `IsNear`, pura); lejos por `AutoCloseDelayMs` (900 ms) → se cierra. No cierra con un menú contextual abierto dentro de la carpeta. Ajuste `DockPopupsAutoClose` (prendido de fábrica).

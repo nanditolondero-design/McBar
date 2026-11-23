@@ -90,6 +90,8 @@ namespace McBar.Core
         public bool IslandHideOnMaximized { get; set; } = true;
         /// <summary>1.8.9: el Dock también se esconde con una ventana maximizada (vuelve llevando el mouse abajo).</summary>
         public bool DockHideOnMaximized { get; set; } = true;
+        /// <summary>1.9.7: las carpetas y pilas abiertas del Dock se cierran solas al sacar el mouse un momento.</summary>
+        public bool DockPopupsAutoClose { get; set; } = true;
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";

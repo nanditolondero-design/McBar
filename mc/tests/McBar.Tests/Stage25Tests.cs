@@ -1,6 +1,7 @@
 // McBar — Creado por Andrés Londero
-// Pruebas de la 1.9.6: acomodar las ventanas maximizadas que no se enteran del cambio de área de trabajo.
+// Pruebas de la 1.9.6 (ventanas maximizadas que no se enteran del cambio de área de trabajo) y 1.9.7 (carpetas del Dock que se cierran solas, cartel de la Papelera).
 using McBar.Core;
+using McBar.Dock;
 using McBar.Native;
 using Xunit;
 
@@ -48,5 +49,22 @@ namespace McBar.Tests
         [Fact]
         public void Captura_SeLlamaComoEnMac() =>
             Assert.Equal("Captura de pantalla 2026-11-23 a las 20.10.05.png", Screenshots.FileName(new System.DateTime(2026, 11, 23, 20, 10, 5)));
+    
+
+        [Fact]
+        public void Carpetas_SeCierranSolas_DeFabrica() => Assert.True(new AppSettings().DockPopupsAutoClose);
+
+        [Fact]
+        public void Cerca_ConMargen()
+        {
+            var r = new System.Windows.Rect(100, 100, 200, 100);
+            Assert.True(DockWindow.IsNear(r, new System.Windows.Point(150, 150), 0));
+            Assert.True(DockWindow.IsNear(r, new System.Windows.Point(310, 150), 24));
+            Assert.False(DockWindow.IsNear(r, new System.Windows.Point(340, 150), 24));
+            Assert.False(DockWindow.IsNear(r, new System.Windows.Point(150, 40), 24));
+        }
+
+        [Fact]
+        public void CartelDeLaPapelera() => Assert.Equal("Mover a la Papelera", DockWindow.TrashDropLabel);
     }
 }

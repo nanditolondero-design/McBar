@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.7 — 23/11/2026
+- **Cartel en la Papelera**: al arrastrar un archivo encima de la Papelera del Dock aparece "Mover a la Papelera".
+- **Carpetas y pilas que se cierran solas**: las carpetas de apps y las pilas (abanico, cuadrícula o lista) se cierran al sacar el mouse de ellas y del Dock por un momento (menos de un segundo); antes quedaban abiertas hasta hacer clic afuera. Preferencias → Dock → **"Cerrar carpetas y pilas al sacar el mouse"** (viene prendido).
+
 ## 1.9.6 — 23/11/2026 (arreglo)
 - **Ventanas maximizadas que quedaban con el hueco del Dock** (sobre todo el Explorador): cuando el Dock se esconde o vuelve por una ventana maximizada, algunas apps no se acomodaban solas y había que achicarlas y volver a maximizarlas. Ahora McBar las acomoda.
 - **Capturas al portapapeles**: cada captura (Win+Mayús+3, 4 o 5) además de guardarse queda copiada, lista para pegar con Ctrl+V.

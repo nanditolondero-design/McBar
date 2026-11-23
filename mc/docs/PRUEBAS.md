@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.7
+- [ ] Arrastrar un archivo del escritorio encima de la Papelera del Dock → aparece "Mover a la Papelera" arriba; al soltarlo va a la Papelera. Pasar por encima de otro ícono → el cartel desaparece.
+- [ ] Abrir una carpeta de apps y una pila (en abanico, cuadrícula y lista), sacar el mouse lejos → se cierran en menos de un segundo. Moverse entre el Dock y la carpeta no la cierra. Clic derecho en una app de la carpeta → el menú no hace que se cierre.
+- [ ] Apagar "Cerrar carpetas y pilas al sacar el mouse" → quedan abiertas hasta hacer clic afuera, como antes.
+
 ### Versión 1.9.6
 - [ ] Con "Esconder el Dock con ventanas maximizadas" prendido: abrir el Explorador ya maximizado y maximizar/restaurar varias veces → siempre llega hasta abajo, sin hueco; al restaurar otra cosa y volver el Dock, la ventana maximizada no queda tapada.
 - [ ] Win+Mayús+3 y luego Ctrl+V en Paint o WhatsApp → se pega la captura. Lo mismo con Win+Mayús+4 (zona y ventana).

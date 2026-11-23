@@ -147,7 +147,7 @@ namespace McBar.Dock
             SizeChanged += (_, _) => EnsureAnimating();
             DragOver += Window_DragOver;
             DragEnter += (_, _) => { _hideTimer.Stop(); if (_hidden) { _hidden = false; } _hover = true; EnsureAnimating(); }; // 1.4.1
-            DragLeave += (_, _) => { _hover = false; EnsureAnimating(); if (AutoHide) _hideTimer.Start(); };
+            DragLeave += (_, _) => { _hover = false; _dropTrash = null; EnsureAnimating(); if (AutoHide) _hideTimer.Start(); };
             Drop += Window_Drop;
 
             SourceInitialized += (_, _) =>
@@ -590,6 +590,9 @@ namespace McBar.Dock
         public double VisibleHeightDip => BarHeight + BottomMargin + 6;
         private DragGhost? _ghost;
         private bool _suppressPuff;
+        /// <summary>1.9.7: la Papelera mientras se le arrastra un archivo encima (para el cartel).</summary>
+        private DockItem? _dropTrash;
+        public const string TrashDropLabel = "Mover a la Papelera";
 
         /// <summary>Fuera del Dock: más de 50 arriba, o más de 40 a un costado de la barra. Pura, se prueba.</summary>
         public static bool OutsideDock(double up, double x, double barLeft, double barW, double pull = PullOutDistance) =>
@@ -789,7 +792,8 @@ namespace McBar.Dock
                 if (_pulledSince == DateTime.MaxValue) _pulledSince = DateTime.Now;
             }
             else _pulledSince = DateTime.MaxValue;
-            if (_pressItem != null && IsPulledOut(_pressItem)) { if (_ghost == null) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; } }
+            if (_dropTrash != null && _items.Contains(_dropTrash)) { labelFor = _dropTrash; labelText = TrashDropLabel; }
+            else if (_pressItem != null && IsPulledOut(_pressItem)) { if (_ghost == null) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; } }
             else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
             { labelFor = _hoverItem; labelText = _hoverItem.Name; }
 
@@ -1338,6 +1342,7 @@ namespace McBar.Dock
             title.MouseLeftButtonUp += (_, _) => { popup.IsOpen = false; RenameFolder(item); };
             panel.Children.Add(title);
             var grid = new UniformGrid { Columns = cols };
+            int menusOpen = 0;
             foreach (var t in f.Targets)
             {
                 var target = t;
@@ -1361,6 +1366,8 @@ namespace McBar.Dock
                     ApplyFolderChange(pins => DockFolders.TakeOut(pins, S.DockFolders, item.Target!, target, AppIdentity.FriendlyName));
                 };
                 cm.Items.Add(takeOut);
+                cm.Opened += (_, _) => menusOpen++;
+                cm.Closed += (_, _) => menusOpen--;
                 b.ContextMenu = cm;
                 grid.Children.Add(b);
             }
@@ -1384,6 +1391,7 @@ namespace McBar.Dock
                 grow.BeginAnimation(ScaleTransform.ScaleYProperty, a);
             };
             popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
+            CloseWhenAway(popup, border, () => menusOpen > 0);
             popup.IsOpen = true;
         }
 
@@ -1877,6 +1885,7 @@ namespace McBar.Dock
             popup.Child = border;
             popup.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
             popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
+            CloseWhenAway(popup, border);
             popup.IsOpen = true;
         }
 
@@ -1950,8 +1959,55 @@ namespace McBar.Dock
             popup.Child = canvas;
             popup.Opened += (_, _) => { _menuOpen = true; EnsureAnimating(); };
             popup.Closed += (_, _) => { _menuOpen = false; EnsureAnimating(); App.ScheduleTrim(); };
+            CloseWhenAway(popup, canvas);
             popup.IsOpen = true;
         }
+
+        /// <summary>
+        /// 1.9.7: cierra la carpeta o pila abierta cuando el mouse queda un momento lejos de ella y del Dock
+        /// (antes quedaba abierta hasta hacer clic afuera). Se puede apagar en Preferencias → Dock.
+        /// </summary>
+        private void CloseWhenAway(Popup popup, FrameworkElement content, Func<bool>? busy = null)
+        {
+            var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(150) };
+            DateTime awaySince = DateTime.MaxValue;
+            timer.Tick += (_, _) =>
+            {
+                if (!popup.IsOpen || !SettingsStore.Current.DockPopupsAutoClose) { awaySince = DateTime.MaxValue; return; }
+                bool near = busy?.Invoke() == true;
+                if (!near && Win32.GetCursorPos(out var c))
+                {
+                    var p = new Point(c.x, c.y);
+                    double margin = 24 * _monitor.Scale;
+                    near = NearScreen(content, p, margin) || NearScreen(Bar, p, margin);
+                }
+                if (near) { awaySince = DateTime.MaxValue; return; }
+                if (awaySince == DateTime.MaxValue) awaySince = DateTime.Now;
+                else if ((DateTime.Now - awaySince).TotalMilliseconds >= AutoCloseDelayMs) popup.IsOpen = false;
+            };
+            popup.Opened += (_, _) => { awaySince = DateTime.MaxValue; timer.Start(); };
+            popup.Closed += (_, _) => timer.Stop();
+        }
+
+        /// <summary>Tiempo con el mouse lejos antes de cerrar la carpeta o pila.</summary>
+        public const int AutoCloseDelayMs = 900;
+
+        /// <summary>¿El punto (pantalla, píxeles) está sobre el elemento o a menos de "margin" de él?</summary>
+        private static bool NearScreen(FrameworkElement el, Point p, double margin)
+        {
+            try
+            {
+                if (!el.IsLoaded || PresentationSource.FromVisual(el) == null) return false;
+                var a = el.PointToScreen(new Point(0, 0));
+                var b = el.PointToScreen(new Point(el.ActualWidth, el.ActualHeight));
+                return IsNear(new Rect(a, b), p, margin);
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Pura, se prueba.</summary>
+        public static bool IsNear(Rect r, Point p, double margin) =>
+            p.X >= r.Left - margin && p.X <= r.Right + margin && p.Y >= r.Top - margin && p.Y <= r.Bottom + margin;
 
         // ================== Soltar archivos ==================
 
@@ -1960,6 +2016,9 @@ namespace McBar.Dock
             e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(McBar.Panels.LaunchpadWindow.DockPinFormat)
                 ? DragDropEffects.Link : DragDropEffects.None;
             var p = e.GetPosition(Stage);
+            // 1.9.7: archivo arrastrado encima de la Papelera → cartel "Mover a la Papelera"
+            var over = e.Data.GetDataPresent(DataFormats.FileDrop) ? HitItem(p) : null;
+            _dropTrash = over?.Kind == DockItemKind.Trash ? over : null;
             _hover = true;
             _hideTimer.Stop();
             if (_hidden) _hidden = false; // 1.4.1: si estaba oculto, sube entero al arrastrar algo encima
@@ -1971,6 +2030,7 @@ namespace McBar.Dock
 
         private void Window_Drop(object sender, DragEventArgs e)
         {
+            _dropTrash = null;
             // 0.4.3: app arrastrada desde el Launchpad
             if (e.Data.GetDataPresent(McBar.Panels.LaunchpadWindow.DockPinFormat) && e.Data.GetData(McBar.Panels.LaunchpadWindow.DockPinFormat) is string pin)
             {
