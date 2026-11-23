@@ -80,3 +80,4 @@ docs/                    arquitectura, etapas, pruebas manuales
 - Perfiles / importar (1.3.0): NUNCA reemplazar `SettingsStore.Current` por otro objeto (Preferencias, Docks y barras lo tienen agarrado): copiar con `Profiles.CopyInto`. Un ajuste nuevo propio de la PC (que no deba viajar en perfiles ni exportaciones) va en `Profiles.MachineFields`.
 - Modo juego (1.3.0): todo lo que "moleste" (atajos, avisos, esquinas, cosas que aparecen solas) tiene que mirar `GameMode.On`.
 - Textos en C#: no usar comillas rectas dentro de un string; usar «» (en la 1.1.0 rompieron la compilación).
+- Strings de C#: las barras invertidas van dobles (`"\;"`, `"\\n"` literal). Un `"\;"` no compila (CS1009).

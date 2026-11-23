@@ -5,7 +5,7 @@
 - **Modo juego**: la tecla Windows sola no abre el Launchpad ni el Inicio, las esquinas activas no hacen nada, las notificaciones no aparecen en la isla (quedan en el centro) y el Dock se oculta solo y deja toda la pantalla. Se prende desde el Centro de control, el menú de McBar, el buscador ("modo juego") o Preferencias. Mientras está prendido, la isla y la barra muestran "Juego"; tocándolo se apaga.
 - **Exportar / importar ajustes** (Preferencias → Personalización → Copia de seguridad): un .json con todos los ajustes y los perfiles. Al importar no se pisan los datos propios de la PC (estado de la barra de Windows, arranque con Windows).
 - **Fondo de pantalla según la hora**: una imagen para la mañana (6), la tarde (12), el atardecer (18) y la noche (21). Si un momento no tiene imagen, sigue la anterior. Se revisa una vez por minuto y solo cambia cuando hace falta.
-- Arreglo: un texto de Preferencias → Calendarios tenía comillas rectas que rompían la compilación de la 1.1.0.
+- Arreglos de compilación (venían de la 1.1.0): comillas rectas dentro de un texto de Preferencias → Calendarios y la secuencia `"\;"` en el lector de iCal (C# no la acepta; ahora `"\\;"`).
 
 ## 1.2.0 — 22/11/2026 (etapa 12: isla más viva)
 - **Temporizador y cronómetro** (como las actividades en vivo del iPhone): mientras corren, la isla muestra la cuenta (se ensancha un poco) y la barra de menú un chip al lado del reloj. Tocándolos se abre el panel "Temporizador": atajos de 1, 5, 10 y 25 min, minutos a mano ("10", "1:30", "1,5"), Pausar / Seguir / Cancelar; cronómetro con décimas, Iniciar / Pausar / Reiniciar. Al terminar: notificación "¡Terminó el temporizador!" y tres sonidos de aviso. El temporizador sigue aunque se cierre el panel.

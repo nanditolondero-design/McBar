@@ -131,7 +131,7 @@ namespace McBar.Core
             return (head[0].ToUpperInvariant(), prms, line.Substring(colon + 1));
         }
 
-        private static string Unescape(string s) => s.Replace("\\n", " ").Replace("\\N", " ").Replace("\\,", ",").Replace("\;", ";").Replace("\\\\", "\\");
+        private static string Unescape(string s) => s.Replace("\\n", " ").Replace("\\N", " ").Replace("\\,", ",").Replace("\\;", ";").Replace("\\\\", "\\");
 
         /// <summary>Fecha iCal → hora local. "20261122" (día entero), "20261122T150000Z" (UTC) o con TZID.</summary>
         public static (DateTime local, bool allDay) ParseDate(string value, string? tzid)
