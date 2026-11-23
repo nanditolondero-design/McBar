@@ -164,6 +164,7 @@ namespace McBar.MenuBar
             _pill.SizeChanged += (_, _) =>
             {
                 _pill.CornerRadius = Corners(_pill.ActualHeight);
+                if (SettingsStore.Current.IslandStyle == "glass") { var gb = GlassBrush(); if (gb != null) _pill.Background = gb; } // 1.8.6: sigue al fondo
                 PlaceBackdrop();
                 UpdateShape();
             };
@@ -204,7 +205,12 @@ namespace McBar.MenuBar
                 if (_pill.IsMouseOver) GoExpanded(); else GoCompact();
             };
             _clockTimer = new DispatcherTimer(DispatcherPriority.Background);
-            _clockTimer.Tick += (_, _) => { UpdateCompact(); ScheduleClock(); };
+            _clockTimer.Tick += (_, _) =>
+            {
+                UpdateCompact(); ScheduleClock();
+                // 1.8.6: si cambió el fondo de pantalla (por ejemplo el fondo según la hora), el vidrio lo sigue
+                if (SettingsStore.Current.IslandStyle == "glass") { var gb = GlassBrush(); if (gb != null) _pill.Background = gb; }
+            };
             _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _progressTimer.Tick += (_, _) => UpdateProgress();
 
@@ -277,9 +283,11 @@ namespace McBar.MenuBar
                 case "glass":
                     // 0.4.1: vidrio dibujado por McBar (el desenfoque de Windows pintaba toda la ventana:
                     // se veía un cuadrado oscuro gigante alrededor de la píldora).
-                    // 1.8.5: la "Transparencia del vidrio" (Preferencias → General) también cambia la píldora de vidrio
+                    // 1.8.5: la "Transparencia del vidrio" (Preferencias → General) también cambia la píldora de vidrio.
+                    // 1.8.6: vidrio dibujado con el fondo de pantalla difuminado (Core/WallpaperGlass); si no hay
+                    // imagen de fondo, el degradé de antes.
                     int tr = s.GlassTransparency;
-                    bg = new LinearGradientBrush(Color.FromArgb(ThemeManager.ScaleAlpha(0xA0, tr), 0x3A, 0x3A, 0x40), Color.FromArgb(ThemeManager.ScaleAlpha(0xB0, tr), 0x1C, 0x1C, 0x20), 90);
+                    bg = GlassBrush() ?? new LinearGradientBrush(Color.FromArgb(ThemeManager.ScaleAlpha(0xA0, tr), 0x3A, 0x3A, 0x40), Color.FromArgb(ThemeManager.ScaleAlpha(0xB0, tr), 0x1C, 0x1C, 0x20), 90);
                     break;
                 case "accent":
                     var a = Application.Current.TryFindResource("Mc.Accent") is SolidColorBrush ab ? ab.Color : Color.FromRgb(0x0A, 0x84, 0xFF);
@@ -296,15 +304,18 @@ namespace McBar.MenuBar
             _compactArt.Clip = new RectangleGeometry(new Rect(0, 0, CompactHeight - 12, CompactHeight - 12), 6, 6);
             UpdateCompact();
 
-            // 1.8.5: la píldora de vidrio SIEMPRE tiene el desenfoque de atrás (antes dependía de "Desenfoque detrás
-            // del Dock", que se sacó en la 1.6.1, y el vidrio había quedado sin efecto). Va en una ventanita aparte
-            // con la forma de la píldora (_backdrop), también en la ventana rápida.
-            bool glassBlur = style == "glass";
-            // Nunca desenfoque de Windows en la propia ventana rápida: Windows lo aplica a TODA la ventana
-            // (no respeta la forma) y se veía un cuadrado oscuro enorme.
+            // 1.8.6: el desenfoque de Windows (ventanita _backdrop) NO se usa más: en Windows 11 no respeta la forma
+            // redondeada y se veía un rectángulo claro alrededor de la píldora. El vidrio lo pinta McBar.
             if (_fast && _hwnd != IntPtr.Zero) WindowOps.DisableBlur(this);
-            if (glassBlur && IsVisible) { _backdrop.Show(); PlaceBackdrop(); }
-            else _backdrop.Hide();
+            _backdrop.Hide();
+        }
+
+        /// <summary>1.8.6: vidrio con la parte del fondo de pantalla que queda detrás de la píldora.</summary>
+        private Brush? GlassBrush()
+        {
+            double w = _pill.ActualWidth > 0 ? _pill.ActualWidth : _pill.Width;
+            double monW = _monitor.Bounds.Width / _monitor.Scale;
+            return WallpaperGlass.BrushFor(_monitor, (monW - w) / 2, TopMargin, SettingsStore.Current.GlassTransparency);
         }
 
         /// <summary>Forma de la ventana rápida = la píldora (fuera de ella los clics pasan a las ventanas de atrás).</summary>

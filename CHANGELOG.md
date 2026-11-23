@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.8.6 — 23/11/2026 (arreglo)
+- **Píldora de vidrio sin el rectángulo claro**: el desenfoque de Windows que se agregó en la 1.8.5 no respeta la forma redondeada en Windows 11 y se veía un recuadro alrededor de la píldora. Ahora el vidrio lo pinta McBar: la parte del fondo de pantalla que queda detrás de la píldora, difuminada, con un tinte que cambia con "Transparencia del vidrio" (sin bajar tanto que no se lea la hora). Sigue al fondo si cambia (por ejemplo con el fondo según la hora). Si el fondo es un color liso, queda el degradé de antes.
+
 ## 1.8.5 — 23/11/2026 (pedidos de Andrés)
 - **Píldora de vidrio de verdad**: con Isla dinámica → Estilo → Vidrio, la píldora vuelve a tener el fondo difuminado detrás (desde la 1.6.1 dependía de "Desenfoque detrás del Dock", que se sacó, y había quedado sin efecto). Y **"Transparencia del vidrio" también la cambia**, igual que a Preferencias, paneles y Dock.
 - **.icns de macOS** (los dos Launchpad que mandó Andrés tienen PNG adentro, del formato moderno): el PNG ahora se copia aparte y se abre ignorando perfiles de color y metadatos; si Windows igual no puede, se prueba con el decodificador de PNG directo y con los otros tamaños del archivo. El registro anota el motivo.

@@ -193,3 +193,6 @@ Andrés: "cuando elijo un icns para el ícono del Launchpad no cambia en el Dock
 ## 1.8.5 (23/11/2026)
 Andrés mandó dos .icns de Launchpad que "la app no lee" (ambos: PNG en ic07…ic14, uno con bloque eXIf), "faltan palabras" en Preferencias y "el slider del glass debe hacer lo mismo con la píldora". `Icns.DecodePng` (copia propia, IgnoreColorProfile, PngBitmapDecoder de respaldo, otros tamaños). `IslandWindow.ApplyAppearance`: vidrio con `ThemeManager.ScaleAlpha(…, GlassTransparency)` y `_backdrop` (desenfoque) siempre con estilo Vidrio, también en la ventana rápida. `SettingsWindow.SliderSetting(…, format)` y letra 13 en SliderSetting/Segment.
 
+## 1.8.6 (23/11/2026)
+Captura de Andrés: con la 1.8.5 la píldora de vidrio tenía un rectángulo claro alrededor (el `_backdrop` con desenfoque de Windows no respeta la región redondeada en Windows 11). `Core/WallpaperGlass`: fondo de pantalla achicado a 96 px (borroso al estirarlo), recorte "Rellenar"/"Expandir" (`VisiblePart`, pura), `DrawingBrush` con Viewport = posición de la píldora en el monitor + tinte según la transparencia. `IslandWindow` ya no muestra `_backdrop`; actualiza el pincel al cambiar de tamaño y cada minuto.
+

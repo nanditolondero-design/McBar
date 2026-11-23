@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.8.6
+- [ ] Isla → Estilo → Vidrio: la píldora muestra el fondo de pantalla difuminado, SIN rectángulo alrededor, también al agrandarse (música, avisos). Transparencia del vidrio 0 → más oscura; 100 → se ve más el fondo pero la hora se sigue leyendo.
+- [ ] Cambiar el fondo de pantalla: en menos de un minuto la píldora lo toma.
+
 ### Versión 1.8.5
 - [ ] Isla dinámica → Estilo → Vidrio: la píldora deja ver el fondo difuminado. General → Transparencia del vidrio de 0 a 100: la píldora pasa de casi opaca a muy transparente. En pantalla completa no queda ningún recuadro difuminado suelto.
 - [ ] Cambiar el ícono del Launchpad por los .icns de Launchpad que mandó Andrés: cambia.
