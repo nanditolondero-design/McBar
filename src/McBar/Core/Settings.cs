@@ -107,6 +107,15 @@ namespace McBar.Core
         public string IconPackPath { get; set; } = "";
         /// <summary>Ruta del .exe que el usuario eligió "Probar sin instalar" (no se le vuelve a ofrecer instalar). 0.5.0.</summary>
         public string PortablePath { get; set; } = "";
+        /// <summary>La tecla Windows sola abre el Launchpad (en vez del menú Inicio). 0.6.0.</summary>
+        public bool WinKeyLaunchpad { get; set; } = true;
+        /// <summary>Win+S abre el buscador de McBar. 0.6.0.</summary>
+        public bool OwnSearch { get; set; } = true;
+        /// <summary>Las teclas de volumen las maneja McBar (cartel propio en vez del de Windows). 0.6.0.</summary>
+        public bool OwnVolumeKeys { get; set; } = true;
+        /// <summary>¿Hace falta el gancho de teclado?</summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool NeedsKeyboardHook => OwnShortcuts || WinKeyLaunchpad || OwnSearch || OwnVolumeKeys;
         public bool ShowWeatherInMenuBar { get; set; } = true;
 
         // Bandeja del sistema propia

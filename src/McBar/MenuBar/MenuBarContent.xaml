@@ -57,7 +57,7 @@
                 <Button x:Name="VolumeButton" Style="{StaticResource McFlatButton}">
                     <TextBlock x:Name="VolumeGlyph" FontFamily="{StaticResource Mc.Icons}" Text="&#xE767;" FontSize="14"/>
                 </Button>
-                <Button x:Name="SearchButton" Style="{StaticResource McFlatButton}" ToolTip="Buscar apps">
+                <Button x:Name="SearchButton" Style="{StaticResource McFlatButton}" ToolTip="Buscar (Win+S)">
                     <TextBlock FontFamily="{StaticResource Mc.Icons}" Text="&#xE721;" FontSize="13"/>
                 </Button>
                 <Button x:Name="ControlCenterButton" Style="{StaticResource McFlatButton}" ToolTip="Centro de control">

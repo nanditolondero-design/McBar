@@ -178,7 +178,7 @@ namespace McBar
             }));
 
             if (s.OwnNotifications) NotificationCenter.Start();
-            if (s.OwnShortcuts) KeyboardHook.Start();
+            if (s.NeedsKeyboardHook) KeyboardHook.Start();
             StartWeather();
             StartWatchdog();
             ScheduleTrim(6);
@@ -295,7 +295,7 @@ namespace McBar
         }
 
         /// <summary>Datos frescos del monitor (el área de trabajo puede haber cambiado desde que se guardó).</summary>
-        private static MonitorInfo MonitorOrPrimary(MonitorInfo? m)
+        internal static MonitorInfo MonitorOrPrimary(MonitorInfo? m)
         {
             if (m != null) return Monitors.Get(m.Handle) ?? m;
             return Monitors.All().FirstOrDefault(x => x.Primary) ?? Monitors.All().First();
@@ -441,7 +441,7 @@ namespace McBar
                 foreach (var d in Docks) d.RefreshIcons();
             }
             if (s.OwnNotifications) NotificationCenter.Start(); else NotificationCenter.Stop();
-            if (s.OwnShortcuts) KeyboardHook.Start(); else KeyboardHook.Stop();
+            if (s.NeedsKeyboardHook) KeyboardHook.Start(); else KeyboardHook.Stop();
             if (IslandKey(s) != _lastIslandKey)
             {
                 _lastIslandKey = IslandKey(s);
@@ -547,6 +547,17 @@ namespace McBar
         {
             var fg = Win32.GetForegroundWindow();
             return fg != IntPtr.Zero ? Monitors.FromWindow(fg) : null;
+        }
+
+        private static SpotlightWindow? _spotlight;
+
+        /// <summary>Buscador tipo Spotlight (0.6.0): Win+S o la lupa.</summary>
+        public static void ToggleSpotlight(MonitorInfo? monitor = null)
+        {
+            if (_spotlight != null && _spotlight.IsVisible && !_spotlight.IsClosing) { _spotlight.CloseAnimated(); return; }
+            if (_spotlight != null && RecentlyClosed(_spotlight.ClosedAt)) return;
+            _spotlight = new SpotlightWindow(MonitorOrPrimary(monitor ?? ActiveMonitor()));
+            _spotlight.Show();
         }
 
         public static void OpenSettings()

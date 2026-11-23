@@ -117,6 +117,17 @@ namespace McBar.Panels
             nt.Children.Add(Switch("Ocultar los avisos de Windows (experimental)", s.HideWindowsToasts, v => s.HideWindowsToasts = v));
             root.Children.Add(Group(nt));
 
+            // ---------- Teclado (0.6.0) ----------
+            root.Children.Add(Header("Teclado"));
+            var kb = new StackPanel();
+            kb.Children.Add(Switch("Tecla Windows sola: abrir el Launchpad (en vez de Inicio)", s.WinKeyLaunchpad, v => s.WinKeyLaunchpad = v));
+            kb.Children.Add(Switch("Win+S: buscador de McBar (apps, archivos y cuentas)", s.OwnSearch, v => s.OwnSearch = v));
+            kb.Children.Add(Switch("Teclas de volumen con el cartel de McBar", s.OwnVolumeKeys, v => s.OwnVolumeKeys = v));
+            var kbTip = new TextBlock { Text = "Win+N abre las notificaciones y Win+A el Centro de control (se cambian en Notificaciones).", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
+            kbTip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            kb.Children.Add(kbTip);
+            root.Children.Add(Group(kb));
+
             // ---------- Launchpad (0.4.0) ----------
             root.Children.Add(Header("Launchpad"));
             var lp = new StackPanel();

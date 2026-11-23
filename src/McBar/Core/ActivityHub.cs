@@ -112,6 +112,18 @@ namespace McBar.Core
         public static void Restart() { Stop(); Start(); }
 
 
+        /// <summary>
+        /// Muestra algo en la isla desde McBar (0.6.0: teclas de volumen). Devuelve false si la isla no está
+        /// escuchando (modo barra, o la isla sin "Volumen"): entonces se usa el cartel propio.
+        /// </summary>
+        public static bool Show(Activity a)
+        {
+            if (!_running) return false;
+            if (a.Kind == ActivityKind.Volume && !SettingsStore.Current.IslandVolume) return false;
+            Raised?.Invoke(a);
+            return true;
+        }
+
         private static void Post(Activity a) => _ui?.BeginInvoke(new Action(() => Raised?.Invoke(a)));
 
         private static void CheckBattery()

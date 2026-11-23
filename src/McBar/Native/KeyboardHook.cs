@@ -9,7 +9,8 @@
 //    avisamos al hilo de la interfaz.
 //  - Para que al soltar la tecla Windows NO se abra el menú Inicio, mandamos una tecla "vacía" (VK 0xE8,
 //    sin asignar) — el mismo truco que usa PowerToys.
-//  - Se activa solo con Preferencias → Notificaciones → "Usar Win+N y Win+A de McBar".
+//  - 0.6.0: también la tecla Windows sola (Launchpad), Win+S (buscador) y las teclas de volumen.
+//  - Cada atajo se activa o desactiva en Preferencias → Teclado.
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -91,30 +92,76 @@ namespace McBar.Native
 
         private static bool Down(int vk) => (GetAsyncKeyState(vk) & 0x8000) != 0;
 
+        private const int WM_KEYUP = 0x101, WM_SYSKEYUP = 0x105;
+        private const int VK_S = 0x53, VK_VOLUME_MUTE = 0xAD, VK_VOLUME_DOWN = 0xAE, VK_VOLUME_UP = 0xAF;
+        private static bool _winDown, _winOther;
+
+        private static void Ui(Action a)
+        {
+            _ui?.BeginInvoke(new Action(() =>
+            {
+                try { a(); } catch (Exception ex) { Log.Write("Atajo: " + ex.Message); }
+            }));
+        }
+
+        /// <summary>
+        /// 0.6.0:
+        ///  - Tecla Windows SOLA → Launchpad. Al apretarla se manda enseguida la tecla vacía (0xE8): así
+        ///    Windows nunca abre Inicio al soltarla, pero Win+E, Win+D, etc. siguen funcionando.
+        ///  - Win+S → buscador de McBar. Win+N / Win+A como antes.
+        ///  - Teclas de volumen: McBar cambia el volumen y muestra su cartel (o la isla), no el de Windows.
+        /// </summary>
         private static IntPtr Proc(int nCode, IntPtr wParam, IntPtr lParam)
         {
             try
             {
-                if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
+                if (nCode >= 0)
                 {
                     var k = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-                    if ((k.flags & LLKHF_INJECTED) == 0 && (k.vkCode == VK_N || k.vkCode == VK_A)
-                        && (Down(VK_LWIN) || Down(VK_RWIN))
-                        && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                    bool down = wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN;
+                    bool up = wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP;
+                    if ((k.flags & LLKHF_INJECTED) == 0)
                     {
-                        // Tecla "vacía" para que al soltar Windows no se abra el menú Inicio.
-                        WindowOps.SendChord(VK_DUMMY);
-                        bool notif = k.vkCode == VK_N;
-                        _ui?.BeginInvoke(new Action(() =>
+                        var s = SettingsStore.Current;
+                        int vk = (int)k.vkCode;
+
+                        if (vk == VK_LWIN || vk == VK_RWIN)
                         {
-                            try
+                            if (down && !_winDown)
                             {
-                                var m = App.ActiveMonitor();
-                                if (notif) App.ToggleWidgets(m); else App.ToggleControlCenter(m);
+                                _winDown = true;
+                                _winOther = false;
+                                if (s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY);
                             }
-                            catch (Exception ex) { Log.Write("KeyboardHook acción: " + ex.Message); }
-                        }));
-                        return (IntPtr)1; // nos comemos la tecla: Windows no abre su panel
+                            else if (up)
+                            {
+                                bool alone = _winDown && !_winOther;
+                                _winDown = false;
+                                if (alone && s.WinKeyLaunchpad && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                                    Ui(() => App.ToggleLaunchpad(App.ActiveMonitor()));
+                            }
+                        }
+                        else if (down && _winDown) _winOther = true;
+
+                        if (s.OwnVolumeKeys && (vk == VK_VOLUME_MUTE || vk == VK_VOLUME_DOWN || vk == VK_VOLUME_UP))
+                        {
+                            if (down) Ui(() => VolumeKeys.Handle(vk));
+                            return (IntPtr)1; // Windows no ve la tecla: no muestra su cartel
+                        }
+
+                        if (down && _winDown && !Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU))
+                        {
+                            Action? act = null;
+                            if (s.OwnShortcuts && vk == VK_N) act = () => App.ToggleWidgets(App.ActiveMonitor());
+                            else if (s.OwnShortcuts && vk == VK_A) act = () => App.ToggleControlCenter(App.ActiveMonitor());
+                            else if (s.OwnSearch && vk == VK_S) act = () => App.ToggleSpotlight(App.ActiveMonitor());
+                            if (act != null)
+                            {
+                                if (!s.WinKeyLaunchpad) WindowOps.SendChord(VK_DUMMY); // que no se abra Inicio al soltar
+                                Ui(act);
+                                return (IntPtr)1; // Windows no abre su panel
+                            }
+                        }
                     }
                 }
             }

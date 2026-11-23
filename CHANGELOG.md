@@ -1,5 +1,18 @@
 # Cambios
 
+## 0.6.0 — 22/11/2026 (etapa 6: Inicio, buscador y avisos)
+- **Tecla Windows sola → Launchpad** en vez del menú Inicio. Los atajos con Windows (Win+E, Win+D, Win+L…) siguen funcionando: al apretar Windows McBar manda una tecla vacía, así Inicio no se abre al soltar.
+- **Buscador tipo Spotlight** (Win+S o la lupa de la barra/isla): ventana de vidrio centrada con:
+  - **Apps** (las del Launchpad).
+  - **Calculadora**: "12*3+4", "15% de 300", "raiz(81)", "2^10", con coma o punto decimal; Enter copia el resultado.
+  - **Configuración**: Wi-Fi, Bluetooth, Sonido, Pantalla, Fondo, Windows Update, etc., y las Preferencias de McBar.
+  - **Archivos**: índice propio de Escritorio, Documentos, Descargas, Imágenes, Música, Videos y OneDrive (no usa el indexador de Windows). Ctrl+Enter muestra el archivo en su carpeta.
+  - **Buscar en la web**.
+  - Flechas para elegir, Enter para abrir, Esc para cerrar.
+- **Teclas de volumen con cartel propio**: McBar cambia el volumen (de a 2, como Windows) y lo muestra en la isla, o en modo barra con un cartel de vidrio estilo macOS (ícono + 16 rayitas) abajo al centro. El cartel de Windows ya no aparece.
+- **Preferencias → Teclado**: cada atajo (tecla Windows, Win+S, volumen) se puede apagar.
+- Límite: el cartel de **brillo** de Windows no se puede reemplazar (esas teclas las maneja el equipo directamente); la isla igual muestra el brillo.
+
 ## 0.5.0 — 22/11/2026 (etapa 5: instalador y arranque)
 - **Instalador propio estilo Mac**: McBar.exe es su propio instalador. Abierto desde fuera de la carpeta instalada muestra una ventana de vidrio con semáforo, el ícono flotando, opciones (iniciar con Windows, accesos directos en Inicio y escritorio, traer las apps fijadas de la barra de Windows, tema Vidrio), barra de progreso animada y pantalla de "¡Listo!".
   - Sin permisos de administrador: se instala en `%LocalAppData%\Programs\McBar`.

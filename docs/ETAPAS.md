@@ -69,6 +69,9 @@ Pedido de Andrés: "un instalador copado, lindo" e integrarse mejor a Windows ta
 Pendiente aparte: **actualización automática** — necesita que el workflow publique un *Release* en GitHub (hoy deja el .exe como *Artifact*, que pide iniciar sesión para bajarlo). El workflow solo se puede cambiar subiéndolo a mano.
 No se puede tapar desde una app: inicio de sesión, avisos de UAC, la app Configuración y las ventanas del Explorador de archivos. Reemplazar el shell (explorer.exe) se descartó: rompe la Tienda, las notificaciones y otras partes.
 
+## Etapa 6 — versión 0.6.0 (22/11/2026) ✅ escrita, pendiente de compilación y prueba
+Tecla Windows → Launchpad, buscador tipo Spotlight (apps, archivos, calculadora, Configuración, web), teclas de volumen con cartel propio. Sigue: 0.7.0 Wi-Fi, Bluetooth y sonido propios.
+
 ## Limitaciones conocidas (posibles próximas etapas)
 - **Isla y notificaciones**: con el "plan B" no siempre se distingue bien qué texto es la app, el título y el mensaje; el cartelito de Windows se sigue viendo abajo a la derecha.
 - **Isla y monitores con distinta escala**: igual que el resto de McBar, usa la escala del sistema.

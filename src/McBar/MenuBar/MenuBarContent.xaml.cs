@@ -69,7 +69,7 @@ namespace McBar.MenuBar
             WifiButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Wifi); else OpenMenu(WifiButton, BuildNetworkMenu()); };
             BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Battery); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
             VolumeButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Sound); else ShowVolumePopup(); };
-            SearchButton.Click += (_, _) => App.ToggleLaunchpad(_monitor);
+            SearchButton.Click += (_, _) => App.ToggleSpotlight(_monitor); // 0.6.0: buscador tipo Spotlight
             ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
             ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
 

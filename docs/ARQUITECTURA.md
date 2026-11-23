@@ -94,6 +94,11 @@
 - `Core/LaunchpadLayout`: lógica pura (crear, agregar, sacar, renombrar, deshacer, limpiar, ordenar, buscar) sobre `AppSettings.LaunchpadFolders` (lista de `LaunchpadFolder` con los Target de las apps).
 - `LaunchpadWindow`: arrastrar con `DragDrop` (dato = Target de la app); capa `_folderLayer` para la carpeta abierta. Fondo = `Mc.LaunchpadBg` y tinte del desenfoque escalados por `LaunchpadTransparency` (50 = como antes).
 
+## Teclado, buscador y volumen (0.6.0)
+- `Native/KeyboardHook`: un solo gancho (en su hilo) para Win sola → Launchpad, Win+S → `App.ToggleSpotlight`, Win+N/Win+A y teclas de volumen (se "comen" y van a `Core/VolumeKeys`). Se instala si `AppSettings.NeedsKeyboardHook`.
+- `Panels/SpotlightWindow`: resultados por secciones; `Core/Calc` (analizador propio, puro), `Core/FileIndex` (índice propio de carpetas del usuario, `Rank` puro), páginas de Configuración fijas.
+- `Core/VolumeKeys` → `ActivityHub.Show` (isla) o `Panels/OsdWindow` (cartel estilo macOS).
+
 ## Instalador (0.5.0)
 `App.OnStartup` decide antes de crear el mutex: `--uninstall` → confirmación + `Installer.Uninstall()`; si el .exe no está en `Installer.InstallDir` (y no es `--portable` ni `PortablePath`), `Installer.Decide` → `InstallerWindow` (instalar/actualizar) o abrir la instalada. `Core/Installer.cs` tiene todo lo que toca disco y registro (HKCU\...\Uninstall\McBar, Run, accesos directos con WScript.Shell). `SafeCleanup(keepTaskbarHidden)` al cerrar sesión no devuelve la barra si McBar arranca con Windows.
 

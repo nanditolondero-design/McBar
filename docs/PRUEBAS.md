@@ -191,6 +191,14 @@ Tema:
 - [ ] "Probar sin instalar": funciona y al abrirlo otra vez no pregunta.
 - [ ] Desinstalar desde Aplicaciones instaladas: confirma, la barra de Windows vuelve, desaparecen los accesos directos y la carpeta; `%AppData%\McBar` sigue.
 
+### Versión 0.6.0
+- [ ] Apretar y soltar la tecla Windows: se abre el Launchpad (no Inicio). Otra vez: se cierra.
+- [ ] Win+E abre el Explorador, Win+D muestra el escritorio, Win+L bloquea (siguen andando).
+- [ ] Win+S: buscador. "chro" → Chrome; "12*3+4" → = 40 (Enter lo copia); "wifi" → Wi-Fi y red; el nombre de un archivo del Escritorio → aparece (Ctrl+Enter lo muestra en su carpeta); última opción "Buscar … en la web".
+- [ ] La lupa de la barra y la de la isla abren el buscador.
+- [ ] Teclas de volumen (o las del teclado multimedia): en modo isla se ve en la isla; en modo barra aparece el cartel de vidrio abajo al centro. No aparece el de Windows. Silencio: ícono tachado.
+- [ ] Preferencias → Teclado: apagar cada atajo vuelve al comportamiento de Windows.
+
 ### Consumo
 - [ ] En reposo (sin tocar nada) McBar usa ~0 % de procesador.
 - [ ] La memoria vuelve a bajar unos segundos después de cerrar el Launchpad o los paneles.
