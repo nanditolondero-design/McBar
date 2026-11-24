@@ -247,5 +247,8 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.15 (24/11/2026)
+Revertida la secuencia de clics de la 1.9.14 en `TrayHost.Send` (la interfaz ya manda abajo/arriba por separado, así que acá va un mensaje por llamada). Se agrega `Log.Write` en `Send` con click, hwnd, uid, versión, mensaje de callback, IsWindowsSystem y los mensajes reenviados, para diagnosticar los íconos que no responden. Pendiente de confirmar con el log si el problema es el bloqueo de foco al mostrar el menú.
+
 ## 1.9.14 (24/11/2026)
 Systray (`TrayHost.Send`): antes de reenviar, `SetForegroundWindow(icon.HWnd)` (varios programas no muestran el menú si su ventana no está al frente) y se manda el par abajo+arriba (antes solo "arriba", que algunos ignoran). Resorte al arrastrar: `StageStrip` con `AllowDrop` y un `DispatcherTimer` de 500 ms por miniatura → `StageManager.Bring` (no acepta el drop, `Effects=None`); `DockWindow.Window_DragOver` detecta el ícono de app bajo el puntero (`HitItem`) y a los 600 ms activa su ventana (`_springTimer`, `_springHwnd`), restaurándola si estaba minimizada. Ninguno de los dos toma el archivo: solo trae la ventana al frente para que el usuario lo suelte adentro.

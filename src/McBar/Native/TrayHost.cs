@@ -299,20 +299,20 @@ namespace McBar.Native
             if (icon.IsWindowsSystem) return; // nunca tocar los íconos propios de Windows
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
             Win32.AllowSetForegroundWindow(Win32.ProcessOf(icon.HWnd)); // para que pueda mostrar su menú al frente
-            // 1.9.14: muchos programas (sobre todo con menú de clic derecho) solo responden si su ventana está al
-            // frente; si no, el menú ni aparece o se cierra solo. Se la trae antes de reenviar el clic.
-            Win32.SetForegroundWindow(icon.HWnd);
-            // 1.9.14: se manda el par completo abajo+arriba. Antes se mandaba solo "arriba", y varios programas
-            // llevan la cuenta de abajo→arriba e ignoran un "arriba" suelto, así que no abrían ni mostraban menú.
+            // 1.9.15: la interfaz ya manda "abajo" al apretar y "arriba" al soltar (dos llamadas), así que acá va
+            // un solo mensaje por llamada. Para los íconos nuevos (versión 4) el menú se pide con WM_CONTEXTMENU
+            // y la selección con NIN_SELECT; para los viejos, con el "arriba" común.
             int[] msgs = click switch
             {
                 Click.LeftDown => new[] { WM_LBUTTONDOWN },
-                Click.LeftUp => icon.Version >= 4 ? new[] { WM_LBUTTONDOWN, WM_LBUTTONUP, NIN_SELECT } : new[] { WM_LBUTTONDOWN, WM_LBUTTONUP },
+                Click.LeftUp => icon.Version >= 4 ? new[] { WM_LBUTTONUP, NIN_SELECT } : new[] { WM_LBUTTONUP },
                 Click.LeftDouble => new[] { WM_LBUTTONDBLCLK },
                 Click.RightDown => new[] { WM_RBUTTONDOWN },
-                Click.RightUp => icon.Version >= 4 ? new[] { WM_RBUTTONDOWN, WM_RBUTTONUP, WM_CONTEXTMENU } : new[] { WM_RBUTTONDOWN, WM_RBUTTONUP },
+                Click.RightUp => icon.Version >= 4 ? new[] { WM_RBUTTONUP, WM_CONTEXTMENU } : new[] { WM_RBUTTONUP },
                 _ => Array.Empty<int>()
             };
+            // 1.9.15: registro para diagnóstico (queda en mcbar.log). Dice qué se reenvía y a quién.
+            Log.Write($"Tray {click} -> hwnd=0x{icon.HWnd.ToInt64():X} uid={icon.Uid} ver={icon.Version} cb=0x{icon.CallbackMessage:X} sys={icon.IsWindowsSystem} msgs=[{string.Join(",", msgs.Select(m => "0x" + m.ToString("X")))}]");
             foreach (var mm in msgs)
             {
                 IntPtr wParam, lParam;

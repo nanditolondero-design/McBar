@@ -240,6 +240,9 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.15
+- [ ] Tocar un ícono del área de notificaciones que no responde y después abrir `%AppData%\McBar\mcbar.log`: tiene que aparecer una línea "Tray ... -> hwnd=... msgs=[...]". Si NO aparece, el clic no llega; si aparece pero el programa no reacciona, es del lado del programa/foco.
+
 ### Versión 1.9.14
 - [ ] Área de notificaciones: tocar un programa que antes no abría (o su menú de clic derecho) → ahora abre / muestra el menú. Probar con varios (antivirus, utilidades, etc.).
 - [ ] Arrastrar un archivo del escritorio y pararlo ~medio segundo sobre una miniatura de la franja del Organizador visual → esa ventana viene al frente; soltar el archivo cae en esa app.

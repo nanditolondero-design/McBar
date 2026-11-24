@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.15 — 24/11/2026 (diagnóstico del systray)
+- Se revierte el cambio de la 1.9.14 en los clics del área de notificaciones: duplicaba el "apretar" y podía empeorar las cosas. Vuelve a la secuencia correcta (un mensaje por acción).
+- Se agrega un registro de diagnóstico: cada vez que tocás un ícono del área de notificaciones queda anotado en `mcbar.log` qué se le reenvía y a qué ventana. Sirve para encontrar por qué algunos programas no abren ni muestran menú.
+
 ## 1.9.14 — 24/11/2026
 - **Íconos del área de notificaciones (systray) que no respondían**: algunos programas no abrían al tocarlos ni mostraban el menú con el clic derecho. Ahora McBar trae la ventana del programa al frente antes de reenviar el clic y manda la secuencia completa (apretar y soltar), que es lo que esos programas esperan.
 - **Arrastrar un archivo a otra ventana (como en la barra de Windows)**: si dejás un archivo arrastrado un momento sobre una miniatura de la franja del Organizador visual, o sobre el ícono de una app abierta en el Dock, esa ventana viene al frente para que sueltes el archivo adentro. McBar no se queda con el archivo, solo trae la ventana.
