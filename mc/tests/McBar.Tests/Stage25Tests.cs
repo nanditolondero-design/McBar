@@ -103,5 +103,33 @@ namespace McBar.Tests
         [Fact]
         public void AreaDeTrabajo_ConBarraYDock() =>
             Assert.Equal(ConBarra.Top, WorkArea.Compute(Monitor, 28, 90).Top);
+    
+
+        // 1.9.10: Launchpad según el tamaño de la pantalla
+        [Fact]
+        public void Launchpad_PantallaGrande_7x5De80()
+        {
+            var f = McBar.Panels.LaunchpadWindow.Fit(1920, 1080, 80);
+            Assert.Equal((7, 5), (f.cols, f.rows));
+            Assert.Equal(80, f.icon);
+        }
+
+        [Fact]
+        public void Launchpad_Notebook1366_ÍconosMasChicos()
+        {
+            var f = McBar.Panels.LaunchpadWindow.Fit(1366, 768, 80);
+            Assert.True(f.icon >= 52 && f.icon < 80);
+            Assert.True(f.top < 124);
+            // entra todo: filas × (ícono + nombre) en el lugar que queda
+            Assert.True(f.rows * (f.icon + 52) <= 768 - f.top - f.bottom - 80);
+        }
+
+        [Fact]
+        public void Launchpad_PantallaMuyChica_MenosFilas()
+        {
+            var f = McBar.Panels.LaunchpadWindow.Fit(1024, 600, 70);
+            Assert.True(f.rows < 5 || f.cols < 7);
+            Assert.True(f.icon >= 40);
+        }
     }
 }

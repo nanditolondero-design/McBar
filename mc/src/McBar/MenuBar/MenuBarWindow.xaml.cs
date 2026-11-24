@@ -1,5 +1,6 @@
 // McBar — Creado por Andrés Londero
 // Barra de menú superior clásica (una por monitor): ventana con fondo desenfocado que aloja MenuBarContent.
+// 1.9.9: se registra como barra de escritorio (AppBar) arriba: Windows le reserva el lugar.
 using System;
 using System.Windows;
 using System.Windows.Interop;
@@ -18,6 +19,7 @@ namespace McBar.MenuBar
         private IntPtr _hwnd;
         private bool _fullscreen;
         private bool _wantVisible;
+        private TopAppBar? _appBar; // 1.9.9
 
         public MonitorInfo Monitor => _monitor;
         public int ReservePx => _wantVisible ? (int)Math.Ceiling(BarHeightDip * _monitor.Scale) : 0;
@@ -37,6 +39,15 @@ namespace McBar.MenuBar
                 _hwnd = new WindowInteropHelper(this).Handle;
                 WindowOps.MakeToolNoActivate(this);
                 ApplyBlur();
+                // 1.9.9: Windows reserva el lugar de la barra (ver TopAppBar)
+                _appBar = new TopAppBar(_hwnd);
+                HwndSource.FromHwnd(_hwnd)?.AddHook((IntPtr h, int msg, IntPtr wp, IntPtr lp, ref bool handled) =>
+                {
+                    if (_appBar != null && _appBar.IsReposition(msg, wp))
+                        Dispatcher.BeginInvoke(new Action(ApplyGeometry), System.Windows.Threading.DispatcherPriority.Background);
+                    return IntPtr.Zero;
+                });
+                if (_wantVisible) ApplyGeometry();
             };
             _onTheme = ApplyBlur;
             ThemeManager.ThemeChanged += _onTheme;
@@ -50,7 +61,7 @@ namespace McBar.MenuBar
                 if (!_fullscreen) Show();
                 ApplyGeometry();
             }
-            else Hide();
+            else { _appBar?.Remove(); Hide(); }
         }
 
         public void ApplyGeometry()
@@ -58,6 +69,7 @@ namespace McBar.MenuBar
             if (_hwnd == IntPtr.Zero || !_wantVisible) return;
             var b = _monitor.Bounds;
             int h = (int)Math.Ceiling(BarHeightDip * _monitor.Scale);
+            _appBar?.Reserve(b, h);
             Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, b.Left, b.Top, b.Width, h, Win32.SWP_NOACTIVATE);
         }
 
@@ -68,9 +80,17 @@ namespace McBar.MenuBar
             if (fullscreen) Hide(); else { Show(); ApplyGeometry(); }
         }
 
+        /// <summary>1.9.9: el Explorador se reinició: volver a registrar la barra para que reserve el lugar.</summary>
+        public void OnShellRestarted()
+        {
+            _appBar?.Forget();
+            ApplyGeometry();
+        }
+
         public void Teardown()
         {
             ThemeManager.ThemeChanged -= _onTheme;
+            _appBar?.Remove(); // 1.9.9: devolver el lugar
             _content.Teardown();
         }
 

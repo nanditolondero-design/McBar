@@ -30,7 +30,30 @@ namespace McBar.Panels
 {
     internal sealed class LaunchpadWindow : Window
     {
-        private const int Cols = 7, Rows = 5, PerPage = Cols * Rows;
+        // 1.9.10: columnas, filas y tamaño de íconos según el tamaño de la pantalla (antes 7×5 de 80 px fijos:
+        // en pantallas chicas, como las de 1366×768, los nombres quedaban cortados y todo se veía apretado)
+        private readonly int Cols = 7, Rows = 5;
+        private int PerPage => Cols * Rows;
+        private readonly double _iconSize = 80, _labelMax = 120, _labelFont = 12.5;
+
+        /// <summary>
+        /// Medidas del Launchpad para una pantalla (en DIP). Busca la grilla más parecida a la de macOS (7×5) que
+        /// deje los íconos de al menos 52 px con el nombre entero abajo. Pura, se prueba.
+        /// </summary>
+        public static (int cols, int rows, double icon, double top, double bottom) Fit(double w, double h, double dock)
+        {
+            bool small = h < 860;
+            double top = small ? 84 : 124, bottom = small ? 50 : 90;
+            double availH = Math.Max(200, h - top - bottom - Math.Max(0, dock));
+            double availW = Math.Max(300, w - 140);
+            foreach (var rows in new[] { 5, 4, 3 })
+                foreach (var cols in new[] { 7, 6, 5 })
+                {
+                    double icon = Math.Min(80, Math.Min(availH / rows - 52, availW / cols - 44));
+                    if (icon >= 52) return (cols, rows, Math.Floor(icon), top, bottom);
+                }
+            return (5, 3, Math.Max(40, Math.Floor(Math.Min(availH / 3 - 52, availW / 5 - 44))), top, bottom);
+        }
         private static readonly Brush HoverBrush = Frozen(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF));
         private static readonly Brush LabelBrush = Frozen(Colors.White);
 
@@ -86,15 +109,21 @@ namespace McBar.Panels
             _root.Children.Add(_folderLayer);
             _content.RenderTransformOrigin = new Point(0.5, 0.5);
             _content.RenderTransform = _zoom;
-            _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(124) });
+            var fit = Fit(monitor.Bounds.Width / sc, monitor.Bounds.Height / sc, dockHeight); // 1.9.10
+            Cols = fit.cols; Rows = fit.rows; _iconSize = fit.icon;
+            _labelFont = _iconSize < 66 ? 11.5 : 12.5;
+            _labelMax = Math.Max(84, Math.Min(140, (monitor.Bounds.Width / sc - 140) / Cols - 24));
+            _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(fit.top) });
             _content.RowDefinitions.Add(new RowDefinition());
-            _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(90) });
+            _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(fit.bottom) });
             _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(Math.Max(0, dockHeight)) }); // 1.6.2: lugar del Dock (queda a la vista encima)
 
             // Búsqueda (píldora arriba al centro)
             // (abajo de la fila para no quedar debajo de la isla dinámica)
             var searchHost = new Grid { Width = 260, Height = 32, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 20) };
             _search.SetResourceReference(StyleProperty, "McTextBox");
+            // 1.9.10: píldora de vidrio oscuro propia (con el tema Claro el cuadro salía blanco con letras blancas)
+            _search.Template = SearchTemplate();
             _search.Foreground = Brushes.White;
             _search.CaretBrush = Brushes.White;
             _search.VerticalContentAlignment = VerticalAlignment.Center;
@@ -192,6 +221,24 @@ namespace McBar.Panels
                 d = d is Visual || d is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
             }
             return false;
+        }
+
+        /// <summary>1.9.10: cuadro de búsqueda como el de macOS: píldora de vidrio oscuro con borde suave.</summary>
+        private static ControlTemplate SearchTemplate()
+        {
+            var t = new ControlTemplate(typeof(TextBox));
+            var bd = new FrameworkElementFactory(typeof(Border));
+            bd.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+            bd.SetValue(Border.BackgroundProperty, Frozen(Color.FromArgb(0x40, 0x00, 0x00, 0x00)));
+            bd.SetValue(Border.BorderBrushProperty, Frozen(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF)));
+            bd.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+            var host = new FrameworkElementFactory(typeof(ScrollViewer)) { Name = "PART_ContentHost" };
+            host.SetValue(MarginProperty, new Thickness(10, 0, 10, 0));
+            host.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Hidden);
+            host.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Hidden);
+            bd.AppendChild(host);
+            t.VisualTree = bd;
+            return t;
         }
 
         private void Filter(int keepPage = 0)
@@ -332,10 +379,10 @@ namespace McBar.Panels
             {
                 Text = text,
                 Foreground = LabelBrush,
-                FontSize = 12.5,
+                FontSize = _labelFont,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                MaxWidth = 120,
+                MaxWidth = _labelMax,
                 Margin = new Thickness(0, 7, 0, 0)
             };
             var iconHost = new Grid { HorizontalAlignment = HorizontalAlignment.Center, RenderTransformOrigin = new Point(0.5, 0.5) };
@@ -500,7 +547,7 @@ namespace McBar.Panels
         private UIElement Tile(CatalogApp app, LaunchpadFolder? inFolder)
         {
             bool isHidden = Hidden.Contains(app.Target, StringComparer.OrdinalIgnoreCase);
-            var card = Card(IconImage(app, 80), app.Name, app.Target, isHidden);
+            var card = Card(IconImage(app, _iconSize), app.Name, app.Target, isHidden);
             card.PreviewMouseLeftButtonDown += (_, e) => { _dragKey = app.Target; _dragStart = e.GetPosition(this); _dragged = false; };
             card.PreviewMouseMove += (_, e) => TryStartDrag(card, app.Target, app, e);
             card.MouseLeftButtonUp += (_, e) =>
@@ -568,12 +615,12 @@ namespace McBar.Panels
             var folder = entry.Folder!;
             string key = LaunchpadLayout.FolderKey(folder);
             bool isHidden = Hidden.Contains(key, StringComparer.OrdinalIgnoreCase);
-            var minis = new UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(8) };
-            foreach (var a in entry.Apps.Take(9)) minis.Children.Add(IconImage(a, 19));
+            var minis = new UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(_iconSize / 10) };
+            foreach (var a in entry.Apps.Take(9)) minis.Children.Add(IconImage(a, Math.Round(_iconSize * 0.24)));
             var box = new Border
             {
-                Width = 80, Height = 80,
-                CornerRadius = new CornerRadius(20),
+                Width = _iconSize, Height = _iconSize,
+                CornerRadius = new CornerRadius(_iconSize / 4),
                 Background = new LinearGradientBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF), Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF), 90),
                 BorderBrush = new LinearGradientBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF), Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF), 90),
                 BorderThickness = new Thickness(1),

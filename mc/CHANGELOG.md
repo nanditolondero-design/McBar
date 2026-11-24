@@ -1,5 +1,12 @@
 # Cambios
 
+## 1.9.10 — 24/11/2026
+- **Launchpad que se adapta a la pantalla**: la cantidad de columnas y filas, el tamaño de los íconos y los márgenes ahora dependen del tamaño de la pantalla. En pantallas chicas (por ejemplo notebooks de 1366×768) los íconos se achican y los nombres se ven enteros; en pantallas grandes queda igual que antes (7×5).
+- **Cuadro de búsqueda del Launchpad**: ahora es una píldora de vidrio oscuro con el texto blanco; con el tema Claro salía como un rectángulo blanco donde no se leía nada.
+
+## 1.9.9 — 24/11/2026 (arreglo)
+- **La barra de arriba reserva su lugar como la barra de tareas**: en modo barra, McBar ahora la registra en Windows como barra de escritorio (igual que la barra de tareas de Windows). Así es Windows el que le guarda el lugar: las ventanas maximizadas, las acopladas y los íconos del escritorio quedan siempre debajo, sin depender de que el Explorador no pise el área de trabajo. Al cerrar McBar o pasar a la píldora, el lugar se devuelve.
+
 ## 1.9.8 — 24/11/2026 (arreglo)
 - **La barra de arriba (modo barra) ya no tapa ventanas ni íconos del escritorio**: al arrancar, el Explorador devolvía la pantalla entera mientras escondía su barra, y McBar volvía a reservar el lugar sin avisar a las ventanas; las maximizadas, las acopladas y los íconos del escritorio quedaban debajo de la barra. Ahora se avisa a todos (al arrancar, cuando el Explorador se reinicia y cada vez que se pierde el lugar de la barra), y McBar baja las ventanas que quedaron con la barra de título debajo.
 

@@ -240,6 +240,17 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.10
+- [ ] Notebook de 1366×768: el Launchpad muestra los nombres enteros debajo de cada ícono, sin que se corten las filas; los puntitos de las páginas quedan arriba del Dock.
+- [ ] Monitor de 1920×1080: se ve igual que antes (7×5, íconos grandes).
+- [ ] Cuadro de búsqueda: píldora oscura con "Buscar" legible, con tema Claro, Oscuro y Vidrio; al escribir se lee el texto.
+
+### Versión 1.9.9
+- [ ] Modo barra: maximizar el Explorador, Chrome y el Bloc de notas → todos quedan debajo de la barra. Win+← / Win+→ → la barra de título se ve.
+- [ ] Los íconos del escritorio de la primera fila quedan debajo de la barra (si no, Escritorio → clic derecho → Ver → "Organizar íconos automáticamente" una vez).
+- [ ] Pasar a píldora → las ventanas maximizadas suben hasta arriba. Volver a barra → bajan.
+- [ ] Cerrar McBar → la pantalla queda entera para las ventanas. Reiniciar el Explorador → la barra sigue reservando su lugar.
+
 ### Versión 1.9.8
 - [ ] Barra de arriba en modo barra (no píldora), "Abrir McBar al iniciar Windows" prendido: reiniciar la PC con el Explorador abierto maximizado → a los pocos segundos la ventana queda debajo de la barra, no tapada. Los íconos del escritorio de la primera fila quedan debajo de la barra.
 - [ ] Una ventana acoplada a media pantalla (Win+←) queda con la barra de título visible.

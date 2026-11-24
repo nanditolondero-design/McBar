@@ -579,6 +579,7 @@ namespace McBar
             var tray = TrayHost.Current;
             if (tray != null && tray.IsOwnBroadcastRecent) return; // fue nuestro propio aviso
             if (SettingsStore.Current.HideWindowsTaskbar) { Taskbar.Hide(); Taskbar.EnforceBurst(5); }
+            foreach (var mb in MenuBars) { try { mb.OnShellRestarted(); } catch { } } // 1.9.9
             UpdateWorkAreas();
             WorkArea.Refresh(); // 1.9.8: avisar a las ventanas y a los íconos del escritorio
             if (tray != null)
