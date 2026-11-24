@@ -237,3 +237,9 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 
 ## 1.9.10 (24/11/2026)
 `LaunchpadWindow.Fit(ancho, alto, dock)` (pura): con menos de 860 DIP de alto las filas de arriba/abajo pasan de 124/90 a 84/50; prueba grillas 7×5, 6×5, 5×5, 7×4… y elige la primera con íconos de al menos 52 px (máximo 80) con lugar para el nombre. `Cols`, `Rows`, `_iconSize`, `_labelMax` y `_labelFont` son de cada ventana; las carpetas escalan con el ícono. Búsqueda con plantilla propia (`SearchTemplate`): fondo negro 25 %, borde blanco 31 %, esquinas de 9.
+
+## 1.9.11 (24/11/2026)
+`DockWindow.TrashUnder(p, arrastrado)`: la Papelera si el punto está sobre ella (4 px a los costados, 24 arriba). Al arrastrar un ícono del Dock (`Stage_MouseMove`) se marca `_dragTrash`, se cancela armar carpeta y no se reordena; `Step` muestra "Quitar del Dock" / "Cerrar app" sobre la Papelera; al soltar (`Stage_MouseLeftButtonUp`) se quita con nubecita (`RemoveFromDock`) o se cierra la app (`CloseByDrag`). Los archivos (`Window_DragOver` / `Window_Drop`) usan el mismo margen.
+
+## 1.9.12 (24/11/2026)
+`Core/AutoSize`: `DockIcon(altoDip)` = 4,8 % del alto (38 a 64; 1080 → 52), `Magnified(ícono)` = ×1,85 (hasta 128), `DockAuto(ajustes)`. `AppSettings.DockSizeAuto` (`bool?`, true de fábrica; null en ajustes viejos → automático solo si estaba en 52/96; `Sanitize` lo fija). `DockWindow.BaseSize`/`MaxSize` usan el automático con el alto de SU monitor. Preferencias: interruptor nuevo; los deslizadores muestran el tamaño automático y al moverlos lo pasan a manual. `PanelWindow.ShowBelowMenuBar`: `MaxHeight` hasta el área de trabajo. `App.DefaultPins` (primera vez): Launchpad + Explorador + `Installer.TaskbarPins()` (ordenados por fecha de creación del acceso, que es cuando se fijaron); si no hay, las de ejemplo.

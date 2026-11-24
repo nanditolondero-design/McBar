@@ -231,13 +231,22 @@ namespace McBar
             base.OnExit(e);
         }
 
-        private static List<PinnedApp> DefaultPins()
+        internal static List<PinnedApp> DefaultPins()
         {
             var list = new List<PinnedApp>
             {
                 new PinnedApp { Name = "Launchpad", Target = AppIdentity.Launchpad },
                 new PinnedApp { Name = "Explorador", Target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe") }
             };
+            // 1.9.12: se respeta lo que el usuario ya tenía fijado en la barra de Windows, en el orden en que se fijaron.
+            // Solo si no tiene nada fijado se ponen las apps de ejemplo de abajo.
+            var mine = Installer.TaskbarPins();
+            if (mine.Count > 0)
+            {
+                foreach (var p in mine)
+                    if (!list.Any(x => string.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase))) list.Add(p);
+                return list;
+            }
             void AddIfExists(string name, params string[] paths)
             {
                 foreach (var p in paths)

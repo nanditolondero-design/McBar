@@ -99,8 +99,10 @@ namespace McBar.Dock
             EnsureAnimating();
             return true;
         }
-        private double BaseSize => S.DockIconSize;
-        private double MaxSize => S.Magnification && !IsTaskbar ? S.MagnifiedSize : BaseSize;
+        // 1.9.12: con "Tamaño automático" se calcula según la pantalla de este Dock
+        private double BaseSize => AutoSize.DockAuto(S) ? AutoSize.DockIcon(AutoSize.HeightDip(_monitor)) : S.DockIconSize;
+        private double MaxSize => S.Magnification && !IsTaskbar
+            ? (AutoSize.DockAuto(S) ? AutoSize.Magnified((int)BaseSize) : S.MagnifiedSize) : BaseSize;
         private double Gap => Math.Round(BaseSize * 0.1);
         private double BarHeight => BaseSize + Pad * 2;
         // Estilos: "classic", "floating", "full", y desde 0.4.3 "taskbar" (barra ancha flotante, parecida a la
@@ -268,7 +270,7 @@ namespace McBar.Dock
 
         private int IconPixelSize() // 1.5.0: ya no es static (usa la escala de su monitor)
         {
-            double max = S.Magnification ? S.MagnifiedSize : S.DockIconSize;
+            double max = S.Magnification ? MaxSize : BaseSize;
             return (int)Math.Min(256, Math.Ceiling(max * Math.Max(1.0, _monitor.Scale) / 16.0) * 16);
         }
 
@@ -592,6 +594,18 @@ namespace McBar.Dock
         private bool _suppressPuff;
         /// <summary>1.9.7: la Papelera mientras se le arrastra un archivo encima (para el cartel).</summary>
         private DockItem? _dropTrash;
+        /// <summary>1.9.11: la Papelera mientras se le arrastra encima un ícono del propio Dock.</summary>
+        private DockItem? _dragTrash;
+
+        /// <summary>La Papelera si el punto está sobre ella (con un poco de margen arriba), sin contar el ícono arrastrado.</summary>
+        private DockItem? TrashUnder(Point p, DockItem? except)
+        {
+            if (except != null && (except.Kind == DockItemKind.Trash || !except.Removable && !ClosesOnDrag(except))) return null;
+            var t = _items.FirstOrDefault(i => i.Kind == DockItemKind.Trash && !i.Removing);
+            if (t == null) return null;
+            double l = t.LayoutLeft, s = t.LayoutSize;
+            return p.X >= l - 4 && p.X <= l + s + 4 && p.Y >= IconBottom - s - 24 && p.Y <= IconBottom + Pad ? t : null;
+        }
         public const string TrashDropLabel = "Mover a la Papelera";
 
         /// <summary>Fuera del Dock: más de 50 arriba, o más de 40 a un costado de la barra. Pura, se prueba.</summary>
@@ -793,6 +807,8 @@ namespace McBar.Dock
             }
             else _pulledSince = DateTime.MaxValue;
             if (_dropTrash != null && _items.Contains(_dropTrash)) { labelFor = _dropTrash; labelText = TrashDropLabel; }
+            else if (_dragTrash != null && _dragging && _pressItem != null && _items.Contains(_dragTrash))
+            { labelFor = _dragTrash; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; }
             else if (_pressItem != null && IsPulledOut(_pressItem)) { if (_ghost == null) { labelFor = _pressItem; labelText = ClosesOnDrag(_pressItem) ? "Cerrar app" : "Quitar del Dock"; } }
             else if (_hoverItem != null && !_dragging && !_menuOpen && _hover && _hoverItem.Kind != DockItemKind.Separator && !_hoverItem.Removing)
             { labelFor = _hoverItem; labelText = _hoverItem.Name; }
@@ -882,7 +898,10 @@ namespace McBar.Dock
                 if (_dragging)
                 {
                     _dragPos = p;
-                    if (!UpdateMerge(p)) ReorderWhileDragging(p); // 1.8.3: dejarla encima de otra arma una carpeta
+                    // 1.9.11: un ícono del Dock arrastrado encima de la Papelera → cartel y, al soltar, se quita
+                    _dragTrash = TrashUnder(p, _pressItem);
+                    if (_dragTrash != null) ClearMerge();
+                    else if (!UpdateMerge(p)) ReorderWhileDragging(p); // 1.8.3: dejarla encima de otra arma una carpeta
                     UpdateGhost();
                 }
             }
@@ -926,7 +945,14 @@ namespace McBar.Dock
 
             var mergeOnto = _mergeReady && !pulledOut ? _mergeTarget : null; // 1.8.3
             ClearMerge();
-            if (wasDragging && mergeOnto != null)
+            var onTrash = _dragTrash; // 1.9.11
+            _dragTrash = null;
+            if (wasDragging && onTrash != null && !pulledOut)
+            {
+                if (ClosesOnDrag(item)) CloseByDrag(item);
+                else { RemoveFromDock(item, poof: true); LoadIcon(onTrash); }
+            }
+            else if (wasDragging && mergeOnto != null)
             {
                 MergeInto(item, mergeOnto);
             }
@@ -2017,8 +2043,7 @@ namespace McBar.Dock
                 ? DragDropEffects.Link : DragDropEffects.None;
             var p = e.GetPosition(Stage);
             // 1.9.7: archivo arrastrado encima de la Papelera → cartel "Mover a la Papelera"
-            var over = e.Data.GetDataPresent(DataFormats.FileDrop) ? HitItem(p) : null;
-            _dropTrash = over?.Kind == DockItemKind.Trash ? over : null;
+            _dropTrash = e.Data.GetDataPresent(DataFormats.FileDrop) ? TrashUnder(p, null) : null; // 1.9.11: con margen
             _hover = true;
             _hideTimer.Stop();
             if (_hidden) _hidden = false; // 1.4.1: si estaba oculto, sube entero al arrastrar algo encima
@@ -2043,7 +2068,7 @@ namespace McBar.Dock
             }
             if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
             var p = e.GetPosition(Stage);
-            var target = HitItem(p);
+            var target = TrashUnder(p, null) ?? HitItem(p);
             if (target?.Kind == DockItemKind.Trash)
             {
                 SystemInfo.SendToRecycleBin(files);

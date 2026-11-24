@@ -240,6 +240,19 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.12
+- [ ] Notebook 1366×768 con ajustes nuevos: el Dock sale más chico que en un monitor 1080p, y la ampliación acompaña. Con dos monitores de distinto tamaño, cada Dock tiene el suyo.
+- [ ] Preferencias → Dock: "Tamaño automático según la pantalla" prendido; mover "Tamaño" → se apaga solo y queda el tamaño elegido. Prenderlo de nuevo → vuelve al automático.
+- [ ] Alguien que venía con el Dock en otro tamaño: después de actualizar lo sigue teniendo igual.
+- [ ] Borrar %AppData%\McBar\settings.json (o en otra PC) y abrir McBar: el Dock tiene Launchpad, Explorador y las apps fijadas en la barra de Windows. Sin nada fijado: las de ejemplo.
+- [ ] Panel de widgets en una pantalla chica: no se sale por abajo de la pantalla.
+
+### Versión 1.9.11
+- [ ] Arrastrar un ícono fijado del Dock encima de la Papelera → "Quitar del Dock" arriba de la Papelera; al soltar se va con la nubecita.
+- [ ] Una app abierta sin fijar → "Cerrar app"; al soltar se cierra.
+- [ ] Una pila (Descargas) sobre la Papelera → "Quitar del Dock". La Papelera misma no se puede tirar.
+- [ ] Archivo del escritorio sobre la Papelera → "Mover a la Papelera".
+
 ### Versión 1.9.10
 - [ ] Notebook de 1366×768: el Launchpad muestra los nombres enteros debajo de cada ícono, sin que se corten las filas; los puntitos de las páginas quedan arriba del Dock.
 - [ ] Monitor de 1920×1080: se ve igual que antes (7×5, íconos grandes).

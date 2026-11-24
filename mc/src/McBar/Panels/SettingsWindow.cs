@@ -64,9 +64,28 @@ namespace McBar.Panels
             // ---------- Dock ----------
             root.Children.Add(Header("Dock"));
             var dock = new StackPanel();
-            dock.Children.Add(SliderSetting("Tamaño", 32, 80, s.DockIconSize, v => { s.DockIconSize = (int)v; if (s.MagnifiedSize < s.DockIconSize) s.MagnifiedSize = s.DockIconSize; }));
+            // 1.9.12: de fábrica el Dock se adapta a la pantalla; mover un tamaño lo pasa a manual
+            // con el automático, los deslizadores muestran el tamaño que se está usando en esta pantalla
+            int autoIcon = AutoSize.DockIcon(AutoSize.HeightDip(Monitors.All()[0]));
+            bool isAuto = AutoSize.DockAuto(s);
+            var autoSize = new CheckBox { Content = "Tamaño automático según la pantalla", IsChecked = AutoSize.DockAuto(s) };
+            autoSize.SetResourceReference(StyleProperty, "McSwitch");
+            autoSize.Click += (_, _) =>
+            {
+                s.DockSizeAuto = autoSize.IsChecked == true;
+                if (s.DockSizeAuto == false)
+                {
+                    // queda en el tamaño que se estaba viendo
+                    s.DockIconSize = autoIcon;
+                    s.MagnifiedSize = AutoSize.Magnified(s.DockIconSize);
+                }
+                Changed();
+            };
+            dock.Children.Add(autoSize);
+            void Manual() { if (s.DockSizeAuto != false) { s.DockSizeAuto = false; autoSize.IsChecked = false; } }
+            dock.Children.Add(SliderSetting("Tamaño", 32, 80, isAuto ? autoIcon : s.DockIconSize, v => { Manual(); s.DockIconSize = (int)v; if (s.MagnifiedSize < s.DockIconSize) s.MagnifiedSize = s.DockIconSize; }));
             dock.Children.Add(Switch("Ampliación", s.Magnification, v => s.Magnification = v));
-            dock.Children.Add(SliderSetting("Tamaño ampliado", 48, 160, s.MagnifiedSize, v => s.MagnifiedSize = Math.Max((int)v, s.DockIconSize)));
+            dock.Children.Add(SliderSetting("Tamaño ampliado", 48, 160, isAuto ? AutoSize.Magnified(autoIcon) : s.MagnifiedSize, v => { Manual(); s.MagnifiedSize = Math.Max((int)v, s.DockIconSize); }));
             dock.Children.Add(Switch("Ocultar y mostrar el Dock automáticamente", s.DockAutoHide, v => s.DockAutoHide = v));
             // 1.8.9: como la píldora
             dock.Children.Add(Switch("Esconder el Dock con ventanas maximizadas", s.DockHideOnMaximized, v => s.DockHideOnMaximized = v));

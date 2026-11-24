@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.12 — 24/11/2026
+- **Todo se adapta a la pantalla de entrada**: el tamaño del Dock (y su ampliación) se calcula según la pantalla de cada monitor (en 1080p queda como siempre, 52; en una notebook de 1366×768, más chico; en pantallas grandes, más grande, con tope). Preferencias → Dock → **"Tamaño automático según la pantalla"** (prendido); mover "Tamaño" o "Tamaño ampliado" lo pasa a manual. Quien ya había cambiado el tamaño lo conserva. Los paneles (widgets, Centro de control, etc.) no pasan del borde de abajo en pantallas chicas. El Launchpad ya se adaptaba desde la 1.9.10.
+- **El Dock arranca con las apps que ya tenías fijadas en la barra de Windows** (en el orden en que se fijaron), más el Launchpad y el Explorador. Solo si no había nada fijado se ponen las apps de ejemplo. Vale para la primera vez que se abre McBar (también en la edición de la Store, que no tiene instalador).
+
+## 1.9.11 — 24/11/2026 (arreglo)
+- **Cartel al tirar íconos del Dock a la Papelera**: al arrastrar un ícono del propio Dock encima de la Papelera aparece "Quitar del Dock" (o "Cerrar app" si es una app abierta sin fijar) y al soltarlo se quita con la nubecita. Antes el cartel solo salía con archivos y el ícono se reacomodaba o armaba una carpeta.
+- El cartel "Mover a la Papelera" para archivos ahora aparece también con el mouse un poco por encima de la Papelera.
+
 ## 1.9.10 — 24/11/2026
 - **Launchpad que se adapta a la pantalla**: la cantidad de columnas y filas, el tamaño de los íconos y los márgenes ahora dependen del tamaño de la pantalla. En pantallas chicas (por ejemplo notebooks de 1366×768) los íconos se achican y los nombres se ven enteros; en pantallas grandes queda igual que antes (7×5).
 - **Cuadro de búsqueda del Launchpad**: ahora es una píldora de vidrio oscuro con el texto blanco; con el tema Claro salía como un rectángulo blanco donde no se leía nada.
