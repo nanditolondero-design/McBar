@@ -37,6 +37,8 @@ namespace McBar.Core
         public int DockIconSize { get; set; } = 52;
         public bool Magnification { get; set; } = true;
         public int MagnifiedSize { get; set; } = 96;
+        /// <summary>1.9.12: tamaño del Dock según la pantalla (null = ajustes viejos: automático si no se había cambiado).</summary>
+        public bool? DockSizeAuto { get; set; } = true;
         public bool DockAutoHide { get; set; } = false;
         public bool ClickMinimizes { get; set; } = false;
         public bool ShowIndicators { get; set; } = true;
@@ -90,6 +92,8 @@ namespace McBar.Core
         public bool IslandHideOnMaximized { get; set; } = true;
         /// <summary>1.8.9: el Dock también se esconde con una ventana maximizada (vuelve llevando el mouse abajo).</summary>
         public bool DockHideOnMaximized { get; set; } = true;
+        /// <summary>1.9.7: las carpetas y pilas abiertas del Dock se cierran solas al sacar el mouse un momento.</summary>
+        public bool DockPopupsAutoClose { get; set; } = true;
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";
@@ -363,6 +367,7 @@ namespace McBar.Core
             s.TimerPresets = (s.TimerPresets ?? new List<int>()).Where(m => m > 0 && m <= 24 * 60).Distinct().Take(6).ToList();
             if (s.TimerPresets.Count == 0) s.TimerPresets = new List<int> { 1, 5, 10, 25 };
             s.MagnifiedSize = Math.Clamp(s.MagnifiedSize, s.DockIconSize, 160);
+            s.DockSizeAuto ??= s.DockIconSize == 52 && s.MagnifiedSize == 96; // 1.9.12: respeta a quien ya lo había cambiado
             if (s.Theme != "dark" && s.Theme != "light" && s.Theme != "glass") s.Theme = "auto";
             s.Pinned ??= new List<PinnedApp>();
             s.Pinned.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Target));

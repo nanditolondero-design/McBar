@@ -240,6 +240,48 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.12
+- [ ] Notebook 1366×768 con ajustes nuevos: el Dock sale más chico que en un monitor 1080p, y la ampliación acompaña. Con dos monitores de distinto tamaño, cada Dock tiene el suyo.
+- [ ] Preferencias → Dock: "Tamaño automático según la pantalla" prendido; mover "Tamaño" → se apaga solo y queda el tamaño elegido. Prenderlo de nuevo → vuelve al automático.
+- [ ] Alguien que venía con el Dock en otro tamaño: después de actualizar lo sigue teniendo igual.
+- [ ] Borrar %AppData%\McBar\settings.json (o en otra PC) y abrir McBar: el Dock tiene Launchpad, Explorador y las apps fijadas en la barra de Windows. Sin nada fijado: las de ejemplo.
+- [ ] Panel de widgets en una pantalla chica: no se sale por abajo de la pantalla.
+
+### Versión 1.9.11
+- [ ] Arrastrar un ícono fijado del Dock encima de la Papelera → "Quitar del Dock" arriba de la Papelera; al soltar se va con la nubecita.
+- [ ] Una app abierta sin fijar → "Cerrar app"; al soltar se cierra.
+- [ ] Una pila (Descargas) sobre la Papelera → "Quitar del Dock". La Papelera misma no se puede tirar.
+- [ ] Archivo del escritorio sobre la Papelera → "Mover a la Papelera".
+
+### Versión 1.9.10
+- [ ] Notebook de 1366×768: el Launchpad muestra los nombres enteros debajo de cada ícono, sin que se corten las filas; los puntitos de las páginas quedan arriba del Dock.
+- [ ] Monitor de 1920×1080: se ve igual que antes (7×5, íconos grandes).
+- [ ] Cuadro de búsqueda: píldora oscura con "Buscar" legible, con tema Claro, Oscuro y Vidrio; al escribir se lee el texto.
+
+### Versión 1.9.9
+- [ ] Modo barra: maximizar el Explorador, Chrome y el Bloc de notas → todos quedan debajo de la barra. Win+← / Win+→ → la barra de título se ve.
+- [ ] Los íconos del escritorio de la primera fila quedan debajo de la barra (si no, Escritorio → clic derecho → Ver → "Organizar íconos automáticamente" una vez).
+- [ ] Pasar a píldora → las ventanas maximizadas suben hasta arriba. Volver a barra → bajan.
+- [ ] Cerrar McBar → la pantalla queda entera para las ventanas. Reiniciar el Explorador → la barra sigue reservando su lugar.
+
+### Versión 1.9.8
+- [ ] Barra de arriba en modo barra (no píldora), "Abrir McBar al iniciar Windows" prendido: reiniciar la PC con el Explorador abierto maximizado → a los pocos segundos la ventana queda debajo de la barra, no tapada. Los íconos del escritorio de la primera fila quedan debajo de la barra.
+- [ ] Una ventana acoplada a media pantalla (Win+←) queda con la barra de título visible.
+- [ ] Reiniciar el Explorador (Administrador de tareas → Explorador de Windows → Reiniciar) → todo vuelve a quedar debajo de la barra.
+- [ ] Cambiar entre píldora y barra en Preferencias → las ventanas maximizadas se acomodan solas.
+
+### Versión 1.9.7
+- [ ] Arrastrar un archivo del escritorio encima de la Papelera del Dock → aparece "Mover a la Papelera" arriba; al soltarlo va a la Papelera. Pasar por encima de otro ícono → el cartel desaparece.
+- [ ] Abrir una carpeta de apps y una pila (en abanico, cuadrícula y lista), sacar el mouse lejos → se cierran en menos de un segundo. Moverse entre el Dock y la carpeta no la cierra. Clic derecho en una app de la carpeta → el menú no hace que se cierre.
+- [ ] Apagar "Cerrar carpetas y pilas al sacar el mouse" → quedan abiertas hasta hacer clic afuera, como antes.
+
+### Versión 1.9.6
+- [ ] Con "Esconder el Dock con ventanas maximizadas" prendido: abrir el Explorador ya maximizado y maximizar/restaurar varias veces → siempre llega hasta abajo, sin hueco; al restaurar otra cosa y volver el Dock, la ventana maximizada no queda tapada.
+- [ ] Win+Mayús+3 y luego Ctrl+V en Paint o WhatsApp → se pega la captura. Lo mismo con Win+Mayús+4 (zona y ventana).
+
+### Versión 1.9.5
+- [ ] Win+Tab: el fondo se ve suave y difuminado (sin cuadraditos), oscurecido, y la animación de abrir/cerrar sigue fluida.
+
 ### Versión 1.9.4
 - [ ] Organizador visual prendido, con una app en la franja: los íconos del escritorio de la columna izquierda se pueden tocar y arrastrar; la miniatura sigue respondiendo al clic.
 

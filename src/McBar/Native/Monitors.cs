@@ -88,7 +88,8 @@ namespace McBar.Native
         public static PxRect Compute(PxRect bounds, int topPx, int bottomPx) =>
             new PxRect(bounds.Left, bounds.Top + Math.Max(0, topPx), bounds.Right, bounds.Bottom - Math.Max(0, bottomPx));
 
-        public static void Set(MonitorInfo m, int topPx, int bottomPx)
+        /// <returns>1.9.8: true si cambió el área de trabajo de ese monitor.</returns>
+        public static bool Set(MonitorInfo m, int topPx, int bottomPx)
         {
             var r = Compute(m.Bounds, topPx, bottomPx);
             // Un pedido explícito (arranque, Preferencias, monitores) vuelve a habilitar el vigilante.
@@ -96,8 +97,29 @@ namespace McBar.Native
             { _gaveUp = false; _pauses = 0; Fixes.Clear(); }
             Desired[m.Device] = r;
             var w = m.Work;
-            if (w.Left == r.Left && w.Top == r.Top && w.Right == r.Right && w.Bottom == r.Bottom) return; // ya está bien: no avisar a todas las apps
+            if (w.Left == r.Left && w.Top == r.Top && w.Right == r.Right && w.Bottom == r.Bottom) return false; // ya está bien: no avisar a todas las apps
             Apply(r);
+            return true;
+        }
+
+        /// <summary>
+        /// 1.9.8: vuelve a poner el área de trabajo AVISANDO a todas las ventanas y acomoda las maximizadas que
+        /// quedaron ocupando todo el monitor (debajo de la barra de arriba o del Dock). Se usa al arrancar: el
+        /// Explorador suele devolver el monitor entero mientras esconde su barra, y las ventanas y los íconos del
+        /// escritorio quedaban debajo de la barra de McBar.
+        /// </summary>
+        public static void Refresh()
+        {
+            if (Desired.Count == 0) return;
+            var before = new Dictionary<string, PxRect>();
+            foreach (var m in Monitors.All())
+            {
+                if (!Desired.TryGetValue(m.Device, out var want)) continue;
+                before[m.Device] = m.Bounds; // las que se maximizaron con el monitor entero
+                Apply(want, notify: true);
+            }
+            _gaveUp = false; _pauses = 0; Fixes.Clear();
+            McBar.Core.MaximizedFit.Schedule(before);
         }
 
         /// <param name="notify">
@@ -142,7 +164,12 @@ namespace McBar.Native
                     return;
                 }
                 Fixes.Enqueue(DateTime.Now);
-                Apply(want, notify: false);
+                // 1.9.8: si se perdió el lugar de la barra de arriba, se avisa a las ventanas (antes iba en
+                // silencio y las ventanas y los íconos del escritorio quedaban debajo de la barra) y se
+                // acomodan las maximizadas que tomaron el área equivocada.
+                bool topLost = w.Top != want.Top;
+                Apply(want, notify: topLost);
+                McBar.Core.MaximizedFit.Schedule(new Dictionary<string, PxRect> { [m.Device] = w });
             }
         }
 

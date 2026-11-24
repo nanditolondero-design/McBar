@@ -220,3 +220,26 @@ Revisión con capturas: Win+Tab se veía negro y el Dock a veces no se escondía
 ## 1.9.4 (23/11/2026)
 Con el Organizador visual prendido, la franja izquierda (ventana de 200 DIP de ancho y toda la altura, con fondo casi invisible #01000000) tapaba los íconos del escritorio de esa columna. `StageStrip`: fondo `null` (transparente de verdad: en las ventanas con transparencia, los píxeles con alfa 0 dejan pasar el mouse).
 
+## 1.9.5 (23/11/2026)
+El fondo de Win+Tab se veía pixelado (copia de 320 px estirada). `WinUi.WallpaperBrushLarge` (1280 px, en caché aparte) + `BlurEffect` radio 36 con `BitmapCache`, agrandado 80 DIP por lado y recortado, para que no se vea el borde del difuminado.
+
+## 1.9.6 (23/11/2026)
+Algunas apps (el Explorador) no se reacomodan cuando cambia el área de trabajo al esconderse o volver el Dock por una ventana maximizada. `Core/MaximizedFit`: `App.ApplyFullscreen` guarda las áreas de antes; a los 300 ms y a los 1000 ms se recorren las ventanas maximizadas y las que siguen pegadas al área vieja se estiran o achican (`Fit`, pura) con `SetWindowPos`. `Screenshots.CopyToClipboard`: cada captura va al portapapeles (imagen + PNG), con reintentos; "Copiar" de la miniatura usa lo mismo.
+
+## 1.9.7 (23/11/2026)
+`DockWindow`: `_dropTrash` se marca en `Window_DragOver` cuando un archivo está sobre la Papelera y `Step` muestra la etiqueta `TrashDropLabel` ("Mover a la Papelera"); se limpia en `DragLeave` y `Drop`. El efecto sigue siendo `Link` (con `Move` el Explorador podría borrar el original por su cuenta). `CloseWhenAway(popup, contenido, ocupado)`: cada 150 ms mira el mouse (`GetCursorPos`) contra el contenido de la carpeta o pila y la barra del Dock (con 24 px de margen, `IsNear`, pura); lejos por `AutoCloseDelayMs` (900 ms) → se cierra. No cierra con un menú contextual abierto dentro de la carpeta. Ajuste `DockPopupsAutoClose` (prendido de fábrica).
+
+## 1.9.8 (24/11/2026)
+Con la barra de menú, ventanas e íconos del escritorio quedaban debajo de la barra: `WorkArea.Verify` corregía el área SIN avisar (para no sacudir ventanas) y al arrancar el Explorador devuelve el monitor entero. `WorkArea.Refresh` (a los 3 y 10 s del arranque y al reiniciarse el Explorador): pone el área avisando a todos y llama a `MaximizedFit.Schedule` con el monitor entero como área vieja. `Verify` avisa cuando lo que se perdió es el borde de arriba, y siempre programa `MaximizedFit`. `WorkArea.Set` devuelve si cambió; `UpdateWorkAreas` programa `MaximizedFit` con las áreas que cambiaron (antes solo lo hacía `ApplyFullscreen`). `MaximizedFit.FitTop` (pura): ventanas comunes con barra de título debajo del borde de arriba se recortan (o se corren si quedan de menos de 200 px).
+
+## 1.9.9 (24/11/2026)
+La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBar`: `SHAppBarMessage` ABM_NEW / ABM_QUERYPOS / ABM_SETPOS con ABE_TOP y el alto de la barra; ABM_REMOVE al esconderla, al pasar a píldora y al cerrar (`Teardown`). `MenuBarWindow.ApplyGeometry` reserva antes de ubicar la ventana; el gancho de mensajes vuelve a ubicarla con ABN_POSCHANGED; `OnShellRestarted` (desde `App.OnExplorerRestarted`) vuelve a registrarla porque el Explorador nuevo no conoce las barras viejas. `WorkArea` sigue manejando el Dock (abajo) como antes; arriba pide lo mismo que reserva Windows, así no se pelean.
+
+## 1.9.10 (24/11/2026)
+`LaunchpadWindow.Fit(ancho, alto, dock)` (pura): con menos de 860 DIP de alto las filas de arriba/abajo pasan de 124/90 a 84/50; prueba grillas 7×5, 6×5, 5×5, 7×4… y elige la primera con íconos de al menos 52 px (máximo 80) con lugar para el nombre. `Cols`, `Rows`, `_iconSize`, `_labelMax` y `_labelFont` son de cada ventana; las carpetas escalan con el ícono. Búsqueda con plantilla propia (`SearchTemplate`): fondo negro 25 %, borde blanco 31 %, esquinas de 9.
+
+## 1.9.11 (24/11/2026)
+`DockWindow.TrashUnder(p, arrastrado)`: la Papelera si el punto está sobre ella (4 px a los costados, 24 arriba). Al arrastrar un ícono del Dock (`Stage_MouseMove`) se marca `_dragTrash`, se cancela armar carpeta y no se reordena; `Step` muestra "Quitar del Dock" / "Cerrar app" sobre la Papelera; al soltar (`Stage_MouseLeftButtonUp`) se quita con nubecita (`RemoveFromDock`) o se cierra la app (`CloseByDrag`). Los archivos (`Window_DragOver` / `Window_Drop`) usan el mismo margen.
+
+## 1.9.12 (24/11/2026)
+`Core/AutoSize`: `DockIcon(altoDip)` = 4,8 % del alto (38 a 64; 1080 → 52), `Magnified(ícono)` = ×1,85 (hasta 128), `DockAuto(ajustes)`. `AppSettings.DockSizeAuto` (`bool?`, true de fábrica; null en ajustes viejos → automático solo si estaba en 52/96; `Sanitize` lo fija). `DockWindow.BaseSize`/`MaxSize` usan el automático con el alto de SU monitor. Preferencias: interruptor nuevo; los deslizadores muestran el tamaño automático y al moverlos lo pasan a manual. `PanelWindow.ShowBelowMenuBar`: `MaxHeight` hasta el área de trabajo. `App.DefaultPins` (primera vez): Launchpad + Explorador + `Installer.TaskbarPins()` (ordenados por fecha de creación del acceso, que es cuando se fijaron); si no hay, las de ejemplo.

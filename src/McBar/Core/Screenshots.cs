@@ -6,6 +6,7 @@
 // Se guardan como PNG en el Escritorio (o la carpeta elegida) con el nombre "Captura de pantalla AAAA-MM-DD a
 // las HH.MM.SS.png", suena el obturador y aparece una miniatura abajo a la derecha (clic = abrir, arrastrar =
 // llevarla a otra app, clic derecho = copiar / mostrar / borrar). Las ventanas se guardan con sombra, como en Mac.
+// 1.9.6: además queda copiada en el portapapeles.
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -106,9 +107,36 @@ namespace McBar.Core
                     enc.Save(fs);
                 }
                 Log.Write("Captura guardada: " + path);
+                CopyToClipboard(img);
                 CaptureThumb.Pop(path, img, m);
             }
             catch (Exception ex) { Log.Write("Captura: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// 1.9.6: cada captura queda también en el portapapeles, lista para pegar. Va como imagen común y como
+        /// PNG (las apps que lo entienden conservan la sombra transparente de las capturas de ventanas).
+        /// </summary>
+        internal static void CopyToClipboard(BitmapSource img)
+        {
+            var data = new DataObject();
+            data.SetImage(img);
+            try
+            {
+                var png = new MemoryStream();
+                var enc = new PngBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(img));
+                enc.Save(png);
+                png.Position = 0;
+                data.SetData("PNG", png, false);
+            }
+            catch { }
+            // otra app puede tener el portapapeles abierto un instante: se reintenta un par de veces
+            for (int i = 0; i < 4; i++)
+            {
+                try { Clipboard.SetDataObject(data, true); return; }
+                catch (Exception ex) { if (i == 3) Log.Write("Captura al portapapeles: " + ex.Message); else System.Threading.Thread.Sleep(60); }
+            }
         }
     }
 }

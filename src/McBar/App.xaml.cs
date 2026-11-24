@@ -184,6 +184,14 @@ namespace McBar
             _workAreaDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
             _workAreaDebounce.Tick += (_, _) => { _workAreaDebounce!.Stop(); WorkArea.Verify(); };
             Hook.WorkAreaChanged += () => { _workAreaDebounce.Stop(); _workAreaDebounce.Start(); };
+            // 1.9.8: al arrancar el Explorador devuelve el monitor entero mientras esconde su barra; se vuelve a
+            // poner el área avisando a todos (ventanas e íconos del escritorio) a los 3 y a los 10 segundos.
+            foreach (var secs in new[] { 3, 10 })
+            {
+                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(secs) };
+                t.Tick += (_, _) => { t.Stop(); WorkArea.Refresh(); };
+                t.Start();
+            }
             if (s.AnimateWindows) ShellHook.EnsureAnimationOn();
 
             _lastHideTaskbar = s.HideWindowsTaskbar;
@@ -223,13 +231,22 @@ namespace McBar
             base.OnExit(e);
         }
 
-        private static List<PinnedApp> DefaultPins()
+        internal static List<PinnedApp> DefaultPins()
         {
             var list = new List<PinnedApp>
             {
                 new PinnedApp { Name = "Launchpad", Target = AppIdentity.Launchpad },
                 new PinnedApp { Name = "Explorador", Target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe") }
             };
+            // 1.9.12: se respeta lo que el usuario ya tenía fijado en la barra de Windows, en el orden en que se fijaron.
+            // Solo si no tiene nada fijado se ponen las apps de ejemplo de abajo.
+            var mine = Installer.TaskbarPins();
+            if (mine.Count > 0)
+            {
+                foreach (var p in mine)
+                    if (!list.Any(x => string.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase))) list.Add(p);
+                return list;
+            }
             void AddIfExists(string name, params string[] paths)
             {
                 foreach (var p in paths)
@@ -300,14 +317,18 @@ namespace McBar
         /// <summary>Reserva en cada monitor solo lo que ocupan nuestra barra y nuestro Dock.</summary>
         public static void UpdateWorkAreas()
         {
+            var before = new Dictionary<string, PxRect>();
             foreach (var m in Monitors.All())
             {
+                before[m.Device] = m.Work;
                 var mb = MenuBars.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 var isl = Islands.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 var d = Docks.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 int top = mb?.ReservePx ?? isl?.ReservePx ?? 0;
-                WorkArea.Set(m, top, d?.ReservePx ?? 0);
+                if (!WorkArea.Set(m, top, d?.ReservePx ?? 0)) before.Remove(m.Device);
             }
+            // 1.9.6/1.9.8: acomoda las maximizadas que no se enteran del cambio (Explorador y otras)
+            if (before.Count > 0) MaximizedFit.Schedule(before);
         }
 
         private static void ApplyFullscreen()
@@ -326,7 +347,7 @@ namespace McBar
             // 1.8.9: el Dock también se esconde con una ventana maximizada (vuelve con el mouse abajo)
             bool changed = false;
             foreach (var d in Docks) changed |= d.SetMaximized(max.Contains(d.Monitor.Device));
-            if (changed) UpdateWorkAreas(); // deja (o vuelve a reservar) el lugar del Dock
+            if (changed) UpdateWorkAreas(); // deja (o vuelve a reservar) el lugar del Dock (y acomoda las maximizadas)
         }
 
         /// <summary>
@@ -567,7 +588,9 @@ namespace McBar
             var tray = TrayHost.Current;
             if (tray != null && tray.IsOwnBroadcastRecent) return; // fue nuestro propio aviso
             if (SettingsStore.Current.HideWindowsTaskbar) { Taskbar.Hide(); Taskbar.EnforceBurst(5); }
+            foreach (var mb in MenuBars) { try { mb.OnShellRestarted(); } catch { } } // 1.9.9
             UpdateWorkAreas();
+            WorkArea.Refresh(); // 1.9.8: avisar a las ventanas y a los íconos del escritorio
             if (tray != null)
             {
                 tray.Raise();

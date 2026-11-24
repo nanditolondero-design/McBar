@@ -90,27 +90,58 @@ namespace McBar.Panels
         private static ImageBrush? _wallBrush;
 
         /// <summary>1.8.0: el fondo de pantalla actual, chiquito (para los escritorios de "Ver todas las ventanas").</summary>
-        public static ImageBrush? WallpaperBrush()
+        public static ImageBrush? WallpaperBrush() => WallpaperBrush(320);
+
+        private static string _wallPathBig = "";
+        private static ImageBrush? _wallBrushBig;
+
+        /// <summary>1.9.5: el fondo de pantalla más grande (para el fondo de "Ver todas las ventanas").</summary>
+        public static ImageBrush? WallpaperBrushLarge()
+        {
+            var path = WallpaperPath();
+            if (path == null) return null;
+            if (path == _wallPathBig && _wallBrushBig != null) return _wallBrushBig;
+            _wallPathBig = path;
+            _wallBrushBig = Load(path, 1280);
+            return _wallBrushBig;
+        }
+
+        private static string? WallpaperPath()
         {
             try
             {
                 var sb = new System.Text.StringBuilder(520);
                 if (!GetWallpaper(0x0073 /*SPI_GETDESKWALLPAPER*/, (uint)sb.Capacity, sb, 0)) return null;
                 var path = sb.ToString();
-                if (path == _wallPath) return _wallBrush;
-                _wallPath = path;
-                _wallBrush = null;
-                if (!System.IO.File.Exists(path)) return null;
+                return System.IO.File.Exists(path) ? path : null;
+            }
+            catch { return null; }
+        }
+
+        private static ImageBrush? WallpaperBrush(int width)
+        {
+            var path = WallpaperPath();
+            if (path == null) return null;
+            if (path == _wallPath && _wallBrush != null) return _wallBrush;
+            _wallPath = path;
+            _wallBrush = Load(path, width);
+            return _wallBrush;
+        }
+
+        private static ImageBrush? Load(string path, int width)
+        {
+            try
+            {
                 var bi = new System.Windows.Media.Imaging.BitmapImage();
                 bi.BeginInit();
                 bi.UriSource = new Uri(path);
-                bi.DecodePixelWidth = 320;
+                bi.DecodePixelWidth = width;
                 bi.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                 bi.EndInit();
                 bi.Freeze();
-                _wallBrush = new ImageBrush(bi) { Stretch = Stretch.UniformToFill };
-                _wallBrush.Freeze();
-                return _wallBrush;
+                var b = new ImageBrush(bi) { Stretch = Stretch.UniformToFill };
+                b.Freeze();
+                return b;
             }
             catch { return null; }
         }
@@ -309,10 +340,16 @@ namespace McBar.Panels
             // 1.9.3: fondo = el fondo de pantalla difuminado y oscurecido (como macOS). Antes era un desenfoque de
             // Windows que en muchas PCs no andaba y quedaba todo negro.
             var root = new Grid { Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x10, 0x10, 0x14)) };
-            var wall = WinUi.WallpaperBrush();
+            var wall = WinUi.WallpaperBrushLarge(); // 1.9.5: más grande y difuminado de verdad (antes se veía pixelado)
             if (wall != null)
             {
-                root.Children.Add(new Border { Background = wall, IsHitTestVisible = false });
+                root.ClipToBounds = true;
+                root.Children.Add(new Border
+                {
+                    Background = wall, IsHitTestVisible = false, Margin = new Thickness(-80), // más grande: el borde del difuminado no se ve
+                    Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 36, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance },
+                    CacheMode = new BitmapCache()
+                });
                 root.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(0x70, 0x08, 0x08, 0x0C)), IsHitTestVisible = false });
             }
             root.Children.Add(_canvas);

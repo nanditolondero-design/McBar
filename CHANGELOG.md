@@ -1,5 +1,34 @@
 # Cambios
 
+## 1.9.12 — 24/11/2026
+- **Todo se adapta a la pantalla de entrada**: el tamaño del Dock (y su ampliación) se calcula según la pantalla de cada monitor (en 1080p queda como siempre, 52; en una notebook de 1366×768, más chico; en pantallas grandes, más grande, con tope). Preferencias → Dock → **"Tamaño automático según la pantalla"** (prendido); mover "Tamaño" o "Tamaño ampliado" lo pasa a manual. Quien ya había cambiado el tamaño lo conserva. Los paneles (widgets, Centro de control, etc.) no pasan del borde de abajo en pantallas chicas. El Launchpad ya se adaptaba desde la 1.9.10.
+- **El Dock arranca con las apps que ya tenías fijadas en la barra de Windows** (en el orden en que se fijaron), más el Launchpad y el Explorador. Solo si no había nada fijado se ponen las apps de ejemplo. Vale para la primera vez que se abre McBar (también en la edición de la Store, que no tiene instalador).
+
+## 1.9.11 — 24/11/2026 (arreglo)
+- **Cartel al tirar íconos del Dock a la Papelera**: al arrastrar un ícono del propio Dock encima de la Papelera aparece "Quitar del Dock" (o "Cerrar app" si es una app abierta sin fijar) y al soltarlo se quita con la nubecita. Antes el cartel solo salía con archivos y el ícono se reacomodaba o armaba una carpeta.
+- El cartel "Mover a la Papelera" para archivos ahora aparece también con el mouse un poco por encima de la Papelera.
+
+## 1.9.10 — 24/11/2026
+- **Launchpad que se adapta a la pantalla**: la cantidad de columnas y filas, el tamaño de los íconos y los márgenes ahora dependen del tamaño de la pantalla. En pantallas chicas (por ejemplo notebooks de 1366×768) los íconos se achican y los nombres se ven enteros; en pantallas grandes queda igual que antes (7×5).
+- **Cuadro de búsqueda del Launchpad**: ahora es una píldora de vidrio oscuro con el texto blanco; con el tema Claro salía como un rectángulo blanco donde no se leía nada.
+
+## 1.9.9 — 24/11/2026 (arreglo)
+- **La barra de arriba reserva su lugar como la barra de tareas**: en modo barra, McBar ahora la registra en Windows como barra de escritorio (igual que la barra de tareas de Windows). Así es Windows el que le guarda el lugar: las ventanas maximizadas, las acopladas y los íconos del escritorio quedan siempre debajo, sin depender de que el Explorador no pise el área de trabajo. Al cerrar McBar o pasar a la píldora, el lugar se devuelve.
+
+## 1.9.8 — 24/11/2026 (arreglo)
+- **La barra de arriba (modo barra) ya no tapa ventanas ni íconos del escritorio**: al arrancar, el Explorador devolvía la pantalla entera mientras escondía su barra, y McBar volvía a reservar el lugar sin avisar a las ventanas; las maximizadas, las acopladas y los íconos del escritorio quedaban debajo de la barra. Ahora se avisa a todos (al arrancar, cuando el Explorador se reinicia y cada vez que se pierde el lugar de la barra), y McBar baja las ventanas que quedaron con la barra de título debajo.
+
+## 1.9.7 — 23/11/2026
+- **Cartel en la Papelera**: al arrastrar un archivo encima de la Papelera del Dock aparece "Mover a la Papelera".
+- **Carpetas y pilas que se cierran solas**: las carpetas de apps y las pilas (abanico, cuadrícula o lista) se cierran al sacar el mouse de ellas y del Dock por un momento (menos de un segundo); antes quedaban abiertas hasta hacer clic afuera. Preferencias → Dock → **"Cerrar carpetas y pilas al sacar el mouse"** (viene prendido).
+
+## 1.9.6 — 23/11/2026 (arreglo)
+- **Ventanas maximizadas que quedaban con el hueco del Dock** (sobre todo el Explorador): cuando el Dock se esconde o vuelve por una ventana maximizada, algunas apps no se acomodaban solas y había que achicarlas y volver a maximizarlas. Ahora McBar las acomoda.
+- **Capturas al portapapeles**: cada captura (Win+Mayús+3, 4 o 5) además de guardarse queda copiada, lista para pegar con Ctrl+V.
+
+## 1.9.5 — 23/11/2026 (arreglo)
+- **Fondo de "Ver todas las ventanas" (Win+Tab) con buena calidad**: la 1.9.3 usaba una copia muy chica del fondo de pantalla estirada a toda la pantalla y se veía pixelada. Ahora usa una copia más grande con un difuminado suave de verdad.
+
 ## 1.9.4 — 23/11/2026 (arreglo)
 - **Organizador visual**: la franja de la izquierda ya no bloquea lo que tiene debajo. Antes, con una app en la franja, no se podía usar nada en esa columna de la pantalla (por ejemplo los íconos del escritorio); ahora solo las miniaturas reciben el mouse.
 

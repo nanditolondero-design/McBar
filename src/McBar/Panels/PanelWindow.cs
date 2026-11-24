@@ -84,6 +84,9 @@ namespace McBar.Panels
             double left = centered ? (monitor.Bounds.Width / sc - Width) / 2 : monitor.Bounds.Width / sc - Width - 8; // 1.6.1: centrado = debajo de la píldora
             WindowOps.PlaceOnMonitor(this, monitor, left, top); // 1.5.0
             if (height != null) Height = height.Value; else SizeToContent = SizeToContent.Height;
+            // 1.9.12: en pantallas chicas el panel no pasa del borde de abajo
+            MaxHeight = Math.Max(240, monitor.Work.Bottom / sc - monitor.Bounds.Top / sc - top - 12);
+            if (height != null && Height > MaxHeight) Height = MaxHeight;
             Show();
             Activate();
             _shadow ??= PanelShadow.Attach(this); // 1.6.0: sombra grande y suave

@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.4-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.12-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -244,6 +244,14 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.9.12** | Tamaño automático según la pantalla; el Dock arranca con las apps fijadas de Windows |
+| **1.9.11** | Tirar íconos del Dock a la Papelera |
+| **1.9.10** | Launchpad adaptado al tamaño de la pantalla |
+| **1.9.9** | La barra de arriba se registra como barra de escritorio de Windows |
+| **1.9.8** | La barra de arriba ya no tapa ventanas ni íconos |
+| **1.9.7** | Cartel al tirar a la Papelera; carpetas y pilas se cierran solas |
+| **1.9.6** | Maximizadas sin hueco del Dock; capturas al portapapeles |
+| **1.9.5** | Fondo de Win+Tab difuminado y sin pixelado |
 | **1.9.4** | La franja del organizador visual ya no bloquea lo de abajo |
 | **1.9.3** | Win+Tab con el fondo difuminado; el Dock se esconde bien con ventanas maximizadas |
 | **1.9.2** | Edición para Microsoft Store (MSIX) |

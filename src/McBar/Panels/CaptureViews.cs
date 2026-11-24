@@ -294,7 +294,7 @@ namespace McBar.Panels
             };
             var cm = new ContextMenu();
             cm.Items.Add(Item("Abrir", () => { Close(); Launcher.Launch(_path); }));
-            cm.Items.Add(Item("Copiar", () => { try { Clipboard.SetImage(_img); } catch { } Close(); }));
+            cm.Items.Add(Item("Copiar", () => { McBar.Core.Screenshots.CopyToClipboard(_img); Close(); }));
             cm.Items.Add(Item("Mostrar en la carpeta", () => { Close(); Launcher.ShowInExplorer(_path); }));
             cm.Items.Add(new Separator());
             cm.Items.Add(Item("Borrar", () => { Close(); SystemInfo.SendToRecycleBin(new[] { _path }); }));

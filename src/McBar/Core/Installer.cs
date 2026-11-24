@@ -172,7 +172,7 @@ namespace McBar.Core
                 // se copian a la carpeta de McBar: si después se desfijan de Windows, el Dock no los pierde
                 var keep = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "McBar", "Accesos");
                 Directory.CreateDirectory(keep);
-                foreach (var lnk in Directory.GetFiles(dir, "*.lnk"))
+                foreach (var lnk in Directory.GetFiles(dir, "*.lnk").OrderBy(f => File.GetCreationTime(f))) // 1.9.12: en el orden en que se fijaron
                 {
                     var name = Path.GetFileNameWithoutExtension(lnk);
                     if (name.Equals("File Explorer", StringComparison.OrdinalIgnoreCase) || name.Equals("Explorador de archivos", StringComparison.OrdinalIgnoreCase))
