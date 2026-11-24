@@ -184,6 +184,14 @@ namespace McBar
             _workAreaDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
             _workAreaDebounce.Tick += (_, _) => { _workAreaDebounce!.Stop(); WorkArea.Verify(); };
             Hook.WorkAreaChanged += () => { _workAreaDebounce.Stop(); _workAreaDebounce.Start(); };
+            // 1.9.8: al arrancar el Explorador devuelve el monitor entero mientras esconde su barra; se vuelve a
+            // poner el área avisando a todos (ventanas e íconos del escritorio) a los 3 y a los 10 segundos.
+            foreach (var secs in new[] { 3, 10 })
+            {
+                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(secs) };
+                t.Tick += (_, _) => { t.Stop(); WorkArea.Refresh(); };
+                t.Start();
+            }
             if (s.AnimateWindows) ShellHook.EnsureAnimationOn();
 
             _lastHideTaskbar = s.HideWindowsTaskbar;
@@ -300,14 +308,18 @@ namespace McBar
         /// <summary>Reserva en cada monitor solo lo que ocupan nuestra barra y nuestro Dock.</summary>
         public static void UpdateWorkAreas()
         {
+            var before = new Dictionary<string, PxRect>();
             foreach (var m in Monitors.All())
             {
+                before[m.Device] = m.Work;
                 var mb = MenuBars.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 var isl = Islands.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 var d = Docks.FirstOrDefault(x => x.Monitor.Device == m.Device);
                 int top = mb?.ReservePx ?? isl?.ReservePx ?? 0;
-                WorkArea.Set(m, top, d?.ReservePx ?? 0);
+                if (!WorkArea.Set(m, top, d?.ReservePx ?? 0)) before.Remove(m.Device);
             }
+            // 1.9.6/1.9.8: acomoda las maximizadas que no se enteran del cambio (Explorador y otras)
+            if (before.Count > 0) MaximizedFit.Schedule(before);
         }
 
         private static void ApplyFullscreen()
@@ -326,14 +338,7 @@ namespace McBar
             // 1.8.9: el Dock también se esconde con una ventana maximizada (vuelve con el mouse abajo)
             bool changed = false;
             foreach (var d in Docks) changed |= d.SetMaximized(max.Contains(d.Monitor.Device));
-            if (changed)
-            {
-                // 1.9.6: se guardan las áreas de antes para acomodar las maximizadas que no se enteran (Explorador)
-                var before = new Dictionary<string, PxRect>();
-                foreach (var m in Monitors.All()) before[m.Device] = m.Work;
-                UpdateWorkAreas(); // deja (o vuelve a reservar) el lugar del Dock
-                MaximizedFit.Schedule(before);
-            }
+            if (changed) UpdateWorkAreas(); // deja (o vuelve a reservar) el lugar del Dock (y acomoda las maximizadas)
         }
 
         /// <summary>
@@ -575,6 +580,7 @@ namespace McBar
             if (tray != null && tray.IsOwnBroadcastRecent) return; // fue nuestro propio aviso
             if (SettingsStore.Current.HideWindowsTaskbar) { Taskbar.Hide(); Taskbar.EnforceBurst(5); }
             UpdateWorkAreas();
+            WorkArea.Refresh(); // 1.9.8: avisar a las ventanas y a los íconos del escritorio
             if (tray != null)
             {
                 tray.Raise();

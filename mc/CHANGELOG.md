@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.8 — 24/11/2026 (arreglo)
+- **La barra de arriba (modo barra) ya no tapa ventanas ni íconos del escritorio**: al arrancar, el Explorador devolvía la pantalla entera mientras escondía su barra, y McBar volvía a reservar el lugar sin avisar a las ventanas; las maximizadas, las acopladas y los íconos del escritorio quedaban debajo de la barra. Ahora se avisa a todos (al arrancar, cuando el Explorador se reinicia y cada vez que se pierde el lugar de la barra), y McBar baja las ventanas que quedaron con la barra de título debajo.
+
 ## 1.9.7 — 23/11/2026
 - **Cartel en la Papelera**: al arrastrar un archivo encima de la Papelera del Dock aparece "Mover a la Papelera".
 - **Carpetas y pilas que se cierran solas**: las carpetas de apps y las pilas (abanico, cuadrícula o lista) se cierran al sacar el mouse de ellas y del Dock por un momento (menos de un segundo); antes quedaban abiertas hasta hacer clic afuera. Preferencias → Dock → **"Cerrar carpetas y pilas al sacar el mouse"** (viene prendido).

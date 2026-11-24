@@ -240,6 +240,12 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.8
+- [ ] Barra de arriba en modo barra (no píldora), "Abrir McBar al iniciar Windows" prendido: reiniciar la PC con el Explorador abierto maximizado → a los pocos segundos la ventana queda debajo de la barra, no tapada. Los íconos del escritorio de la primera fila quedan debajo de la barra.
+- [ ] Una ventana acoplada a media pantalla (Win+←) queda con la barra de título visible.
+- [ ] Reiniciar el Explorador (Administrador de tareas → Explorador de Windows → Reiniciar) → todo vuelve a quedar debajo de la barra.
+- [ ] Cambiar entre píldora y barra en Preferencias → las ventanas maximizadas se acomodan solas.
+
 ### Versión 1.9.7
 - [ ] Arrastrar un archivo del escritorio encima de la Papelera del Dock → aparece "Mover a la Papelera" arriba; al soltarlo va a la Papelera. Pasar por encima de otro ícono → el cartel desaparece.
 - [ ] Abrir una carpeta de apps y una pila (en abanico, cuadrícula y lista), sacar el mouse lejos → se cierran en menos de un segundo. Moverse entre el Dock y la carpeta no la cierra. Clic derecho en una app de la carpeta → el menú no hace que se cierre.

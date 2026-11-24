@@ -3,6 +3,7 @@
 // avisa a las ventanas maximizadas para que se reacomoden. Algunas (el Explorador, sobre todo) no se enteran y
 // quedan con el hueco abajo hasta que se achican y se vuelven a maximizar. Acá se las acomoda a mano: solo las
 // maximizadas de ese monitor cuyo borde todavía está pegado al área de trabajo VIEJA.
+// 1.9.8: también las ventanas comunes que quedaron con la barra de título debajo de la barra de arriba.
 using System;
 using System.Collections.Generic;
 using System.Windows.Threading;
@@ -26,6 +27,19 @@ namespace McBar.Core
             { top = win.Top + (newWork.Top - oldWork.Top); moved = true; }
             if (!moved || bottom - top < 100) return null;
             return new PxRect(win.Left, top, win.Right, bottom);
+        }
+
+        /// <summary>
+        /// 1.9.8: ventana común (no maximizada; por ejemplo acoplada a media pantalla) que quedó con la barra de
+        /// título debajo de la barra de arriba: se baja su borde de arriba hasta el área de trabajo (si queda
+        /// muy chica, se corre entera). null = no hace falta. Pura, se prueba.
+        /// </summary>
+        public static PxRect? FitTop(PxRect win, PxRect work)
+        {
+            if (win.Top >= work.Top || win.Bottom <= work.Top) return null;
+            if (win.Bottom - work.Top >= 200) return new PxRect(win.Left, work.Top, win.Right, win.Bottom);
+            int dy = work.Top - win.Top;
+            return new PxRect(win.Left, win.Top + dy, win.Right, win.Bottom + dy);
         }
 
         // el borde de una maximizada sobresale unos píxeles (el borde invisible de Windows) del área de trabajo
@@ -53,12 +67,22 @@ namespace McBar.Core
                 uint own = (uint)Environment.ProcessId;
                 Win32.EnumWindows((h, _) =>
                 {
-                    if (!Win32.IsWindowVisible(h) || !Win32.IsZoomed(h) || Win32.IsIconic(h)) return true;
+                    if (!Win32.IsWindowVisible(h) || Win32.IsIconic(h)) return true;
                     if (Win32.ProcessOf(h) == own) return true;
                     var m = Monitors.FromWindow(h);
                     if (m == null || !before.TryGetValue(m.Device, out var old) || !monitors.TryGetValue(m.Device, out var now)) return true;
                     if (!Win32.GetWindowRect(h, out var r)) return true;
-                    var fit = Fit(new PxRect(r.left, r.top, r.right, r.bottom), old, now.Work);
+                    var rect = new PxRect(r.left, r.top, r.right, r.bottom);
+                    PxRect? fit;
+                    if (Win32.IsZoomed(h)) fit = Fit(rect, old, now.Work);
+                    else
+                    {
+                        // 1.9.8: solo ventanas de apps con barra de título, y solo si la barra de arriba creció
+                        var st = Win32.GetStyle(h);
+                        var ex = Win32.GetExStyle(h);
+                        bool appWin = (st & Win32.WS_CAPTION) == Win32.WS_CAPTION && (ex & Win32.WS_EX_TOOLWINDOW) == 0;
+                        fit = appWin && now.Work.Top > old.Top ? FitTop(rect, now.Work) : null;
+                    }
                     if (fit is PxRect f)
                         Win32.SetWindowPos(h, IntPtr.Zero, f.Left, f.Top, f.Width, f.Height, Win32.SWP_NOZORDER | Win32.SWP_NOACTIVATE);
                     return true;

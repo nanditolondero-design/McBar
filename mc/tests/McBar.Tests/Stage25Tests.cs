@@ -66,5 +66,42 @@ namespace McBar.Tests
 
         [Fact]
         public void CartelDeLaPapelera() => Assert.Equal("Mover a la Papelera", DockWindow.TrashDropLabel);
+    
+
+        // 1.9.8: barra de arriba en modo barra (28 px)
+        private static readonly PxRect Monitor = new PxRect(0, 0, 1920, 1080);
+        private static readonly PxRect ConBarra = new PxRect(0, 28, 1920, 990);
+
+        [Fact]
+        public void Maximizada_ConElMonitorEntero_BajaDeLaBarra()
+        {
+            var win = new PxRect(-8, -8, 1928, 1088);
+            var fit = MaximizedFit.Fit(win, Monitor, ConBarra);
+            Assert.Equal(20, fit!.Value.Top);
+            Assert.Equal(998, fit.Value.Bottom);
+        }
+
+        [Fact]
+        public void VentanaComun_DebajoDeLaBarra_SeBaja()
+        {
+            var fit = MaximizedFit.FitTop(new PxRect(0, 0, 960, 990), ConBarra);
+            Assert.Equal(28, fit!.Value.Top);
+            Assert.Equal(990, fit.Value.Bottom);
+        }
+
+        [Fact]
+        public void VentanaComun_Chica_SeCorreEntera()
+        {
+            var fit = MaximizedFit.FitTop(new PxRect(100, 10, 500, 150), ConBarra);
+            Assert.Equal(28, fit!.Value.Top);
+            Assert.Equal(168, fit.Value.Bottom);
+        }
+
+        [Fact]
+        public void VentanaComun_YaAbajo_NoSeToca() => Assert.Null(MaximizedFit.FitTop(new PxRect(100, 200, 500, 600), ConBarra));
+
+        [Fact]
+        public void AreaDeTrabajo_ConBarraYDock() =>
+            Assert.Equal(ConBarra.Top, WorkArea.Compute(Monitor, 28, 90).Top);
     }
 }
