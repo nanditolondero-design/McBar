@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.14 — 24/11/2026
+- **Íconos del área de notificaciones (systray) que no respondían**: algunos programas no abrían al tocarlos ni mostraban el menú con el clic derecho. Ahora McBar trae la ventana del programa al frente antes de reenviar el clic y manda la secuencia completa (apretar y soltar), que es lo que esos programas esperan.
+- **Arrastrar un archivo a otra ventana (como en la barra de Windows)**: si dejás un archivo arrastrado un momento sobre una miniatura de la franja del Organizador visual, o sobre el ícono de una app abierta en el Dock, esa ventana viene al frente para que sueltes el archivo adentro. McBar no se queda con el archivo, solo trae la ventana.
+
+## 1.9.13 — 24/11/2026 (arreglo)
+- **La Papelera se ve como está**: si borrás o recuperás archivos por fuera de McBar (desde el Explorador, o vaciándola en otro lado), el ícono del Dock ahora se actualiza solo a lleno o vacío. Antes a veces quedaba "vacía" estando llena, porque solo se refrescaba al soltarle algo encima.
+- **Ícono de apps de la Store empaquetadas (WhatsApp y similares)**: cuando Windows no deja sacar el identificador de la app y su .exe está escondido en WindowsApps, McBar usa el ícono de la propia ventana en vez del genérico. Así WhatsApp muestra su ícono de verdad en el Dock.
+
 ## 1.9.12 — 24/11/2026
 - **Todo se adapta a la pantalla de entrada**: el tamaño del Dock (y su ampliación) se calcula según la pantalla de cada monitor (en 1080p queda como siempre, 52; en una notebook de 1366×768, más chico; en pantallas grandes, más grande, con tope). Preferencias → Dock → **"Tamaño automático según la pantalla"** (prendido); mover "Tamaño" o "Tamaño ampliado" lo pasa a manual. Quien ya había cambiado el tamaño lo conserva. Los paneles (widgets, Centro de control, etc.) no pasan del borde de abajo en pantallas chicas. El Launchpad ya se adaptaba desde la 1.9.10.
 - **El Dock arranca con las apps que ya tenías fijadas en la barra de Windows** (en el orden en que se fijaron), más el Launchpad y el Explorador. Solo si no había nada fijado se ponen las apps de ejemplo. Vale para la primera vez que se abre McBar (también en la edición de la Store, que no tiene instalador).

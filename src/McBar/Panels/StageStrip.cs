@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using McBar.Core;
 using McBar.Native;
 
@@ -19,6 +20,9 @@ namespace McBar.Panels
         public MonitorInfo Monitor { get; }
         private readonly StackPanel _list = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 10, 0) };
         private bool _shown;
+        // 1.9.14: traer una ventana al frente al dejar un archivo arrastrado un momento sobre su miniatura
+        private readonly DispatcherTimer _spring = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        private StageManager.Stage? _springOver;
 
         public StageStrip(MonitorInfo m)
         {
@@ -39,6 +43,8 @@ namespace McBar.Panels
             Opacity = 0;
             Visibility = Visibility.Hidden;
             SourceInitialized += (_, _) => WindowOps.MakeToolNoActivate(this);
+            AllowDrop = true; // 1.9.14: recibir el archivo arrastrado (no lo toma; solo trae la ventana al frente)
+            _spring.Tick += (_, _) => { _spring.Stop(); if (_springOver != null) StageManager.Bring(_springOver); };
             Refresh();
         }
 
@@ -89,6 +95,13 @@ namespace McBar.Panels
                 grid.MouseEnter += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); };
                 grid.MouseLeave += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); };
                 grid.MouseLeftButtonUp += (_, e) => { e.Handled = true; StageManager.Bring(stage); };
+                // 1.9.14: resorte al arrastrar (como la barra de Windows): se para un momento sobre la miniatura
+                // con un archivo y esa ventana viene al frente para soltarlo adentro.
+                grid.AllowDrop = true;
+                grid.DragEnter += (_, e) => { _springOver = stage; _spring.Stop(); _spring.Start(); e.Effects = DragDropEffects.None; e.Handled = true; };
+                grid.DragOver += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
+                grid.DragLeave += (_, _) => { if (_springOver == stage) { _springOver = null; _spring.Stop(); } };
+                grid.Drop += (_, e) => { _spring.Stop(); _springOver = null; StageManager.Bring(stage); e.Handled = true; };
                 _list.Children.Add(grid);
             }
         }

@@ -149,7 +149,9 @@ namespace McBar.Dock
             SizeChanged += (_, _) => EnsureAnimating();
             DragOver += Window_DragOver;
             DragEnter += (_, _) => { _hideTimer.Stop(); if (_hidden) { _hidden = false; } _hover = true; EnsureAnimating(); }; // 1.4.1
-            DragLeave += (_, _) => { _hover = false; _dropTrash = null; EnsureAnimating(); if (AutoHide) _hideTimer.Start(); };
+            DragLeave += (_, _) => { _hover = false; _dropTrash = null; _springHwnd = IntPtr.Zero; _springTimer.Stop(); EnsureAnimating(); if (AutoHide) _hideTimer.Start(); };
+            // 1.9.14: resorte del Dock (traer la ventana al frente al dejar el archivo un momento sobre su ícono)
+            _springTimer.Tick += (_, _) => { _springTimer.Stop(); if (_springHwnd != IntPtr.Zero && Win32.IsWindow(_springHwnd)) { if (Win32.IsIconic(_springHwnd)) Win32.ShowWindow(_springHwnd, Win32.SW_RESTORE); WindowOps.Activate(_springHwnd); } };
             Drop += Window_Drop;
 
             SourceInitialized += (_, _) =>
@@ -385,6 +387,21 @@ namespace McBar.Dock
         /// <summary>Vuelve a cargar todos los íconos (al cambiar el paquete de íconos).</summary>
         public void RefreshIcons() => ReloadIcons();
 
+        /// <summary>
+        /// 1.9.13: si la Papelera cambió de vacía a llena (o al revés) por fuera de McBar —se borró un archivo
+        /// desde el Explorador, se vació la papelera, etc.— vuelve a cargar su ícono para que se vea como está.
+        /// Antes el ícono solo se actualizaba al soltarle algo encima, así que a veces quedaba "vacía" estando llena.
+        /// </summary>
+        private bool _trashFull;
+        public void RefreshTrashIfChanged()
+        {
+            bool full = SystemInfo.RecycleBinHasItems();
+            if (full == _trashFull) return;
+            _trashFull = full;
+            var t = _items.FirstOrDefault(i => i.Kind == DockItemKind.Trash && !i.Removing);
+            if (t != null) LoadIcon(t);
+        }
+
         private void ReloadIcons()
         {
             _lastIconSize = IconPixelSize();
@@ -417,6 +434,7 @@ namespace McBar.Dock
                     if (dl != null) IconLoader.Request(dl, px, img => it.View.SetIcon(img));
                     break;
                 case DockItemKind.Trash:
+                    _trashFull = SystemInfo.RecycleBinHasItems(); // 1.9.13: queda sincronizado
                     IconLoader.Forget(TrashParsingName);
                     IconLoader.Request(TrashParsingName, px, img => it.View.SetIcon(img));
                     break;
@@ -428,6 +446,17 @@ namespace McBar.Dock
                     if (!string.IsNullOrEmpty(it.IconSource))
                     {
                         var hwnd = it.Windows.Count > 0 ? it.Windows[0].Hwnd : IntPtr.Zero;
+                        // 1.9.13: apps empaquetadas (Store) cuyo .exe está en WindowsApps y de las que no se pudo
+                        // sacar el identificador: el .exe da un ícono genérico, así que se usa el de la ventana
+                        // (WhatsApp, por ejemplo). Si no es ese caso, se pide el ícono del shell como siempre.
+                        bool packagedExe = hwnd != IntPtr.Zero
+                            && !AppIdentity.IsAppsFolder(it.IconSource!)
+                            && it.IconSource!.IndexOf(@"\WindowsApps", StringComparison.OrdinalIgnoreCase) >= 0;
+                        if (packagedExe && IconLoader.FromWindow(hwnd) is System.Windows.Media.Imaging.BitmapSource wi)
+                        {
+                            it.View.SetIcon(S.IconShape == "mac" ? (IconShaper.Shape(wi, px) ?? wi) : wi);
+                            break;
+                        }
                         IconLoader.Request(it.IconSource!, px, img =>
                         {
                             if (img == null && hwnd != IntPtr.Zero) img = IconLoader.FromWindow(hwnd);
@@ -2044,6 +2073,20 @@ namespace McBar.Dock
             var p = e.GetPosition(Stage);
             // 1.9.7: archivo arrastrado encima de la Papelera → cartel "Mover a la Papelera"
             _dropTrash = e.Data.GetDataPresent(DataFormats.FileDrop) ? TrashUnder(p, null) : null; // 1.9.11: con margen
+            // 1.9.14: resorte (como la barra de Windows): parar un archivo sobre el ícono de una app abierta trae
+            // su ventana al frente para soltarlo adentro.
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && _dropTrash == null)
+            {
+                var over = HitItem(p);
+                var h = over != null && over.Kind == DockItemKind.App && over.Windows.Count > 0 ? over.Windows[0].Hwnd : IntPtr.Zero;
+                if (h != _springHwnd)
+                {
+                    _springHwnd = h;
+                    _springTimer.Stop();
+                    if (h != IntPtr.Zero) _springTimer.Start();
+                }
+            }
+            else { _springHwnd = IntPtr.Zero; _springTimer.Stop(); }
             _hover = true;
             _hideTimer.Stop();
             if (_hidden) _hidden = false; // 1.4.1: si estaba oculto, sube entero al arrastrar algo encima
@@ -2053,8 +2096,13 @@ namespace McBar.Dock
             e.Handled = true;
         }
 
+        /// <summary>1.9.14: ventana sobre la que está parado el archivo arrastrado, y reloj del resorte.</summary>
+        private IntPtr _springHwnd;
+        private readonly DispatcherTimer _springTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+
         private void Window_Drop(object sender, DragEventArgs e)
         {
+            _springTimer.Stop(); _springHwnd = IntPtr.Zero;
             _dropTrash = null;
             // 0.4.3: app arrastrada desde el Launchpad
             if (e.Data.GetDataPresent(McBar.Panels.LaunchpadWindow.DockPinFormat) && e.Data.GetData(McBar.Panels.LaunchpadWindow.DockPinFormat) is string pin)

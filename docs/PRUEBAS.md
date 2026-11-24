@@ -240,6 +240,16 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.14
+- [ ] Área de notificaciones: tocar un programa que antes no abría (o su menú de clic derecho) → ahora abre / muestra el menú. Probar con varios (antivirus, utilidades, etc.).
+- [ ] Arrastrar un archivo del escritorio y pararlo ~medio segundo sobre una miniatura de la franja del Organizador visual → esa ventana viene al frente; soltar el archivo cae en esa app.
+- [ ] Lo mismo sobre el ícono de una app abierta en el Dock (Chrome, Word): a los ~0,6 s la ventana viene al frente. Si estaba minimizada, se restaura.
+- [ ] Soltar el archivo sobre la Papelera sigue andando (no lo pisa el resorte).
+
+### Versión 1.9.13
+- [ ] Borrar un archivo desde el Explorador (no desde McBar): en ~2 s el ícono de la Papelera del Dock pasa a lleno. Vaciarla desde el Explorador → vuelve a vacío.
+- [ ] WhatsApp (de la Store) abierto y fijado: muestra su ícono real en el Dock, no el genérico. Otras apps de la Store (Spotify, etc.) siguen con su ícono correcto.
+
 ### Versión 1.9.12
 - [ ] Notebook 1366×768 con ajustes nuevos: el Dock sale más chico que en un monitor 1080p, y la ampliación acompaña. Con dos monitores de distinto tamaño, cada Dock tiene el suyo.
 - [ ] Preferencias → Dock: "Tamaño automático según la pantalla" prendido; mover "Tamaño" → se apaga solo y queda el tamaño elegido. Prenderlo de nuevo → vuelve al automático.
