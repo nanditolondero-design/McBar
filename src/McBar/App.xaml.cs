@@ -518,6 +518,8 @@ namespace McBar
                     TrayHost.Current?.EnsureFirst();
                     Fullscreen?.Check();
                     if (++_watchdogTicks % 14 == 0) WorkArea.Verify(); // cada ~10 s
+                    // 1.9.32: importar de la bandeja real los íconos que no se re-registran (NVIDIA, Defender, etc.)
+                    if (_watchdogTicks % 14 == 7) TrayHost.Current?.ImportExisting(); // cada ~10 s, desfasado
                     if (_watchdogTicks % 4 == 0) KeepBarsOnTop();
                     if (_watchdogTicks % 3 == 0) foreach (var d in Docks) d.RefreshTrashIfChanged(); // 1.9.13: ícono de la Papelera (cada ~2 s)
                     // Con "apps por monitor": si una ventana se pasó a otro monitor, actualizar los Docks.

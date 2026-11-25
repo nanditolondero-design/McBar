@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.32 — 25/11/2026 (bandeja: aparecen los íconos que faltaban, como NVIDIA y Defender)
+- **Faltaban íconos en la bandeja (NVIDIA, Seguridad de Windows/Defender y otras apps).** El motivo: esas apps ya estaban abiertas antes de McBar y no "se vuelven a anunciar" cuando McBar arranca, así que McBar nunca las veía. Ahora McBar **lee los íconos que ya están en la bandeja real de Windows** (la que McBar esconde), incluidos los íconos ocultos, y los suma a su barra. Vuelve a revisar cada ~10 segundos por si aparece alguno nuevo. Para esto McBar tiene que correr como la app normal (por eso, si lo abrís "como administrador", la bandeja no anda).
+- Nota: si una de estas apps igual no abre al tocar su ícono, es por el formato del clic y lo seguimos afinando; lo importante de esta versión es que **aparezcan**.
+
 ## 1.9.31 — 25/11/2026 (ayudante del systray: no se cuelga y abre las apps)
 - **McBar se colgaba al tocar varias veces un ícono de app que corre como administrador.** El clic se le reenviaba al ayudante escribiéndolo en la "tubería" desde el mismo hilo de la interfaz; si el ayudante no la estaba leyendo, esa escritura se trababa y McBar se congelaba. Ahora los clics se encolan y los manda un hilo aparte: reenviar nunca congela la interfaz.
 - **Los íconos de apps-administrador no abrían la app.** Por lo de arriba, los clics quedaban trabados sin llegar. Además, ahora el ayudante (que corre como administrador) habilita el "paso al frente" antes de reenviar el clic, para que la app pueda mostrar su ventana o su menú adelante.

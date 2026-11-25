@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.32
+- [ ] Con NVIDIA / Seguridad de Windows (Defender) corriendo, abrir McBar → esos íconos ahora aparecen en la barra (puede tardar hasta ~10 s). En el log: "Bandeja: importado de Windows …".
+- [ ] Abrir MagnAIR (u otra app ya abierta) → su ícono aparece.
+- [ ] Revisar que no queden íconos duplicados cuando una app sí se re-registra.
+
 ### Versión 1.9.31
 - [ ] Con el ayudante activado, tocar un ícono de app que corre como administrador → abre la app / muestra el menú, y al frente.
 - [ ] Apretar muchas veces seguidas un ícono de app-administrador → McBar NO se cuelga.

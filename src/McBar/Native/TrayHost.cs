@@ -85,6 +85,7 @@ namespace McBar.Native
             Current = host;
             host.Raise();
             host.Broadcast();
+            host.ImportExisting(); // 1.9.32: traer los íconos que ya estaban en la bandeja real de Windows
             return host;
         }
 
@@ -183,6 +184,8 @@ namespace McBar.Native
                     if (icon == null)
                     {
                         if (m.Message == TrayData.NIM_MODIFY && (m.Flags & TrayData.NIF_ICON) == 0) return false;
+                        // 1.9.32: si lo habíamos importado de la bandeja real (otro Id, por ej. con GUID), sacar el duplicado
+                        _icons.RemoveAll(i => i.HWnd == new IntPtr(unchecked((int)m.HWnd)) && i.Uid == m.Uid);
                         icon = new TrayIcon
                         {
                             Id = id,
@@ -279,6 +282,47 @@ namespace McBar.Native
             {
                 Interlocked.Exchange(ref _changePending, 0);
                 Changed?.Invoke();
+            }));
+        }
+
+        /// <summary>
+        /// 1.9.32: importa los íconos que YA están en la bandeja real de Windows (NVIDIA, Seguridad de Windows y
+        /// toda app que estaba abierta antes de McBar o que no se re-registra). Corre en el hilo de la bandeja.
+        /// </summary>
+        public void ImportExisting()
+        {
+            _trayThread?.BeginInvoke(new Action(() =>
+            {
+                List<TrayImport.Entry> found;
+                try { found = TrayImport.Read(); } catch (Exception ex) { Log.Write("Importar bandeja: " + ex.Message); return; }
+                bool changed = false;
+                foreach (var e in found)
+                {
+                    try
+                    {
+                        if (e.Hwnd == IntPtr.Zero || !Win32.IsWindow(e.Hwnd)) continue;
+                        // ya lo tenemos (lo mandó la app o lo importamos antes)
+                        if (_icons.Any(i => i.HWnd == e.Hwnd && i.Uid == e.Uid)) continue;
+                        var exe = ExeOf(e.Hwnd);
+                        // los íconos del propio Explorador (reloj, volumen, red) no se importan: McBar tiene los suyos
+                        if (exe.EndsWith("\\explorer.exe", StringComparison.OrdinalIgnoreCase)) continue;
+                        var icon = new TrayIcon
+                        {
+                            Id = $"h:{(uint)e.Hwnd.ToInt64():X}:{e.Uid}", // mismo formato que un ícono registrado, para no duplicar
+                            HWnd = e.Hwnd,
+                            Uid = e.Uid,
+                            CallbackMessage = e.Callback,
+                            Version = 0, // formato clásico (wParam=uid, lParam=mensaje)
+                            ExePath = exe,
+                            Icon = ConvertIcon(e.HIcon) ?? McBar.Core.IconLoader.FromWindow(e.Hwnd)
+                        };
+                        _icons.Add(icon);
+                        changed = true;
+                        Log.Write($"Bandeja: importado de Windows 0x{e.Hwnd.ToInt64():X} uid={e.Uid} cb=0x{e.Callback:X} ({System.IO.Path.GetFileName(exe)})");
+                    }
+                    catch (Exception ex) { Log.Write("Importar ícono: " + ex.Message); }
+                }
+                if (changed) NotifyChanged();
             }));
         }
 
