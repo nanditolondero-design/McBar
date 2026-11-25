@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.28
+- [ ] Preferencias → Bandeja del sistema → prender "Permitir abrir íconos de apps que corren como administrador". Tocar un ícono que corre como admin (ej. NVIDIA, si aparece) → Windows pide permiso una vez (cartel de administrador); después ese ícono abre la app / muestra el menú. En el log: "Ayudante del systray: conectado".
+- [ ] Apagado (de fábrica): no pide permiso y esos íconos siguen sin responder (como antes). Al salir de McBar, la copia ayudante se cierra (no queda un McBar.exe de más).
+
 ### Versión 1.9.27
 - [ ] Win+Mayús+E → abre el visor; tocar un emoji lo escribe en el navegador/Word que tengas abierto (sin cerrar la app). Los botones de arriba saltan a cada categoría; la ✕ cierra. Apagar el atajo en Preferencias → Teclado.
 - [ ] Menú de McBar → "Protector de pantalla": pantalla negra con reloj que se mueve; cualquier tecla/clic/movimiento lo cierra. Ponerlo en una esquina activa (Preferencias → Esquinas activas) y llevar el mouse ahí también lo lanza.

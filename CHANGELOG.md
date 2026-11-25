@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.28 — 24/11/2026 (ayudante del systray)
+- **Íconos de apps que corren como administrador (NVIDIA y similares)**: Windows no deja que un programa normal les mande el clic. Ahora, si prendés **Preferencias → Bandeja del sistema → "Permitir abrir íconos de apps que corren como administrador"**, McBar abre una copia de sí mismo como administrador (pide permiso una vez) que sí puede reenviarles el clic. Así esos íconos abren la app y muestran el menú. Es opcional y viene apagado. La copia ayudante no muestra ventanas y se cierra junto con McBar.
+
 ## 1.9.27 — 24/11/2026
 - **Visor de emojis (como el Visor de caracteres de macOS)**: con **Win+Mayús+E** (o desde el menú de McBar → "Visor de emojis") se abre un panel con emojis por categoría; al tocar uno, se escribe en la app que estás usando (sin robarle el foco). Se apaga el atajo en Preferencias → Teclado.
 - **Protector de pantalla**: fondo negro con un reloj grande que cambia de lugar cada tanto; se cierra con cualquier tecla, clic o movimiento. Se lanza desde el menú de McBar → "Protector de pantalla" o poniéndolo en una esquina activa (Preferencias → Esquinas activas).

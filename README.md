@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.27-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.28-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -244,6 +244,7 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.9.28** | Ayudante (admin) para íconos de apps que corren como administrador |
 | **1.9.27** | Visor de emojis y protector de pantalla |
 | **1.9.26** | Leer en voz alta la selección (Win+Mayús+L) |
 | **1.9.25** | Marcado de capturas (editor: flechas, texto, resaltar) |

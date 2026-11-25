@@ -18,7 +18,7 @@ namespace McBar.Panels
         public static void Show()
         {
             if (_current != null) return;
-            try { _current = new ScreenSaverWindow(); _current.Closed += (_, _) => _current = null; _current.Show(); }
+            try { _current = new ScreenSaverWindow(); _current.Closed += (_, _) => _current = null; ((Window)_current).Show(); }
             catch (Exception ex) { Core.Log.Write("Protector: " + ex.Message); }
         }
 

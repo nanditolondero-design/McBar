@@ -60,6 +60,18 @@ namespace McBar
             base.OnStartup(e);
             SettingsStore.Load();
 
+            // 1.9.28: "McBar.exe --trayhelper <pid>": copia abierta como administrador que solo reenvía clics del
+            // área de notificaciones a los programas que corren como administrador. No muestra ventanas.
+            int thIdx = Array.FindIndex(e.Args, a => a.Equals("--trayhelper", StringComparison.OrdinalIgnoreCase));
+            if (thIdx >= 0)
+            {
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                int pid = 0;
+                if (thIdx + 1 < e.Args.Length) int.TryParse(e.Args[thIdx + 1], out pid);
+                TrayHelper.RunServer(pid);
+                return;
+            }
+
             // "McBar.exe --restaurar": devuelve la barra de Windows (y el área de trabajo) a como estaba y sale.
             if (e.Args.Any(a => a.Equals("--restaurar", StringComparison.OrdinalIgnoreCase)))
             {
@@ -1073,6 +1085,7 @@ namespace McBar
             }
             try { ShellHook.RestoreAnimation(); } catch { }
             try { NightShift.Stop(); } catch { }
+            try { TrayHelper.Stop(); } catch { }
         }
     }
 }

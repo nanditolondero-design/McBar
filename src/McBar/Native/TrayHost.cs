@@ -341,6 +341,12 @@ namespace McBar.Native
                     // 1.9.20: err=5 (acceso denegado) = el programa corre como administrador y Windows no deja
                     // que McBar (normal) le mande el clic. Es un límite de seguridad de Windows (UIPI).
                     Log.Write($"Tray: Windows rechazó el envío a 0x{icon.HWnd.ToInt64():X} (error {err}{(err == 5 ? " = el programa corre como administrador" : "")})");
+                    // 1.9.28: si está activado el ayudante, se lo pedimos a la copia que corre como administrador
+                    if (err == 5 && SettingsStore.Current.TrayAdminHelper)
+                    {
+                        TrayHelper.EnsureStarted();
+                        TrayHelper.Forward(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                    }
                 }
             }
         }
