@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.26
+- [ ] Seleccionar texto (en el navegador, Word, etc.) → Win+Mayús+L → lo lee en voz alta. Apretar otra vez → corta. Lo mismo desde el menú de McBar → "Leer en voz alta la selección".
+- [ ] Sin nada seleccionado → avisa "No hay texto seleccionado". El portapapeles queda como estaba (lo que tenías copiado sigue ahí).
+- [ ] Apagar el toggle en Preferencias → Teclado → Win+Mayús+L deja de leer.
+
 ### Versión 1.9.25
 - [ ] Sacar una captura (Win+Mayús+4) → tocar la miniatura → se abre el editor. Probar Lápiz, Flecha, Rectángulo, Resaltar y Texto; cambiar color; Deshacer. Guardar sobrescribe el archivo; Copiar lo deja en el portapapeles; Listo cierra.
 - [ ] La flecha tiene punta; el resaltador es semitransparente; el texto se escribe donde clickeás. Lo guardado tiene la calidad original.

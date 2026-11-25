@@ -559,6 +559,7 @@ namespace McBar.MenuBar
             cm.Items.Add(Mi("Preferencias de McBar…", App.OpenSettings));
             cm.Items.Add(Mi("Acerca de McBar", App.ShowAbout));
             cm.Items.Add(Mi("Copiar texto de la pantalla (OCR)", () => Core.LiveText.Start())); // 1.9.24
+            cm.Items.Add(Mi("Leer en voz alta la selección", () => Core.Speaker.Toggle())); // 1.9.26
             // 1.9.18: abre el registro para diagnóstico (p. ej. problemas con el área de notificaciones)
             cm.Items.Add(Mi("Abrir registro (diagnóstico)", () =>
             {

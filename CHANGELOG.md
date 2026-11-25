@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.26 — 24/11/2026
+- **Leer en voz alta (como "Contenido hablado" de macOS)**: seleccionás texto en cualquier lado, apretás **Win+Mayús+L** y McBar lo lee con la voz de Windows. Volver a apretar lo corta. También desde el menú de McBar → "Leer en voz alta la selección". Se apaga en Preferencias → Teclado. El portapapeles queda como estaba.
+
 ## 1.9.25 — 24/11/2026
 - **Marcado de capturas (como el editor rápido de macOS)**: al tocar la miniatura que aparece tras una captura, se abre un editor con Lápiz, Flecha, Rectángulo, Resaltar y Texto, con colores y Deshacer. Botones Copiar, Guardar y Listo. También desde el menú de la miniatura → "Marcar". Lo guardado sale a resolución real.
 

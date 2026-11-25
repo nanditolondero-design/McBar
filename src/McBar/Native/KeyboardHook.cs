@@ -255,6 +255,14 @@ namespace McBar.Native
                             return (IntPtr)1;
                         }
 
+                        // ---- Leer en voz alta (1.9.26): Win+Mayús+L ----
+                        if (s.SpeakSelection && down && _winDown && Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU) && vk == 0x4C)
+                        {
+                            if (!_winSwallowed) WindowOps.SendChord(VK_DUMMY);
+                            Ui(() => Core.Speaker.Toggle());
+                            return (IntPtr)1;
+                        }
+
                         // ---- Atajos estilo Mac (1.8.0): Alt izquierdo hace de Cmd ----
                         if (s.MacShortcuts && !_switching)
                         {

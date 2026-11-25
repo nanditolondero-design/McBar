@@ -212,6 +212,7 @@ namespace McBar.Panels
             kb.Children.Add(Switch("Espacio en el Explorador: vista previa rápida (Quick Look)", s.QuickLook, v => s.QuickLook = v));
             kb.Children.Add(Switch("Ctrl+Alt+flechas: acomodar ventanas en mosaico", s.TileShortcuts, v => s.TileShortcuts = v));
             kb.Children.Add(Switch("Win+Mayús+T: copiar texto de la pantalla (OCR)", s.LiveText, v => s.LiveText = v)); // 1.9.24
+            kb.Children.Add(Switch("Win+Mayús+L: leer en voz alta la selección", s.SpeakSelection, v => s.SpeakSelection = v)); // 1.9.26
             var kbTip = new TextBlock { Text = "Win+N abre las notificaciones y Win+A el Centro de control (se cambian en Notificaciones).", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
             kbTip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             kb.Children.Add(kbTip);

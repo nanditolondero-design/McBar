@@ -99,6 +99,7 @@ namespace McBar.Core
         public bool NightShiftAllDay { get; set; } = false;
         public int NightShiftStrength { get; set; } = 55;
         public bool LiveText { get; set; } = true; // 1.9.24: Win+Mayús+T para copiar texto de la pantalla (OCR)
+        public bool SpeakSelection { get; set; } = true; // 1.9.26: Win+Mayús+L para leer en voz alta
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";

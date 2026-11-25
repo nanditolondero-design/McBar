@@ -247,6 +247,9 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.26 (24/11/2026)
+`Core/Speaker`: `Toggle` (si habla, corta; si no, lee la selección). `SpeakSelectionAsync` espera 160 ms (soltar las teclas), copia con `WindowOps.SendChord(VK_CONTROL, 'C')`, lee el portapapeles, lo restaura 400 ms después. `Speak` usa `Windows.Media.SpeechSynthesis.SpeechSynthesizer` → stream → `MediaPlayer` (WinRT, sin librerías nuevas; sin importar `System.Windows.Media` para no chocar con el `MediaPlayer` de WPF). Atajo Win+Mayús+L (vk 0x4C, gate `SpeakSelection`), ítem en el menú del sistema y toggle en Preferencias → Teclado.
+
 ## 1.9.25 (24/11/2026)
 `Panels/MarkupWindow`: lienzo a resolución real (Canvas con ImageBrush) dentro de un `Viewbox` (coordenadas del mouse = píxeles reales, guardado sin perder calidad). Herramientas pen/marker (Polyline, marker semitransparente ×5), rect (Rectangle), arrow (Line + punta en un sub-Canvas), text (TextBox). Colores, Deshacer (lista `_added`), `Flatten` (RenderTargetBitmap) para Copiar/Guardar (sobrescribe el .png). `CaptureThumb`: tocar la miniatura abre `MarkupWindow.Open`; ítem "Marcar" en su menú.
 
