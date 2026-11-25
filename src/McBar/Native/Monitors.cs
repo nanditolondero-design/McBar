@@ -141,6 +141,12 @@ namespace McBar.Native
         public static void Verify()
         {
             if (Desired.Count == 0 || _gaveUp || DateTime.Now < _pausedUntil) return;
+            // 1.9.30: el hueco de abajo en las ventanas maximizadas suele ser porque el Explorador le sacó el
+            // "ocultar automáticamente" a su barra y Windows le reserva el alto. Volvérselo a poner hace que Windows
+            // devuelva la pantalla completa sin que McBar tenga que pelear con el área de trabajo (que es lo que
+            // sacude las ventanas y lo que lleva a McBar a darse por vencido). Si corrigió algo, salimos: en el
+            // próximo ciclo el área ya va a estar bien.
+            if (Taskbar.ReassertAutohide()) return;
             while (Fixes.Count > 0 && (DateTime.Now - Fixes.Peek()).TotalSeconds > 30) Fixes.Dequeue();
             foreach (var m in Monitors.All())
             {

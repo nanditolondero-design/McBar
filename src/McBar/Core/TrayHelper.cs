@@ -24,7 +24,9 @@ namespace McBar.Core
 
         // ---------- lado McBar (normal): servidor de la tubería ----------
         private static volatile StreamWriter? _writer;
-        private static bool _serverRunning;
+        private static volatile bool _serverRunning;
+        private static volatile NamedPipeServerStream? _server; // 1.9.30: para poder destrabar WaitForConnection al frenar
+        private static readonly object _startLock = new object();
         private static readonly ManualResetEvent _reset = new ManualResetEvent(false);
 
         public static bool Ready => _writer != null;
@@ -32,28 +34,49 @@ namespace McBar.Core
         /// <summary>Deja la tubería lista y esperando que el ayudante se conecte. Se llama al arrancar (si está activado).</summary>
         public static void StartServer()
         {
-            if (_serverRunning) return;
-            _serverRunning = true;
-            new Thread(() =>
+            lock (_startLock)
             {
-                while (_serverRunning)
+                if (_serverRunning) return;
+                _serverRunning = true;
+            }
+            new Thread(ServerLoop) { IsBackground = true, Name = "McBar.TrayPipe" }.Start();
+        }
+
+        private static void ServerLoop()
+        {
+            bool loggedBusy = false;
+            while (_serverRunning)
+            {
+                NamedPipeServerStream? server = null;
+                try
                 {
-                    NamedPipeServerStream? server = null;
-                    try
-                    {
-                        server = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte);
-                        server.WaitForConnection();
-                        _writer = new StreamWriter(server) { AutoFlush = true };
-                        Log.Write("Ayudante del systray: conectado.");
-                        _reset.Reset();
-                        _reset.WaitOne(); // se queda hasta que un envío falle (se cortó) o se apague
-                        _writer = null;
-                    }
-                    catch (Exception ex) { Log.Write("Ayudante (servidor): " + ex.Message); Thread.Sleep(1500); }
-                    finally { try { server?.Dispose(); } catch { } }
+                    // 1.9.30: Asíncrona para que Dispose() (desde Stop) destrabe WaitForConnection y no quede un hilo colgado
+                    // reteniendo la única instancia de la tubería (era lo que causaba "todas las instancias en uso").
+                    server = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                    _server = server;
+                    server.WaitForConnection();
+                    if (!_serverRunning) break;
+                    loggedBusy = false;
+                    _writer = new StreamWriter(server) { AutoFlush = true };
+                    Log.Write("Ayudante del systray: conectado.");
+                    _reset.Reset();
+                    _reset.WaitOne(); // se queda hasta que un envío falle (se cortó) o se apague
+                    _writer = null;
                 }
-            })
-            { IsBackground = true, Name = "McBar.TrayPipe" }.Start();
+                catch (Exception ex)
+                {
+                    if (!_serverRunning) break;
+                    if (!loggedBusy) { Log.Write("Ayudante (servidor): " + ex.Message); loggedBusy = true; } // 1.9.30: una sola vez, no spam
+                    Thread.Sleep(3000);
+                }
+                finally
+                {
+                    _writer = null;
+                    try { server?.Dispose(); } catch { }
+                    if (ReferenceEquals(_server, server)) _server = null;
+                }
+            }
+            _server = null;
         }
 
         /// <summary>Le pide al ayudante que reenvíe un mensaje a una ventana que corre como administrador.</summary>
@@ -70,6 +93,8 @@ namespace McBar.Core
             _serverRunning = false;
             _reset.Set();
             _writer = null;
+            try { _server?.Dispose(); } catch { } // 1.9.30: destraba WaitForConnection para que el hilo salga y suelte la tubería
+            _server = null;
         }
 
         // ---------- activar / desactivar (desde Preferencias) ----------

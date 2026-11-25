@@ -85,6 +85,22 @@ namespace McBar.Native
                 if (Win32.IsWindowVisible(h)) Win32.ShowWindow(h, Win32.SW_HIDE);
         }
 
+        /// <summary>
+        /// 1.9.30: si el Explorador le sacó el "ocultar automáticamente" a su barra, Windows vuelve a reservarle el
+        /// alto y las ventanas maximizadas quedan con un hueco abajo. Esto se lo vuelve a poner (sin pelear con el
+        /// área de trabajo: con auto-ocultar, es Windows el que devuelve la pantalla completa). Devuelve true si tuvo
+        /// que corregirlo.
+        /// </summary>
+        public static bool ReassertAutohide()
+        {
+            if (!IsHiddenByUs || TemporarilyShown) return false;
+            if ((GetState() & ABS_AUTOHIDE) != 0) return false; // ya está en auto-ocultar
+            SetState(ABS_AUTOHIDE);
+            Enforce();
+            Log.Write("La barra de Windows había dejado de auto-ocultarse; McBar se lo volvió a poner.");
+            return true;
+        }
+
         public static void Restore()
         {
             var s = SettingsStore.Current;

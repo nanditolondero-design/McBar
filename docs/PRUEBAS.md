@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.30
+- [ ] Maximizar varias ventanas (Explorador, navegador, etc.) → usan toda la pantalla, sin hueco abajo y sin el salto/reacomodo raro.
+- [ ] Si aparece el hueco abajo, en el registro debería figurar "La barra de Windows había dejado de auto-ocultarse; McBar se lo volvió a poner" y corregirse solo.
+- [ ] Prender/apagar varias veces "Permitir abrir íconos de apps que corren como administrador" → el registro ya no se llena de "Todas las instancias de canalización están en uso".
+
 ### Versión 1.9.29
 - [ ] Preferencias → Bandeja del sistema → prender "Permitir abrir íconos de apps que corren como administrador (pide permiso una sola vez)". Windows pide permiso **una vez** (para crear la tarea). Después, tocar un ícono que corre como admin (ej. NVIDIA) → abre la app / muestra el menú. En el log: "Ayudante del systray: conectado".
 - [ ] **Reiniciar la PC** con la opción prendida → el ayudante arranca solo al iniciar sesión, **sin pedir permiso**, y los íconos de apps-administrador siguen funcionando.
