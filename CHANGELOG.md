@@ -1,7 +1,7 @@
 # Cambios
 
 ## 1.9.41 — 25/11/2026 (arreglo del build)
-- **El build fallaba** (`Taskbar.ShowParked`, `HideParked`, `TrayIcon.UiaName`, `UiaElement` no existen). El `Native/TrayUia.cs` de la 1.9.34–1.9.37 seguía en el repo porque subir mc.zip no borra archivos. Ahora ese archivo viene vacío y deja de compilarse el código viejo.
+- **El build fallaba** (`Taskbar.ShowParked`, `HideParked`, `TrayIcon.UiaName`, `UiaElement` no existen). El `Native/TrayUia.cs` de la 1.9.34–1.9.37 seguía en el repo porque subir mc.zip no borra archivos. Ahora ese archivo viene vacío y deja de compilarse el código viejo. Lo mismo con `tests/McBar.Tests/Stage27Tests.cs` (pruebas de la lectura por UI Automation), que también quedó vacío.
 
 ## 1.9.40 — 25/11/2026 (se quita por completo la lectura por UI Automation)
 - **Se elimina la lectura de la bandeja por UI Automation (1.9.34 a 1.9.37).** El registro mostró que no encontraba ningún ícono de app y que, en cada lectura, mostraba y escondía la barra de Windows: el Explorador cambiaba el área de trabajo, McBar la corregía una y otra vez, la interfaz llegó a trabarse 6 segundos en `DockWindow.ApplyGeometry` y el menú de McBar quedaba inaccesible. Se borran el lector, el "estacionar la barra", el ajuste "Experimental…" y los campos que usaba.
