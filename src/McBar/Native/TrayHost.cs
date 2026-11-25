@@ -299,12 +299,11 @@ namespace McBar.Native
         {
             if (icon.IsWindowsSystem) return; // nunca tocar los íconos propios de Windows
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
-            // 1.9.17: la barra de McBar nunca toma el foco, así que Windows le prohíbe al programa traer su menú
-            // al frente (por eso no aparecía o se cerraba solo). McBar engancha su hilo al del programa, deja que
-            // cualquiera pase al frente y recién ahí reenvía el clic; al terminar se desengancha.
-            uint me = Win32.GetCurrentThreadId();
-            uint tgt = Win32.GetWindowThreadProcessId(icon.HWnd, out _);
-            bool attached = tgt != 0 && tgt != me && Win32.AttachThreadInput(me, tgt, true);
+            // 1.9.19: la barra de McBar nunca toma el foco, así que Windows le prohíbe al programa traer su menú
+            // al frente (por eso no abría ni mostraba menú). Se baja a cero el "tiempo de bloqueo de foco" para que
+            // cualquier programa pueda pasar al frente; esto sí dura hasta que el programa procesa el clic (el
+            // AttachThreadInput de la 1.9.17 se desenganchaba antes, por eso no servía).
+            RelaxForegroundLock();
             Win32.AllowSetForegroundWindow(ASFW_ANY);
             Win32.AllowSetForegroundWindow(Win32.ProcessOf(icon.HWnd)); // para que pueda mostrar su menú al frente
             // 1.9.15: la interfaz ya manda "abajo" al apretar y "arriba" al soltar (dos llamadas), así que acá va
@@ -337,11 +336,33 @@ namespace McBar.Native
                 }
                 Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
             }
-            if (attached) Win32.AttachThreadInput(me, tgt, false); // 1.9.17: desenganchar
+        }
+
+        // 1.9.19: baja el bloqueo de foco (una vez) para que los programas del área de notificaciones puedan
+        // mostrar su menú o abrir su ventana. Se guarda el valor anterior y se restaura al cerrar.
+        private bool _fgLockSaved;
+        private uint _fgLockOld;
+        private void RelaxForegroundLock()
+        {
+            if (_fgLockSaved) return;
+            try
+            {
+                Win32.SystemParametersInfoGetUint(Win32.SPI_GETFOREGROUNDLOCKTIMEOUT, 0, out _fgLockOld, 0);
+                Win32.SystemParametersInfoSetPtr(Win32.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, IntPtr.Zero, 0);
+                _fgLockSaved = true;
+            }
+            catch (Exception ex) { Log.Write("Bloqueo de foco: " + ex.Message); }
+        }
+        private void RestoreForegroundLock()
+        {
+            if (!_fgLockSaved) return;
+            try { Win32.SystemParametersInfoSetPtr(Win32.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, (IntPtr)_fgLockOld, 0); } catch { }
+            _fgLockSaved = false;
         }
 
         public void Dispose()
         {
+            RestoreForegroundLock(); // 1.9.19: devolver el bloqueo de foco como estaba
             var t = _trayThread;
             if (t != null)
             {

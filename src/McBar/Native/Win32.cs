@@ -224,6 +224,10 @@ namespace McBar.Native
         [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
         [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vk);
         [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoRect(uint action, uint param, ref RECT rect, uint winIni);
+        // 1.9.19: tiempo de bloqueo de foco (para que los programas del área de notificaciones puedan mostrar su menú)
+        public const uint SPI_GETFOREGROUNDLOCKTIMEOUT = 0x2000, SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001;
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoGetUint(uint action, uint param, out uint pv, uint winIni);
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoSetPtr(uint action, uint param, IntPtr pv, uint winIni);
         [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] public static extern bool SystemParametersInfoAnim(uint action, uint param, ref ANIMATIONINFO info, uint winIni);
         [DllImport("user32.dll")] public static extern int SetWindowRgn(IntPtr hwnd, IntPtr hRgn, bool redraw);
         [DllImport("gdi32.dll")] public static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int w, int h);
