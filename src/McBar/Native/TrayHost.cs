@@ -32,6 +32,7 @@ namespace McBar.Native
 
         private const uint WS_POPUP = 0x80000000;
         private const uint WS_EX_TOOLWINDOW = 0x80, WS_EX_TOPMOST = 0x8;
+        private const uint ASFW_ANY = 0xFFFFFFFF; // 1.9.17: permitir que cualquier proceso pase al frente
         private const int WM_LBUTTONDOWN = 0x201, WM_LBUTTONUP = 0x202, WM_LBUTTONDBLCLK = 0x203,
                           WM_RBUTTONDOWN = 0x204, WM_RBUTTONUP = 0x205, WM_CONTEXTMENU = 0x7B, NIN_SELECT = 0x400;
 
@@ -298,6 +299,13 @@ namespace McBar.Native
         {
             if (icon.IsWindowsSystem) return; // nunca tocar los íconos propios de Windows
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
+            // 1.9.17: la barra de McBar nunca toma el foco, así que Windows le prohíbe al programa traer su menú
+            // al frente (por eso no aparecía o se cerraba solo). McBar engancha su hilo al del programa, deja que
+            // cualquiera pase al frente y recién ahí reenvía el clic; al terminar se desengancha.
+            uint me = Win32.GetCurrentThreadId();
+            uint tgt = Win32.GetWindowThreadProcessId(icon.HWnd, out _);
+            bool attached = tgt != 0 && tgt != me && Win32.AttachThreadInput(me, tgt, true);
+            Win32.AllowSetForegroundWindow(ASFW_ANY);
             Win32.AllowSetForegroundWindow(Win32.ProcessOf(icon.HWnd)); // para que pueda mostrar su menú al frente
             // 1.9.15: la interfaz ya manda "abajo" al apretar y "arriba" al soltar (dos llamadas), así que acá va
             // un solo mensaje por llamada. Para los íconos nuevos (versión 4) el menú se pide con WM_CONTEXTMENU
@@ -329,6 +337,7 @@ namespace McBar.Native
                 }
                 Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
             }
+            if (attached) Win32.AttachThreadInput(me, tgt, false); // 1.9.17: desenganchar
         }
 
         public void Dispose()

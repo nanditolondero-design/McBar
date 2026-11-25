@@ -90,10 +90,24 @@ namespace McBar.Panels
                     grid.Children.Add(icon);
                     grid.ToolTip = App.Tracker.AppNameFor(s.Sample.Hwnd);
                 }
+                // 1.9.16: crucita para cerrar la app (aparece al pasar el mouse por la miniatura), como en macOS
+                var close = new Border
+                {
+                    Width = 20, Height = 20, CornerRadius = new CornerRadius(10),
+                    HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+                    Margin = new Thickness(-6, -6, 0, 0), Cursor = Cursors.Hand, Opacity = 0, Visibility = Visibility.Collapsed,
+                    Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x3A, 0x3E)),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF)), BorderThickness = new Thickness(1),
+                    Child = new TextBlock { Text = "×", FontSize = 13, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) },
+                    ToolTip = "Cerrar"
+                };
+                close.MouseLeftButtonUp += (_, e) => { e.Handled = true; StageManager.Close(stage); };
+                grid.Children.Add(close);
+
                 var scale = new ScaleTransform(1, 1);
                 grid.RenderTransform = scale;
-                grid.MouseEnter += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); };
-                grid.MouseLeave += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); };
+                grid.MouseEnter += (_, _) => { close.Visibility = Visibility.Visible; close.IsHitTestVisible = true; close.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(120))); };
+                grid.MouseLeave += (_, _) => { close.IsHitTestVisible = false; close.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120))); };
                 grid.MouseLeftButtonUp += (_, e) => { e.Handled = true; StageManager.Bring(stage); };
                 // 1.9.14: resorte al arrastrar (como la barra de Windows): se para un momento sobre la miniatura
                 // con un archivo y esa ventana viene al frente para soltarlo adentro.

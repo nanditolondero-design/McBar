@@ -128,6 +128,15 @@ namespace McBar.Core
             if (changed) _strip?.Refresh();
         }
 
+        /// <summary>1.9.16: cierra todas las ventanas de esa app (la crucita de la miniatura) y la saca de la franja.</summary>
+        internal static void Close(Stage s)
+        {
+            foreach (var h in s.Windows.ToList()) if (Win32.IsWindow(h)) WindowOps.Close(h);
+            _recent.Remove(s);
+            _strip?.Refresh();
+            if (_recent.Count == 0) _strip?.SetVisible(false);
+        }
+
         /// <summary>Trae de vuelta una app de la franja.</summary>
         internal static void Bring(Stage s)
         {

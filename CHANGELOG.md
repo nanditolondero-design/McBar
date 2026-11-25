@@ -1,5 +1,11 @@
 # Cambios
 
+## 1.9.17 — 24/11/2026 (systray)
+- **Íconos del área de notificaciones que no abrían ni mostraban menú**: como la barra de McBar nunca toma el foco, Windows no dejaba que el programa trajera su menú al frente. Ahora McBar engancha su hilo al del programa y le habilita el paso al frente antes de reenviar el clic, que es lo que hace la barra de Windows. El registro de diagnóstico de la 1.9.15 sigue estando por si algún programa necesita algo más.
+
+## 1.9.16 — 24/11/2026
+- **Cerrar apps desde el Organizador visual (Stage Manager)**: cada miniatura de la franja ahora tiene una crucita arriba a la izquierda (aparece al pasar el mouse por encima) para cerrar esa app, como en macOS. Cierra todas las ventanas de esa app y la saca de la franja.
+
 ## 1.9.15 — 24/11/2026 (diagnóstico del systray)
 - Se revierte el cambio de la 1.9.14 en los clics del área de notificaciones: duplicaba el "apretar" y podía empeorar las cosas. Vuelve a la secuencia correcta (un mensaje por acción).
 - Se agrega un registro de diagnóstico: cada vez que tocás un ícono del área de notificaciones queda anotado en `mcbar.log` qué se le reenvía y a qué ventana. Sirve para encontrar por qué algunos programas no abren ni muestran menú.

@@ -247,6 +247,12 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.17 (24/11/2026)
+`TrayHost.Send`: antes de reenviar, `AttachThreadInput(hilo McBar, hilo del dueño del ícono, true)` + `AllowSetForegroundWindow(ASFW_ANY)` para saltear el bloqueo de foco (la barra no toma foco, así que el programa no podía hacer `SetForegroundWindow` para su menú); se desengancha al final. Sigue el log de la 1.9.15.
+
+## 1.9.16 (24/11/2026)
+`StageManager.Close(Stage)`: `WindowOps.Close` (WM_CLOSE) a cada ventana de la pila, la saca de `_recent` y refresca la franja. `StageStrip`: crucita (Border redondo con "×") por miniatura, oculta y sin recibir clics; aparece al `MouseEnter` (opacity + IsHitTestVisible) y se va al `MouseLeave`; su clic llama a `Close`, el del resto de la miniatura sigue siendo `Bring`.
+
 ## 1.9.15 (24/11/2026)
 Revertida la secuencia de clics de la 1.9.14 en `TrayHost.Send` (la interfaz ya manda abajo/arriba por separado, así que acá va un mensaje por llamada). Se agrega `Log.Write` en `Send` con click, hwnd, uid, versión, mensaje de callback, IsWindowsSystem y los mensajes reenviados, para diagnosticar los íconos que no responden. Pendiente de confirmar con el log si el problema es el bloqueo de foco al mostrar el menú.
 
