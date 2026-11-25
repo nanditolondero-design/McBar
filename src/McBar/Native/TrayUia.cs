@@ -270,8 +270,8 @@ namespace McBar.Native
         /// </summary>
         private static void MouseClick(AutomationElement el, bool right, string name)
         {
-            Taskbar.ShowTemporarily();
-            Thread.Sleep(450); // dejar que la barra termine de aparecer
+            // 1.9.36: ya NO se usa Win+B ni se deja la barra de Windows a la vista (dejaba la barra trabada).
+            // La barra solo está "estacionada" fuera de pantalla; si el botón no está a la vista, no se hace nada.
             System.Windows.Rect r;
             try { r = el.Current.BoundingRectangle; }
             catch { Log.Write("Tray UIA: no se pudo leer la posición de " + name); return; }

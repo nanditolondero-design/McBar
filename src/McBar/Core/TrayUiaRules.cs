@@ -20,7 +20,8 @@ namespace McBar.Core
         private static readonly Regex SystemName = new Regex(
             @"^\s*(volume|volumen|sound|sonido|speakers|altavoces|battery|bater[ií]a|wi-?fi|internet|clock|reloj|" +
             @"notification center|centro de notificaciones|show hidden icons|mostrar iconos ocultos|mostrar [ií]conos ocultos|" +
-            @"input indicator|indicador de entrada|safely remove hardware|quitar hardware)",
+            @"input indicator|indicador de entrada|safely remove hardware|quitar hardware|" +
+            @"red |potencia|power |network |mostrar escritorio|show desktop|pila|micr[oó]fono|microphone)",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private static readonly string[] SystemIdParts = { "Chevron", "Clock", "ControlCenter", "NotificationCenter", "Omni", "Show Desktop", "ShowDesktop" };
@@ -32,6 +33,10 @@ namespace McBar.Core
             className ??= ""; automationId ??= "";
             if (className.IndexOf("Omni", StringComparison.OrdinalIgnoreCase) >= 0) return false;
             if (className.IndexOf("Chevron", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            // 1.9.37: en Windows 11 en español los botones del sistema (red, batería, mostrar escritorio) traen la clase
+            // SystemTray.AccentButton / SystemTray.ShowDesktopButton y el mismo Id "SystemTrayIcon" que las apps.
+            if (className.IndexOf("Accent", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            if (className.IndexOf("ShowDesktop", StringComparison.OrdinalIgnoreCase) >= 0) return false;
             foreach (var p in SystemIdParts)
                 if (automationId.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0 &&
                     !string.Equals(automationId, IconAutomationId, StringComparison.OrdinalIgnoreCase)) return false;

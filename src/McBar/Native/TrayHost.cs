@@ -337,7 +337,7 @@ namespace McBar.Native
         private DateTime _lastUia = DateTime.MinValue;
         private void ImportUia(bool force = false)
         {
-            if (!SettingsStore.Current.TrayUia) return;
+            if (!SettingsStore.Current.TrayUiaEnabled) return;
             // 1.9.35: cada lectura estaciona la barra de Windows un instante, así que se hace cada ~45 s (no cada 10 s)
             if (!force && (DateTime.Now - _lastUia).TotalSeconds < 45) return;
             if (Interlocked.Exchange(ref _uiaRunning, 1) == 1) return;
@@ -383,7 +383,10 @@ namespace McBar.Native
                 if (_icons.Any(i => !i.FromUia && (TrayUiaRules.SameIcon(i.Tooltip, e.Name) ||
                                                     (i.Tooltip.Length == 0 && TrayUiaRules.SameIcon(System.IO.Path.GetFileNameWithoutExtension(i.ExePath), e.Name))))) continue;
                 owners.TryGetValue(e.Name, out var exe);
-                if (!string.IsNullOrEmpty(exe) && _icons.Any(i => !i.FromUia && string.Equals(i.ExePath, exe, StringComparison.OrdinalIgnoreCase))) continue;
+                // 1.9.36: sin programa dueño identificado no se importa (antes salían círculos con una letra: R, P, M…
+                // que eran botones del propio Windows y al tocarlos abrían la barra de Windows)
+                if (string.IsNullOrEmpty(exe)) { Log.Write($"Bandeja UIA: se ignora '{e.Name}' (no se encontró su programa)"); continue; }
+                if (_icons.Any(i => !i.FromUia && string.Equals(i.ExePath, exe, StringComparison.OrdinalIgnoreCase))) continue;
                 var icon = new TrayIcon
                 {
                     Id = "u:" + TrayUiaRules.Normalize(e.Name),
@@ -392,25 +395,18 @@ namespace McBar.Native
                     UiaElement = e.Element,
                     UiaOverflow = e.Overflow,
                     Tooltip = e.Name,
-                    ExePath = exe ?? ""
+                    ExePath = exe
                 };
+                if (icon.IsWindowsSystem) continue;
                 _icons.Add(icon);
-                Log.Write($"Bandeja: importado por UI Automation '{e.Name}' (id={e.AutomationId}, clase={e.ClassName}) exe={(string.IsNullOrEmpty(exe) ? "?" : System.IO.Path.GetFileName(exe))}");
-                if (!string.IsNullOrEmpty(exe) && !icon.IsWindowsSystem)
+                Log.Write($"Bandeja: importado por UI Automation '{e.Name}' (id={e.AutomationId}, clase={e.ClassName}) exe={System.IO.Path.GetFileName(exe)}");
+                var captured = icon;
+                McBar.Core.IconLoader.Request(exe, 32, img =>
                 {
-                    var captured = icon;
-                    // el dibujo llega en el hilo de esta bandeja; el ícono aparece cuando está listo
-                    McBar.Core.IconLoader.Request(exe, 32, img =>
-                    {
-                        captured.Icon = img ?? MakeLetterIcon(captured.UiaName);
-                        NotifyChanged();
-                    });
-                }
-                else if (!icon.IsWindowsSystem)
-                {
-                    icon.Icon = MakeLetterIcon(e.Name);
-                    changed = true;
-                }
+                    if (img == null) { _icons.Remove(captured); return; }
+                    captured.Icon = img;
+                    NotifyChanged();
+                });
             }
             if (changed) NotifyChanged();
         }

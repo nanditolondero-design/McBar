@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.37 — 25/11/2026 (UI Automation: se descartan los botones del sistema en español)
+- Con el registro de la 1.9.35 se vio que, en Windows 11 en español, los botones de red, batería y "Mostrar escritorio" tienen la clase `SystemTray.AccentButton` / `SystemTray.ShowDesktopButton` y el mismo Id que las apps. Ahora se descartan por clase y por nombre.
+
+## 1.9.36 — 25/11/2026 (se apaga la lectura experimental por UI Automation)
+- **Aparecían íconos con una R, una P y una M que al tocarlos abrían la barra de Windows.** Eran botones del propio Windows (red, batería, etc., en español) que la lectura por UI Automation tomaba por apps. Ahora solo se importa un ícono si se encuentra el programa al que pertenece; si no, se ignora (y queda anotado en el registro).
+- **Ya no se usa Win+B ni se deja la barra de Windows a la vista**: eso dejaba la barra trabada.
+- **La lectura por UI Automation pasa a ser experimental y viene APAGADA.** Se prende en Preferencias → Bandeja del sistema → "Experimental: leer también la bandeja de Windows 11 (UI Automation)".
+
 ## 1.9.35 — 25/11/2026 (bandeja UI Automation: la barra escondida no mostraba nada)
 - **UI Automation no veía ningún ícono.** El registro de la 1.9.34 mostró que, con la barra de Windows escondida (`SW_HIDE`), Windows no arma el contenido de la bandeja y el árbol quedaba vacío. Ahora, para cada lectura, McBar "estaciona" la barra un instante (visible pero fuera de pantalla gracias al auto-ocultar, sin Win+B), la lee con reintentos y la vuelve a esconder. La lectura se hace cada ~45 s (antes 10 s) para no tocar la barra tan seguido.
 

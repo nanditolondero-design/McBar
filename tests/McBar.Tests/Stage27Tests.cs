@@ -20,6 +20,10 @@ namespace McBar.Tests
             Assert.False(TrayUiaRules.IsAppIcon("Wi-Fi, Volume, Battery", "ControlCenterButton", "SystemTray.OmniButton"));
             Assert.False(TrayUiaRules.IsAppIcon("Show Hidden Icons", "NotificationChevron", "SystemTray.Button"));
             Assert.False(TrayUiaRules.IsAppIcon("Volumen: 40%", "SystemTrayIcon", "SystemTray.NormalButton"));
+            // nombres y clases reales vistos en un Windows 11 en español (registro de McBar 1.9.35)
+            Assert.False(TrayUiaRules.IsAppIcon("Red ConsultorioOdontologico2.4GHz", "SystemTrayIcon", "SystemTray.AccentButton"));
+            Assert.False(TrayUiaRules.IsAppIcon("Potencia Estado de la batería: 72% disponible (conectado)", "SystemTrayIcon", "SystemTray.AccentButton"));
+            Assert.False(TrayUiaRules.IsAppIcon("Mostrar escritorio", "SystemTrayIcon", "SystemTray.ShowDesktopButton"));
             Assert.False(TrayUiaRules.IsAppIcon("", "SystemTrayIcon", "SystemTray.NormalButton"));
             Assert.False(TrayUiaRules.IsAppIcon("Algo", "OtroId", "Windows.UI.Xaml.Button"));
         }
