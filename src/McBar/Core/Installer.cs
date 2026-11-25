@@ -188,6 +188,14 @@ namespace McBar.Core
             return list;
         }
 
+        /// <summary>1.9.29: crea (o rehace) el acceso directo del menú Inicio apuntando a la copia que está corriendo.
+        /// Sirve también cuando se está probando sin instalar, para tener el ícono en el menú Inicio igual.</summary>
+        public static bool EnsureStartMenuShortcut()
+        {
+            var exe = IsRunningInstalled ? InstalledExe : (Environment.ProcessPath ?? InstalledExe);
+            return CreateShortcut(StartMenuLink, exe, "Dock y barra estilo macOS");
+        }
+
         public static bool CreateShortcut(string linkPath, string target, string description)
         {
             // 1.9.18: forma nativa (IShellLink). El WScript.Shell por COM fallaba sin aviso en la app de un solo

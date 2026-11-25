@@ -237,7 +237,12 @@ namespace McBar.Panels
             tray.Children.Add(Switch("Mostrar los íconos de las apps en la barra de McBar", s.UseOwnTray, v => s.UseOwnTray = v));
             tray.Children.Add(Switch("Íconos en blanco y negro (estilo Mac)", s.TrayMonochrome, v => s.TrayMonochrome = v));
             // 1.9.28: ayudante para los íconos de apps que corren como administrador (NVIDIA y similares)
-            tray.Children.Add(Switch("Permitir abrir íconos de apps que corren como administrador (pide permiso al iniciar)", s.TrayAdminHelper, v => s.TrayAdminHelper = v));
+            tray.Children.Add(Switch("Permitir abrir íconos de apps que corren como administrador (pide permiso una sola vez)", s.TrayAdminHelper, v =>
+            {
+                s.TrayAdminHelper = v;
+                // 1.9.29: al prender registra la tarea programada del ayudante (pide permiso una vez); al apagar la saca.
+                if (v) McBar.Core.TrayHelper.Enable(); else McBar.Core.TrayHelper.Disable();
+            }));
             tray.Children.Add(TrayList(s));
             root.Children.Add(Group(tray));
 
@@ -269,6 +274,13 @@ namespace McBar.Panels
             root.Children.Add(Spaced(Group(GameModeBox())));
             root.Children.Add(Spaced(Group(WallpaperBox(s))));
             root.Children.Add(Group(BackupBox()));
+
+            // ---------- Instalación (1.9.29) ----------
+            if (!Edition.IsStore)
+            {
+                root.Children.Add(Header("Instalación"));
+                root.Children.Add(Group(InstallBox()));
+            }
 
             // ---------- Diagnóstico (0.9.0) ----------
             root.Children.Add(Header("Diagnóstico"));
@@ -823,6 +835,37 @@ namespace McBar.Panels
             g.Children.Add(t);
             g.Children.Add(cb);
             return g;
+        }
+
+        /// <summary>Instalación (1.9.29): acceso directo en el menú Inicio y desinstalar McBar.</summary>
+        private UIElement InstallBox()
+        {
+            var sp = new StackPanel();
+            var state = new TextBlock { FontSize = 12, Margin = new Thickness(0, 2, 0, 6), TextWrapping = TextWrapping.Wrap,
+                Text = App.IsTrying ? "McBar se está ejecutando sin instalar." : "McBar está instalado en esta PC." };
+            state.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            sp.Children.Add(state);
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
+            row.Children.Add(Btn("Crear acceso directo en el menú Inicio", () =>
+            {
+                bool ok = Installer.EnsureStartMenuShortcut();
+                McDialog.Info(ok ? "Acceso directo creado" : "No se pudo crear",
+                    ok ? "Ya podés abrir McBar desde el menú Inicio (buscá «McBar»)." : "No se pudo crear el acceso directo. Revisá el registro en Diagnóstico.");
+            }));
+            if (App.IsTrying)
+            {
+                var inst = Btn("Instalar McBar…", () => App.InstallNow());
+                inst.SetResourceReference(StyleProperty, "McAccentButton");
+                row.Children.Add(inst);
+            }
+            sp.Children.Add(row);
+
+            var uninstall = Btn("Desinstalar McBar…", () => App.UninstallNow(), new Thickness(0, 10, 6, 0));
+            uninstall.HorizontalAlignment = HorizontalAlignment.Left;
+            sp.Children.Add(uninstall);
+            sp.Children.Add(Tip("El acceso directo del menú Inicio apunta a la copia que está corriendo. «Desinstalar» devuelve la barra de Windows tal como estaba y borra McBar de esta PC; tus ajustes quedan guardados por si lo volvés a instalar."));
+            return sp;
         }
 
         /// <summary>Diagnóstico (0.9.0): consumo de McBar en vivo y carpeta de informes de errores.</summary>

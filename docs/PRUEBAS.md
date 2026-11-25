@@ -240,6 +240,15 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.29
+- [ ] Preferencias → Bandeja del sistema → prender "Permitir abrir íconos de apps que corren como administrador (pide permiso una sola vez)". Windows pide permiso **una vez** (para crear la tarea). Después, tocar un ícono que corre como admin (ej. NVIDIA) → abre la app / muestra el menú. En el log: "Ayudante del systray: conectado".
+- [ ] **Reiniciar la PC** con la opción prendida → el ayudante arranca solo al iniciar sesión, **sin pedir permiso**, y los íconos de apps-administrador siguen funcionando.
+- [ ] Apagar la opción → Windows pide permiso una vez (para sacar la tarea). Al reiniciar ya no arranca el ayudante.
+- [ ] Revisar en el Programador de tareas de Windows que existe/desaparece la tarea "McBar Tray Helper" al prender/apagar.
+- [ ] Preferencias → Instalación → "Crear acceso directo en el menú Inicio" → aparece McBar en el menú Inicio (buscar «McBar») y lo abre. Probar también estando sin instalar.
+- [ ] Preferencias → Instalación → "Desinstalar McBar…" → pide confirmación; al aceptar, vuelve la barra de Windows, desaparece el acceso directo y McBar se cierra. En "Aplicaciones instaladas" de Windows ya no figura.
+- [ ] Versión de Store: la sección "Instalación" no aparece en Preferencias.
+
 ### Versión 1.9.28
 - [ ] Preferencias → Bandeja del sistema → prender "Permitir abrir íconos de apps que corren como administrador". Tocar un ícono que corre como admin (ej. NVIDIA, si aparece) → Windows pide permiso una vez (cartel de administrador); después ese ícono abre la app / muestra el menú. En el log: "Ayudante del systray: conectado".
 - [ ] Apagado (de fábrica): no pide permiso y esos íconos siguen sin responder (como antes). Al salir de McBar, la copia ayudante se cierra (no queda un McBar.exe de más).

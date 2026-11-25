@@ -1,11 +1,12 @@
 // McBar — Creado por Andrés Londero
-// 1.9.28: Ayudante del área de notificaciones. Windows no deja que un programa normal (McBar) le mande el clic
-// a un ícono de un programa que corre COMO ADMINISTRADOR (NVIDIA y similares). La solución: McBar lanza una vez
-// una copia de sí mismo como administrador, en "modo ayudante" (McBar.exe --trayhelper <pid>). El ayudante,
-// al ser administrador, SÍ puede reenviarles el clic. Se comunican por una tubería con nombre.
+// 1.9.29: Ayudante del área de notificaciones, con TAREA PROGRAMADA (pide permiso una sola vez).
+// Windows no deja que un programa normal (McBar) le mande el clic a un ícono de un programa que corre COMO
+// ADMINISTRADOR. Solución: una copia de McBar en "modo ayudante" (McBar.exe --trayhelper), que corre como
+// administrador y sí puede reenviarles el clic.
 //
-// La tubería la crea McBar (normal, integridad media) y el ayudante (administrador, integridad alta) se conecta:
-// alto puede abrir lo que creó medio, así que no hay problema de permisos.
+// Para no pedir permiso cada vez: se registra una tarea programada que arranca el ayudante al iniciar sesión
+// "con privilegios máximos" (el Programador de tareas corre eso como administrador SIN cartel). Crear la tarea
+// pide permiso una sola vez. McBar (normal) deja la tubería lista y el ayudante se conecta cuando arranca.
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -19,77 +20,117 @@ namespace McBar.Core
     public static class TrayHelper
     {
         private const string PipeName = "McBarTrayHelper";
+        private const string TaskName = "McBar Tray Helper";
 
-        // ---------- lado McBar (normal): servidor de la tubería + lanzar al ayudante ----------
-        private static NamedPipeServerStream? _server;
-        private static StreamWriter? _writer;
-        private static Process? _helper;
-        private static bool _starting;
+        // ---------- lado McBar (normal): servidor de la tubería ----------
+        private static volatile StreamWriter? _writer;
+        private static bool _serverRunning;
+        private static readonly ManualResetEvent _reset = new ManualResetEvent(false);
 
-        /// <summary>true si el ayudante ya está conectado y listo para reenviar.</summary>
         public static bool Ready => _writer != null;
 
-        /// <summary>Lanza el ayudante como administrador (una sola vez; pide permiso a Windows).</summary>
-        public static void EnsureStarted()
+        /// <summary>Deja la tubería lista y esperando que el ayudante se conecte. Se llama al arrancar (si está activado).</summary>
+        public static void StartServer()
         {
-            if (_writer != null) return;
-            if (_helper != null && !_helper.HasExited) return;
-            if (_starting) return;
-            _starting = true;
-            try
+            if (_serverRunning) return;
+            _serverRunning = true;
+            new Thread(() =>
             {
-                _server?.Dispose();
-                _server = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                var psi = new ProcessStartInfo(Environment.ProcessPath ?? "", "--trayhelper " + Environment.ProcessId)
+                while (_serverRunning)
                 {
-                    UseShellExecute = true,
-                    Verb = "runas" // pide permiso de administrador (cartel de Windows)
-                };
-                _helper = Process.Start(psi);
-                _server.BeginWaitForConnection(ar =>
-                {
-                    try { _server.EndWaitForConnection(ar); _writer = new StreamWriter(_server) { AutoFlush = true }; Log.Write("Ayudante del systray: conectado."); }
-                    catch (Exception ex) { Log.Write("Ayudante del systray (conexión): " + ex.Message); }
-                }, null);
-            }
-            catch (Exception ex) { Log.Write("Ayudante del systray (lanzar): " + ex.Message); _helper = null; }
-            finally { _starting = false; }
+                    NamedPipeServerStream? server = null;
+                    try
+                    {
+                        server = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte);
+                        server.WaitForConnection();
+                        _writer = new StreamWriter(server) { AutoFlush = true };
+                        Log.Write("Ayudante del systray: conectado.");
+                        _reset.Reset();
+                        _reset.WaitOne(); // se queda hasta que un envío falle (se cortó) o se apague
+                        _writer = null;
+                    }
+                    catch (Exception ex) { Log.Write("Ayudante (servidor): " + ex.Message); Thread.Sleep(1500); }
+                    finally { try { server?.Dispose(); } catch { } }
+                }
+            })
+            { IsBackground = true, Name = "McBar.TrayPipe" }.Start();
         }
 
-        /// <summary>Le pide al ayudante que reenvíe un mensaje a una ventana (que corre como administrador).</summary>
+        /// <summary>Le pide al ayudante que reenvíe un mensaje a una ventana que corre como administrador.</summary>
         public static void Forward(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
             var w = _writer;
-            if (w == null) { EnsureStarted(); return; }
+            if (w == null) return;
             try { w.WriteLine($"{hwnd.ToInt64():X} {msg:X} {wParam.ToInt64():X} {lParam.ToInt64():X}"); }
-            catch
-            {
-                try { _writer = null; _server?.Dispose(); _server = null; } catch { }
-                EnsureStarted();
-            }
+            catch { _writer = null; _reset.Set(); } // se cortó: que el servidor rearme la tubería
         }
 
         public static void Stop()
         {
-            try { _writer?.Dispose(); } catch { }
-            try { _server?.Dispose(); } catch { }
-            try { if (_helper != null && !_helper.HasExited) _helper.Kill(); } catch { }
-            _writer = null; _server = null; _helper = null;
+            _serverRunning = false;
+            _reset.Set();
+            _writer = null;
         }
 
-        // ---------- lado ayudante (administrador): McBar.exe --trayhelper <pid> ----------
-        /// <summary>Se ejecuta cuando McBar se abre como administrador en modo ayudante. No muestra ventanas.</summary>
-        public static void RunServer(int parentPid)
+        // ---------- activar / desactivar (desde Preferencias) ----------
+        /// <summary>Al prender la opción: registra la tarea (pide permiso una vez) y deja la tubería lista.</summary>
+        public static void Enable()
         {
-            // si McBar (el padre) se cierra, el ayudante también
+            StartServer();
+            RunElevated("--installtask");
+        }
+
+        /// <summary>Al apagar la opción: saca la tarea (pide permiso una vez) y corta.</summary>
+        public static void Disable()
+        {
+            RunElevated("--uninstalltask");
+            Stop();
+        }
+
+        private static void RunElevated(string arg)
+        {
             try
             {
-                var parent = Process.GetProcessById(parentPid);
-                parent.EnableRaisingEvents = true;
-                parent.Exited += (_, _) => Environment.Exit(0);
+                Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? "", arg) { UseShellExecute = true, Verb = "runas" });
             }
-            catch { }
+            catch (Exception ex) { Log.Write("Ayudante (permiso): " + ex.Message); }
+        }
 
+        // ---------- modos elevados (McBar.exe --installtask / --uninstalltask) ----------
+        /// <summary>Corre como administrador: crea la tarea de inicio y lanza el ayudante ya mismo. Después sale.</summary>
+        public static void InstallTask()
+        {
+            try
+            {
+                string exe = Environment.ProcessPath ?? "";
+                Schtasks($"/Create /TN \"{TaskName}\" /TR \"\\\"{exe}\\\" --trayhelper\" /SC ONLOGON /RL HIGHEST /F");
+                // arrancarlo ya (somos administrador, así que el hijo también lo es)
+                Process.Start(new ProcessStartInfo(exe, "--trayhelper") { UseShellExecute = false });
+            }
+            catch (Exception ex) { Log.Write("Ayudante (instalar tarea): " + ex.Message); }
+        }
+
+        /// <summary>Corre como administrador: saca la tarea. Después sale.</summary>
+        public static void UninstallTask()
+        {
+            try { Schtasks($"/Delete /TN \"{TaskName}\" /F"); }
+            catch (Exception ex) { Log.Write("Ayudante (sacar tarea): " + ex.Message); }
+        }
+
+        private static void Schtasks(string args)
+        {
+            var p = Process.Start(new ProcessStartInfo("schtasks.exe", args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true });
+            p?.WaitForExit(8000);
+        }
+
+        // ---------- lado ayudante (administrador): McBar.exe --trayhelper ----------
+        public static void RunServer(int parentPid)
+        {
+            if (parentPid > 0)
+            {
+                try { var parent = Process.GetProcessById(parentPid); parent.EnableRaisingEvents = true; parent.Exited += (_, _) => Environment.Exit(0); }
+                catch { }
+            }
             new Thread(() =>
             {
                 while (true)
@@ -97,7 +138,7 @@ namespace McBar.Core
                     try
                     {
                         using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.In);
-                        client.Connect(8000);
+                        client.Connect(10000);
                         using var r = new StreamReader(client);
                         string? line;
                         while ((line = r.ReadLine()) != null)
@@ -111,7 +152,7 @@ namespace McBar.Core
                             Win32.PostMessage(new IntPtr(h), m, new IntPtr(wp), new IntPtr(lp));
                         }
                     }
-                    catch { Thread.Sleep(1000); } // la tubería se cortó: reintentar conectar
+                    catch { Thread.Sleep(1500); } // reintentar conectar
                 }
             })
             { IsBackground = true, Name = "McBar.TrayHelper" }.Start();

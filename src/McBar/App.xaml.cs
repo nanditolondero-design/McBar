@@ -72,6 +72,21 @@ namespace McBar
                 return;
             }
 
+            // 1.9.29: modos elevados que registran/sacan la tarea programada del ayudante (piden permiso una vez).
+            // Los lanza McBar (normal) con "Ejecutar como administrador"; hacen su trabajo y salen enseguida.
+            if (e.Args.Any(a => a.Equals("--installtask", StringComparison.OrdinalIgnoreCase)))
+            {
+                TrayHelper.InstallTask();
+                Shutdown();
+                return;
+            }
+            if (e.Args.Any(a => a.Equals("--uninstalltask", StringComparison.OrdinalIgnoreCase)))
+            {
+                TrayHelper.UninstallTask();
+                Shutdown();
+                return;
+            }
+
             // "McBar.exe --restaurar": devuelve la barra de Windows (y el área de trabajo) a como estaba y sale.
             if (e.Args.Any(a => a.Equals("--restaurar", StringComparison.OrdinalIgnoreCase)))
             {
@@ -434,6 +449,9 @@ namespace McBar
         {
             var host = TrayHost.Start();
             if (host == null) return;
+            // 1.9.29: si el ayudante para apps-administrador está activado, dejamos la tubería lista desde el arranque
+            // para que la copia elevada (la que lanza la tarea programada al iniciar sesión) se pueda conectar.
+            if (SettingsStore.Current.TrayAdminHelper) TrayHelper.StartServer();
             host.Changed += () => TrayChanged?.Invoke();
             host.IconRectProvider = ic =>
             {
@@ -1045,6 +1063,27 @@ namespace McBar
             }
             catch (Exception ex) { Log.Write("Abrir McBar instalado: " + ex.Message); McDialog.Info("McBar se instaló", "Abrilo desde el menú Inicio."); }
             SafeCleanup(keepTaskbarHidden: true);
+            Current.Shutdown();
+        }
+
+        /// <summary>
+        /// 1.9.29: desinstalar McBar desde Preferencias (mismo flujo que "Aplicaciones instaladas" de Windows).
+        /// Devuelve la barra de Windows, saca accesos directos y registro, y cierra McBar.
+        /// </summary>
+        public static void UninstallNow()
+        {
+            if (Edition.IsStore) { McDialog.Info("Versión de la Store", "Esta copia se instaló desde Microsoft Store: desinstalala desde Configuración de Windows → Aplicaciones."); return; }
+            if (!McDialog.Confirm("¿Desinstalar McBar?",
+                    "Se va a devolver la barra de Windows tal como estaba y se va a borrar McBar de esta PC. Tus ajustes quedan guardados por si lo volvés a instalar.",
+                    "Desinstalar", danger: true))
+                return;
+            try { WorkArea.Reset(); } catch { }
+            try { Taskbar.Restore(); } catch { }
+            try { ShellHook.RestoreAnimation(); } catch { }
+            if (SettingsStore.Current.TrayAdminHelper) { try { TrayHelper.Disable(); } catch { } } // 1.9.29: sacar la tarea del ayudante (pide permiso)
+            Installer.Uninstall();
+            McDialog.Info("McBar se desinstaló", "La barra de Windows volvió a la normalidad. ¡Gracias por usar McBar!");
+            SafeCleanup();
             Current.Shutdown();
         }
 
