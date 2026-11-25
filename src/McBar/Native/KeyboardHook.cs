@@ -263,6 +263,14 @@ namespace McBar.Native
                             return (IntPtr)1;
                         }
 
+                        // ---- Visor de emojis (1.9.27): Win+Mayús+E ----
+                        if (s.EmojiShortcut && down && _winDown && Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU) && vk == 0x45)
+                        {
+                            if (!_winSwallowed) WindowOps.SendChord(VK_DUMMY);
+                            Ui(() => Panels.EmojiViewer.Toggle());
+                            return (IntPtr)1;
+                        }
+
                         // ---- Atajos estilo Mac (1.8.0): Alt izquierdo hace de Cmd ----
                         if (s.MacShortcuts && !_switching)
                         {

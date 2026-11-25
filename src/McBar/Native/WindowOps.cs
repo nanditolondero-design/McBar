@@ -264,6 +264,29 @@ namespace McBar.Native
             Win32.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Win32.INPUT>());
         }
 
+        /// <summary>1.9.27: "tipea" texto Unicode (emojis incluidos) en la app que tiene el foco.</summary>
+        public static void TypeUnicode(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            var inputs = new System.Collections.Generic.List<Win32.INPUT>();
+            foreach (char ch in text)
+            {
+                inputs.Add(UnicodeKey(ch, false));
+                inputs.Add(UnicodeKey(ch, true));
+            }
+            Win32.SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<Win32.INPUT>());
+        }
+
+        private static Win32.INPUT UnicodeKey(char ch, bool up)
+        {
+            uint flags = Win32.KEYEVENTF_UNICODE | (up ? Win32.KEYEVENTF_KEYUP : 0);
+            return new Win32.INPUT
+            {
+                type = Win32.INPUT_KEYBOARD,
+                U = new Win32.InputUnion { ki = new Win32.KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = flags } }
+            };
+        }
+
         private static Win32.INPUT Key(ushort vk, bool up)
         {
             uint flags = up ? Win32.KEYEVENTF_KEYUP : 0;

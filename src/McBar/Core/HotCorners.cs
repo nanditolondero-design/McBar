@@ -16,7 +16,7 @@ namespace McBar.Core
         {
             ("none", "Nada"), ("launchpad", "Launchpad"), ("mission", "Todas las ventanas"),
             ("desktop", "Escritorio"), ("spotlight", "Buscador"), ("notifications", "Notificaciones"),
-            ("control", "Centro de control"), ("lock", "Bloquear pantalla")
+            ("control", "Centro de control"), ("lock", "Bloquear pantalla"), ("screensaver", "Protector de pantalla")
         };
 
         private static DispatcherTimer? _timer;
@@ -83,6 +83,7 @@ namespace McBar.Core
                     case "notifications": App.ToggleWidgets(m); break;
                     case "control": App.ToggleControlCenter(m); break;
                     case "lock": Launcher.Lock(); break;
+                    case "screensaver": McBar.Panels.ScreenSaverWindow.Show(); break;
                 }
             }
             catch (Exception ex) { Log.Write("Esquina activa: " + ex.Message); }

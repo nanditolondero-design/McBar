@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.27 — 24/11/2026
+- **Visor de emojis (como el Visor de caracteres de macOS)**: con **Win+Mayús+E** (o desde el menú de McBar → "Visor de emojis") se abre un panel con emojis por categoría; al tocar uno, se escribe en la app que estás usando (sin robarle el foco). Se apaga el atajo en Preferencias → Teclado.
+- **Protector de pantalla**: fondo negro con un reloj grande que cambia de lugar cada tanto; se cierra con cualquier tecla, clic o movimiento. Se lanza desde el menú de McBar → "Protector de pantalla" o poniéndolo en una esquina activa (Preferencias → Esquinas activas).
+
 ## 1.9.26 — 24/11/2026
 - **Leer en voz alta (como "Contenido hablado" de macOS)**: seleccionás texto en cualquier lado, apretás **Win+Mayús+L** y McBar lo lee con la voz de Windows. Volver a apretar lo corta. También desde el menú de McBar → "Leer en voz alta la selección". Se apaga en Preferencias → Teclado. El portapapeles queda como estaba.
 

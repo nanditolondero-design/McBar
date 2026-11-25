@@ -344,6 +344,7 @@ namespace McBar.Native
         public const uint INPUT_KEYBOARD = 1;
         public const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
         public const uint KEYEVENTF_KEYUP = 0x0002;
+        public const uint KEYEVENTF_UNICODE = 0x0004; // 1.9.27: para "tipear" emojis y otros caracteres
 
         [StructLayout(LayoutKind.Sequential)]
         public struct INPUT { public uint type; public InputUnion U; }

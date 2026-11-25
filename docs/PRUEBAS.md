@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.27
+- [ ] Win+Mayús+E → abre el visor; tocar un emoji lo escribe en el navegador/Word que tengas abierto (sin cerrar la app). Los botones de arriba saltan a cada categoría; la ✕ cierra. Apagar el atajo en Preferencias → Teclado.
+- [ ] Menú de McBar → "Protector de pantalla": pantalla negra con reloj que se mueve; cualquier tecla/clic/movimiento lo cierra. Ponerlo en una esquina activa (Preferencias → Esquinas activas) y llevar el mouse ahí también lo lanza.
+
 ### Versión 1.9.26
 - [ ] Seleccionar texto (en el navegador, Word, etc.) → Win+Mayús+L → lo lee en voz alta. Apretar otra vez → corta. Lo mismo desde el menú de McBar → "Leer en voz alta la selección".
 - [ ] Sin nada seleccionado → avisa "No hay texto seleccionado". El portapapeles queda como estaba (lo que tenías copiado sigue ahí).
