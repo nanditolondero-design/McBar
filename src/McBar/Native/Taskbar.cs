@@ -150,6 +150,35 @@ namespace McBar.Native
             WindowOps.SendChord(WindowOps.VK_LWIN, 0x42 /*B*/);
         }
 
+        // 1.9.35: con la ventana escondida (SW_HIDE) Windows no arma el contenido XAML de la bandeja y UI Automation
+        // no ve ningún ícono. Para leerla se la "estaciona": se muestra sin activar (con el auto-ocultar puesto queda
+        // fuera de pantalla, sin Win+B) y se vuelve a esconder apenas termina la lectura.
+        private static int _parkUsers;
+        private static readonly object ParkLock = new object();
+
+        public static void ShowParked()
+        {
+            if (!IsHiddenByUs) return;
+            lock (ParkLock)
+            {
+                _parkUsers++;
+                TemporarilyShown = true; // frena Enforce() mientras se lee
+            }
+            foreach (var h in TrayWindows()) Win32.ShowWindow(h, Win32.SW_SHOWNOACTIVATE);
+        }
+
+        public static void HideParked()
+        {
+            if (!IsHiddenByUs) return;
+            lock (ParkLock)
+            {
+                if (_parkUsers > 0) _parkUsers--;
+                if (_parkUsers > 0) return;
+                TemporarilyShown = false;
+            }
+            Enforce();
+        }
+
         public static void EndTemporary()
         {
             if (!TemporarilyShown) return;

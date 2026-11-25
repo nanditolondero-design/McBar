@@ -334,10 +334,14 @@ namespace McBar.Native
         /// mezcla en el hilo de la bandeja.
         /// </summary>
         private int _uiaRunning;
-        private void ImportUia()
+        private DateTime _lastUia = DateTime.MinValue;
+        private void ImportUia(bool force = false)
         {
             if (!SettingsStore.Current.TrayUia) return;
+            // 1.9.35: cada lectura estaciona la barra de Windows un instante, así que se hace cada ~45 s (no cada 10 s)
+            if (!force && (DateTime.Now - _lastUia).TotalSeconds < 45) return;
             if (Interlocked.Exchange(ref _uiaRunning, 1) == 1) return;
+            _lastUia = DateTime.Now;
             System.Threading.Tasks.Task.Run(() =>
             {
                 TrayUia.Result res;

@@ -51,6 +51,36 @@ namespace McBar.Native
         {
             var res = new Result();
             if (Interlocked.Exchange(ref _busy, 1) == 1) return res; // ya hay una lectura en curso
+            // 1.9.35: la barra de Windows está escondida y así no expone la bandeja: se la estaciona mientras se lee
+            bool parked = Taskbar.IsHiddenByUs;
+            if (parked) Taskbar.ShowParked();
+            try
+            {
+                for (int attempt = 0; attempt < 4; attempt++)
+                {
+                    if (parked) Thread.Sleep(attempt == 0 ? 350 : 500); // dejar que Windows arme el contenido
+                    res = ReadOnce();
+                    if (res.Entries.Count > 0) break;
+                }
+                if (res.Entries.Count == 0 && !_dumped)
+                {
+                    _dumped = true;
+                    var tray = Taskbar.ExplorerTray();
+                    if (tray != IntPtr.Zero) DumpTree(tray);
+                }
+            }
+            catch (Exception ex) { Log.Write("Bandeja UIA: " + ex.Message); }
+            finally
+            {
+                if (parked) Taskbar.HideParked();
+                Interlocked.Exchange(ref _busy, 0);
+            }
+            return res;
+        }
+
+        private static Result ReadOnce()
+        {
+            var res = new Result();
             try
             {
                 var roots = new List<(IntPtr h, bool overflow)>();
@@ -91,16 +121,8 @@ namespace McBar.Native
                     catch (Exception ex) { Log.Write("Bandeja UIA: " + ex.GetType().Name + " " + ex.Message); }
                 }
 
-                // Diagnóstico (una sola vez): si en esta versión de Windows no se encontró ningún botón, se deja en el
-                // registro cómo se ve el árbol de la barra, para poder ajustar los nombres de clase.
-                if (res.Entries.Count == 0 && !_dumped && tray != IntPtr.Zero)
-                {
-                    _dumped = true;
-                    DumpTree(tray);
-                }
             }
             catch (Exception ex) { Log.Write("Bandeja UIA: " + ex.Message); }
-            finally { Interlocked.Exchange(ref _busy, 0); }
             return res;
         }
 
@@ -201,6 +223,9 @@ namespace McBar.Native
         {
             Task.Run(() =>
             {
+                // 1.9.35: con la barra escondida el botón no responde: se la estaciona mientras dura el clic
+                bool parked = Taskbar.IsHiddenByUs;
+                if (parked) { Taskbar.ShowParked(); Thread.Sleep(350); }
                 try
                 {
                     var el = icon.UiaElement as AutomationElement;
@@ -218,6 +243,10 @@ namespace McBar.Native
                     MouseClick(el, right, icon.UiaName);
                 }
                 catch (Exception ex) { Log.Write("Tray UIA clic: " + ex.GetType().Name + " " + ex.Message); }
+                finally
+                {
+                    if (parked) { Thread.Sleep(1500); Taskbar.HideParked(); }
+                }
             });
         }
 

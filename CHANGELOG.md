@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.35 — 25/11/2026 (bandeja UI Automation: la barra escondida no mostraba nada)
+- **UI Automation no veía ningún ícono.** El registro de la 1.9.34 mostró que, con la barra de Windows escondida (`SW_HIDE`), Windows no arma el contenido de la bandeja y el árbol quedaba vacío. Ahora, para cada lectura, McBar "estaciona" la barra un instante (visible pero fuera de pantalla gracias al auto-ocultar, sin Win+B), la lee con reintentos y la vuelve a esconder. La lectura se hace cada ~45 s (antes 10 s) para no tocar la barra tan seguido.
+
 ## 1.9.34 — 25/11/2026 (bandeja de Windows 11 leída por UI Automation)
 - **Los íconos "siempre visibles" de la bandeja de Windows 11 (NVIDIA y similares) ahora aparecen.** Desde Windows 11 22H2 la bandeja dejó de ser una barra clásica y el método que usaba McBar (leer la memoria del Explorador) solo veía los íconos ocultos (los del "^"). Ahora McBar además recorre la bandeja nueva con **UI Automation**, la vía que Windows ofrece para eso, y suma esos íconos a su barra. Se revisa cada ~10 segundos junto con el método anterior; los íconos que ya llegaron por otro camino no se duplican.
 - **Cómo se abren.** Clic izquierdo: McBar "invoca" el botón real de la bandeja (igual que tocarlo). Clic derecho (menú): UI Automation no tiene clic derecho, así que McBar muestra la barra de Windows un momento (como Win+B), hace el clic con el mouse sobre el botón y deja el mouse donde estaba.
