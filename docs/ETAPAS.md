@@ -247,6 +247,9 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.25 (24/11/2026)
+`Panels/MarkupWindow`: lienzo a resolución real (Canvas con ImageBrush) dentro de un `Viewbox` (coordenadas del mouse = píxeles reales, guardado sin perder calidad). Herramientas pen/marker (Polyline, marker semitransparente ×5), rect (Rectangle), arrow (Line + punta en un sub-Canvas), text (TextBox). Colores, Deshacer (lista `_added`), `Flatten` (RenderTargetBitmap) para Copiar/Guardar (sobrescribe el .png). `CaptureThumb`: tocar la miniatura abre `MarkupWindow.Open`; ítem "Marcar" en su menú.
+
 ## 1.9.24 (24/11/2026)
 `Core/LiveText`: reusa `CaptureOverlay` (nuevo parámetro `onRegion`) para elegir zona; `ToSoftwareBitmap` (CopyPixels BGRA → `SoftwareBitmap.CreateCopyFromBuffer`), `OcrEngine.TryCreateFromUserProfileLanguages().RecognizeAsync`, junta las líneas, copia al portapapeles y avisa con `NotificationCenter`. Atajo Win+Mayús+T en `KeyboardHook` (gate `LiveText`, vk 0x54), ítem en el menú del sistema y toggle en Preferencias → Teclado. `CaptureOverlay` entrega la zona a `onRegion` tanto en arrastre como en modo ventana.
 

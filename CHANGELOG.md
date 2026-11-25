@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.25 — 24/11/2026
+- **Marcado de capturas (como el editor rápido de macOS)**: al tocar la miniatura que aparece tras una captura, se abre un editor con Lápiz, Flecha, Rectángulo, Resaltar y Texto, con colores y Deshacer. Botones Copiar, Guardar y Listo. También desde el menú de la miniatura → "Marcar". Lo guardado sale a resolución real.
+
 ## 1.9.24 — 24/11/2026
 - **Texto en vivo (OCR, como Live Text de macOS)**: elegís una zona de la pantalla y McBar copia el texto que haya en la imagen (un cartel, un PDF escaneado, una foto) al portapapeles. Atajo **Win+Mayús+T**, o desde el menú de McBar → "Copiar texto de la pantalla (OCR)". Se puede apagar en Preferencias → Teclado. Usa el OCR que ya trae Windows.
 

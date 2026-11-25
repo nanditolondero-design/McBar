@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.25
+- [ ] Sacar una captura (Win+Mayús+4) → tocar la miniatura → se abre el editor. Probar Lápiz, Flecha, Rectángulo, Resaltar y Texto; cambiar color; Deshacer. Guardar sobrescribe el archivo; Copiar lo deja en el portapapeles; Listo cierra.
+- [ ] La flecha tiene punta; el resaltador es semitransparente; el texto se escribe donde clickeás. Lo guardado tiene la calidad original.
+
 ### Versión 1.9.24
 - [ ] Win+Mayús+T → elegir una zona con texto (un cartel, un PDF) → aviso "Texto copiado al portapapeles" y Ctrl+V pega el texto. Lo mismo desde el menú de McBar → "Copiar texto de la pantalla (OCR)".
 - [ ] Una zona sin texto → avisa "No se encontró texto". Si Windows no tiene idioma de OCR, avisa eso.

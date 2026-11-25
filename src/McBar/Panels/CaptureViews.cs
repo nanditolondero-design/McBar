@@ -292,9 +292,10 @@ namespace McBar.Panels
                 if (!_pressed) return;
                 _pressed = false;
                 Close();
-                Launcher.Launch(_path);
+                MarkupWindow.Open(_path, _img); // 1.9.25: tocar la miniatura abre el editor de marcado (como en Mac)
             };
             var cm = new ContextMenu();
+            cm.Items.Add(Item("Marcar", () => { Close(); MarkupWindow.Open(_path, _img); })); // 1.9.25
             cm.Items.Add(Item("Abrir", () => { Close(); Launcher.Launch(_path); }));
             cm.Items.Add(Item("Copiar", () => { McBar.Core.Screenshots.CopyToClipboard(_img); Close(); }));
             cm.Items.Add(Item("Mostrar en la carpeta", () => { Close(); Launcher.ShowInExplorer(_path); }));
