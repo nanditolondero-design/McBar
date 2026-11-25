@@ -312,7 +312,8 @@ namespace McBar.Native
                             HWnd = e.Hwnd,
                             Uid = e.Uid,
                             CallbackMessage = e.Callback,
-                            Version = 0, // formato clásico (wParam=uid, lParam=mensaje)
+                            Version = 0,
+                            Imported = true, // 1.9.33: el clic se manda en los dos formatos (no sabemos su versión)
                             ExePath = exe,
                             Icon = ConvertIcon(e.HIcon) ?? McBar.Core.IconLoader.FromWindow(e.Hwnd)
                         };
@@ -353,42 +354,44 @@ namespace McBar.Native
             // 1.9.15: la interfaz ya manda "abajo" al apretar y "arriba" al soltar (dos llamadas), así que acá va
             // un solo mensaje por llamada. Para los íconos nuevos (versión 4) el menú se pide con WM_CONTEXTMENU
             // y la selección con NIN_SELECT; para los viejos, con el "arriba" común.
+            // 1.9.33: los importados (versión desconocida) usan el set "nuevo" y además se mandan en los dos formatos.
+            bool modern = icon.Version >= 4 || icon.Imported;
             int[] msgs = click switch
             {
                 Click.LeftDown => new[] { WM_LBUTTONDOWN },
-                Click.LeftUp => icon.Version >= 4 ? new[] { WM_LBUTTONUP, NIN_SELECT } : new[] { WM_LBUTTONUP },
+                Click.LeftUp => modern ? new[] { WM_LBUTTONUP, NIN_SELECT } : new[] { WM_LBUTTONUP },
                 Click.LeftDouble => new[] { WM_LBUTTONDBLCLK },
                 Click.RightDown => new[] { WM_RBUTTONDOWN },
-                Click.RightUp => icon.Version >= 4 ? new[] { WM_RBUTTONUP, WM_CONTEXTMENU } : new[] { WM_RBUTTONUP },
+                Click.RightUp => modern ? new[] { WM_RBUTTONUP, WM_CONTEXTMENU } : new[] { WM_RBUTTONUP },
                 _ => Array.Empty<int>()
             };
             // 1.9.15: registro para diagnóstico (queda en mcbar.log). Dice qué se reenvía y a quién.
-            Log.Write($"Tray {click} -> hwnd=0x{icon.HWnd.ToInt64():X} uid={icon.Uid} ver={icon.Version} cb=0x{icon.CallbackMessage:X} sys={icon.IsWindowsSystem} msgs=[{string.Join(",", msgs.Select(m => "0x" + m.ToString("X")))}]");
+            Log.Write($"Tray {click} -> hwnd=0x{icon.HWnd.ToInt64():X} uid={icon.Uid} ver={icon.Version} imp={icon.Imported} cb=0x{icon.CallbackMessage:X} sys={icon.IsWindowsSystem} msgs=[{string.Join(",", msgs.Select(m => "0x" + m.ToString("X")))}]");
             foreach (var mm in msgs)
             {
-                IntPtr wParam, lParam;
-                if (icon.Version >= 4)
+                // formato nuevo (v4): wParam = posición del ícono, lParam = mensaje + uid. formato clásico: wParam = uid, lParam = mensaje.
+                int x = anchor.Left, y = anchor.Bottom;
+                var v4w = new IntPtr((x & 0xFFFF) | ((y & 0xFFFF) << 16));
+                var v4l = new IntPtr((mm & 0xFFFF) | (int)((icon.Uid & 0xFFFF) << 16));
+                var oldw = new IntPtr(icon.Uid);
+                var oldl = new IntPtr(mm);
+                // para un ícono importado mandamos los dos; para uno conocido, el que corresponde a su versión
+                var pairs = icon.Imported
+                    ? new[] { (v4w, v4l), (oldw, oldl) }
+                    : (icon.Version >= 4 ? new[] { (v4w, v4l) } : new[] { (oldw, oldl) });
+                foreach (var (wParam, lParam) in pairs)
                 {
-                    int x = anchor.Left, y = anchor.Bottom;
-                    wParam = new IntPtr((x & 0xFFFF) | ((y & 0xFFFF) << 16));
-                    lParam = new IntPtr((mm & 0xFFFF) | (int)((icon.Uid & 0xFFFF) << 16));
-                }
-                else
-                {
-                    wParam = new IntPtr(icon.Uid);
-                    lParam = new IntPtr(mm);
-                }
-                bool ok = Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
-                if (!ok)
-                {
-                    int err = Marshal.GetLastWin32Error();
-                    // 1.9.20: err=5 (acceso denegado) = el programa corre como administrador y Windows no deja
-                    // que McBar (normal) le mande el clic. Es un límite de seguridad de Windows (UIPI).
-                    Log.Write($"Tray: Windows rechazó el envío a 0x{icon.HWnd.ToInt64():X} (error {err}{(err == 5 ? " = el programa corre como administrador" : "")})");
-                    // 1.9.29: si está activado el ayudante, se lo pedimos a la copia que corre como administrador.
-                    // La tubería ya quedó lista al arrancar (TrayHelper.StartServer), así que solo reenviamos.
-                    if (err == 5 && SettingsStore.Current.TrayAdminHelper)
-                        TrayHelper.Forward(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                    bool ok = Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                    if (!ok)
+                    {
+                        int err = Marshal.GetLastWin32Error();
+                        // 1.9.20: err=5 (acceso denegado) = el programa corre como administrador y Windows no deja
+                        // que McBar (normal) le mande el clic. Es un límite de seguridad de Windows (UIPI).
+                        Log.Write($"Tray: Windows rechazó el envío a 0x{icon.HWnd.ToInt64():X} (error {err}{(err == 5 ? " = el programa corre como administrador" : "")})");
+                        // 1.9.29: si está activado el ayudante, se lo pedimos a la copia que corre como administrador.
+                        if (err == 5 && SettingsStore.Current.TrayAdminHelper)
+                            TrayHelper.Forward(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                    }
                 }
             }
         }

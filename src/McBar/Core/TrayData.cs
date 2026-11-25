@@ -40,6 +40,10 @@ namespace McBar.Core
         public bool Hidden { get; set; }
         public string ExePath { get; set; } = "";
 
+        /// <summary>1.9.33: ícono leído de la bandeja real de Windows (no sabemos su "versión", así que el clic se
+        /// manda en los dos formatos, el clásico y el nuevo).</summary>
+        public bool Imported { get; set; }
+
         /// <summary>
         /// Íconos que pone el propio Windows (volumen, red, batería del Explorador). No se muestran: McBar
         /// tiene los suyos, y tocarlos abría paneles de Windows anclados a la barra escondida que trababan todo.

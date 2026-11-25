@@ -240,6 +240,11 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.33
+- [ ] Tocar (clic izquierdo) los íconos importados (NVIDIA, Defender, MagnAir) → abren la app / su panel.
+- [ ] Clic derecho → muestran su menú.
+- [ ] Que WhatsApp (que se registra normal) siga funcionando y sin doble apertura.
+
 ### Versión 1.9.32
 - [ ] Con NVIDIA / Seguridad de Windows (Defender) corriendo, abrir McBar → esos íconos ahora aparecen en la barra (puede tardar hasta ~10 s). En el log: "Bandeja: importado de Windows …".
 - [ ] Abrir MagnAIR (u otra app ya abierta) → su ícono aparece.

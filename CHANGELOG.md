@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.33 — 25/11/2026 (bandeja: ahora SÍ abren al tocarlas)
+- **Los íconos que McBar importa de Windows (NVIDIA, Defender, MagnAir…) no abrían al tocarlos.** Como McBar los lee de la bandeja real, no sabe qué "formato de clic" esperan (las apps nuevas usan uno y las viejas otro). Ahora, para esos íconos, McBar manda el clic en **los dos formatos**: la app usa el que entiende y descarta el otro. Así abren y muestran su menú igual que WhatsApp.
+
 ## 1.9.32 — 25/11/2026 (bandeja: aparecen los íconos que faltaban, como NVIDIA y Defender)
 - **Faltaban íconos en la bandeja (NVIDIA, Seguridad de Windows/Defender y otras apps).** El motivo: esas apps ya estaban abiertas antes de McBar y no "se vuelven a anunciar" cuando McBar arranca, así que McBar nunca las veía. Ahora McBar **lee los íconos que ya están en la bandeja real de Windows** (la que McBar esconde), incluidos los íconos ocultos, y los suma a su barra. Vuelve a revisar cada ~10 segundos por si aparece alguno nuevo. Para esto McBar tiene que correr como la app normal (por eso, si lo abrís "como administrador", la bandeja no anda).
 - Nota: si una de estas apps igual no abre al tocar su ícono, es por el formato del clic y lo seguimos afinando; lo importante de esta versión es que **aparezcan**.
