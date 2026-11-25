@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.31 — 25/11/2026 (ayudante del systray: no se cuelga y abre las apps)
+- **McBar se colgaba al tocar varias veces un ícono de app que corre como administrador.** El clic se le reenviaba al ayudante escribiéndolo en la "tubería" desde el mismo hilo de la interfaz; si el ayudante no la estaba leyendo, esa escritura se trababa y McBar se congelaba. Ahora los clics se encolan y los manda un hilo aparte: reenviar nunca congela la interfaz.
+- **Los íconos de apps-administrador no abrían la app.** Por lo de arriba, los clics quedaban trabados sin llegar. Además, ahora el ayudante (que corre como administrador) habilita el "paso al frente" antes de reenviar el clic, para que la app pueda mostrar su ventana o su menú adelante.
+
 ## 1.9.30 — 24/11/2026 (pantalla completa + ayudante del systray, arreglos)
 - **Ventanas maximizadas con un hueco abajo (y el "movimiento raro" al maximizar).** Pasaba cuando el Explorador le sacaba el "ocultar automáticamente" a su barra: Windows le volvía a reservar el alto, las ventanas maximizadas quedaban con un espacio abajo y McBar tenía que reacomodarlas a mano (de ahí el salto incómodo). Ahora McBar detecta eso y le vuelve a poner el "ocultar automáticamente" a la barra de Windows; así es Windows el que devuelve la pantalla completa, sin pelear con el área de trabajo y sin sacudir las ventanas.
 - **Error del ayudante del systray repetido en el registro** ("Todas las instancias de canalización están en uso"). Al apagar/prender la opción o al reiniciarse la bandeja, quedaba un hilo viejo colgado reteniendo la tubería y el nuevo chocaba una y otra vez. Ahora, al frenar, la tubería se cierra bien (destraba el hilo) y, si algo la ocupa, se reintenta más espaciado y se avisa una sola vez.

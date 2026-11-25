@@ -23,13 +23,16 @@ namespace McBar.Core
         private const string TaskName = "McBar Tray Helper";
 
         // ---------- lado McBar (normal): servidor de la tubería ----------
-        private static volatile StreamWriter? _writer;
         private static volatile bool _serverRunning;
+        private static volatile bool _connected;
         private static volatile NamedPipeServerStream? _server; // 1.9.30: para poder destrabar WaitForConnection al frenar
         private static readonly object _startLock = new object();
-        private static readonly ManualResetEvent _reset = new ManualResetEvent(false);
+        // 1.9.31: los clics se encolan y los escribe un hilo aparte; así reenviar NUNCA bloquea la interfaz
+        // (antes se escribía en la tubería desde el hilo de la interfaz y, si el ayudante no leía, McBar se colgaba).
+        private static readonly System.Collections.Concurrent.ConcurrentQueue<string> _outbox = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        private static readonly AutoResetEvent _signal = new AutoResetEvent(false);
 
-        public static bool Ready => _writer != null;
+        public static bool Ready => _connected;
 
         /// <summary>Deja la tubería lista y esperando que el ayudante se conecte. Se llama al arrancar (si está activado).</summary>
         public static void StartServer()
@@ -48,6 +51,7 @@ namespace McBar.Core
             while (_serverRunning)
             {
                 NamedPipeServerStream? server = null;
+                StreamWriter? writer = null;
                 try
                 {
                     // 1.9.30: Asíncrona para que Dispose() (desde Stop) destrabe WaitForConnection y no quede un hilo colgado
@@ -57,11 +61,16 @@ namespace McBar.Core
                     server.WaitForConnection();
                     if (!_serverRunning) break;
                     loggedBusy = false;
-                    _writer = new StreamWriter(server) { AutoFlush = true };
+                    writer = new StreamWriter(server) { AutoFlush = true };
+                    while (_outbox.TryDequeue(out _)) { } // 1.9.31: descartar clics viejos de antes de conectar
+                    _connected = true;
                     Log.Write("Ayudante del systray: conectado.");
-                    _reset.Reset();
-                    _reset.WaitOne(); // se queda hasta que un envío falle (se cortó) o se apague
-                    _writer = null;
+                    // 1.9.31: drena la cola mientras siga conectado; si la tubería se cortó, WriteLine tira y reconecta
+                    while (_serverRunning)
+                    {
+                        _signal.WaitOne(1000);
+                        while (_outbox.TryDequeue(out var line)) writer.WriteLine(line);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +80,8 @@ namespace McBar.Core
                 }
                 finally
                 {
-                    _writer = null;
+                    _connected = false;
+                    try { writer?.Dispose(); } catch { }
                     try { server?.Dispose(); } catch { }
                     if (ReferenceEquals(_server, server)) _server = null;
                 }
@@ -79,22 +89,23 @@ namespace McBar.Core
             _server = null;
         }
 
-        /// <summary>Le pide al ayudante que reenvíe un mensaje a una ventana que corre como administrador.</summary>
+        /// <summary>Le pide al ayudante que reenvíe un mensaje a una ventana que corre como administrador.
+        /// 1.9.31: solo encola y avisa; la escritura real la hace el hilo del servidor (no bloquea la interfaz).</summary>
         public static void Forward(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
-            var w = _writer;
-            if (w == null) return;
-            try { w.WriteLine($"{hwnd.ToInt64():X} {msg:X} {wParam.ToInt64():X} {lParam.ToInt64():X}"); }
-            catch { _writer = null; _reset.Set(); } // se cortó: que el servidor rearme la tubería
+            if (!_serverRunning) return;
+            if (_outbox.Count > 256) return; // no acumular sin fin si el ayudante no está leyendo
+            _outbox.Enqueue($"{hwnd.ToInt64():X} {msg:X} {wParam.ToInt64():X} {lParam.ToInt64():X}");
+            _signal.Set();
         }
 
         public static void Stop()
         {
             _serverRunning = false;
-            _reset.Set();
-            _writer = null;
+            _signal.Set();
             try { _server?.Dispose(); } catch { } // 1.9.30: destraba WaitForConnection para que el hilo salga y suelte la tubería
             _server = null;
+            while (_outbox.TryDequeue(out _)) { }
         }
 
         // ---------- activar / desactivar (desde Preferencias) ----------
@@ -174,6 +185,8 @@ namespace McBar.Core
                             if (!uint.TryParse(p[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var m)) continue;
                             if (!long.TryParse(p[2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var wp)) continue;
                             if (!long.TryParse(p[3], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var lp)) continue;
+                            // 1.9.31: habilitar el paso al frente para que la app pueda mostrar su ventana/menú al frente
+                            try { Win32.AllowSetForegroundWindow(unchecked((uint)(-1))); Win32.AllowSetForegroundWindow(Win32.ProcessOf(new IntPtr(h))); } catch { }
                             Win32.PostMessage(new IntPtr(h), m, new IntPtr(wp), new IntPtr(lp));
                         }
                     }

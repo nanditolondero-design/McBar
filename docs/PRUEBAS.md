@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.31
+- [ ] Con el ayudante activado, tocar un ícono de app que corre como administrador → abre la app / muestra el menú, y al frente.
+- [ ] Apretar muchas veces seguidas un ícono de app-administrador → McBar NO se cuelga.
+
 ### Versión 1.9.30
 - [ ] Maximizar varias ventanas (Explorador, navegador, etc.) → usan toda la pantalla, sin hueco abajo y sin el salto/reacomodo raro.
 - [ ] Si aparece el hueco abajo, en el registro debería figurar "La barra de Windows había dejado de auto-ocultarse; McBar se lo volvió a poner" y corregirse solo.
