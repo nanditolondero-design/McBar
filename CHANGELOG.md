@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.38 — 25/11/2026 (Seguridad de Windows abre al tocar su ícono)
+- **El ícono de Seguridad de Windows (Defender) no hacía nada al tocarlo.** Ignora el clic que McBar le reenvía, así que ahora el clic izquierdo abre Windows Security directamente con su protocolo (`windowsdefender:`). El clic derecho sigue por el camino de antes.
+- Se descartó leer la bandeja desde `HKCU\Control Panel\NotifyIconSettings`: esas entradas solo traen GUID y ruta del programa (sin tooltip, UID ni estado), así que no sirven para saber qué íconos están activos ni para hacerles clic.
+
 ## 1.9.37 — 25/11/2026 (UI Automation: se descartan los botones del sistema en español)
 - Con el registro de la 1.9.35 se vio que, en Windows 11 en español, los botones de red, batería y "Mostrar escritorio" tienen la clase `SystemTray.AccentButton` / `SystemTray.ShowDesktopButton` y el mismo Id que las apps. Ahora se descartan por clase y por nombre.
 

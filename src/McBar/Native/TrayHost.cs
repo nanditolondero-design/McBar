@@ -456,6 +456,17 @@ namespace McBar.Native
         public void Send(TrayIcon icon, Click click, PxRect anchor)
         {
             if (icon.IsWindowsSystem) return; // nunca tocar los íconos propios de Windows
+            // 1.9.38: Seguridad de Windows (Defender) ignora el clic que le reenviamos. Su clic izquierdo equivale a abrir
+            // la app con su protocolo oficial, así que se hace directo. El clic derecho sigue por el camino normal.
+            if (icon.ExePath.EndsWith("\\SecurityHealthSystray.exe", StringComparison.OrdinalIgnoreCase))
+            {
+                if (click == Click.LeftUp)
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("windowsdefender:") { UseShellExecute = true }); Log.Write("Tray: Seguridad de Windows abierta con windowsdefender:"); }
+                    catch (Exception ex) { Log.Write("Tray: no se pudo abrir Seguridad de Windows: " + ex.Message); }
+                }
+                if (click == Click.LeftDown || click == Click.LeftUp || click == Click.LeftDouble) return;
+            }
             if (icon.FromUia)
             {
                 // 1.9.34: ícono leído por UI Automation: se abre con Invoke (izquierdo) o con el mouse (derecho).
