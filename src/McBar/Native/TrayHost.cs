@@ -139,6 +139,7 @@ namespace McBar.Native
         }
 
         private DispatcherTimer? _guard;
+        private DateTime _lastSink = DateTime.MinValue;
 
         /// <summary>Mantiene nuestra Shell_TrayWnd primera (la que Windows encuentra) y la del Explorador al fondo.</summary>
         private void Guard()
@@ -150,8 +151,10 @@ namespace McBar.Native
                 Raise();
                 // Con la barra de Windows escondida por McBar se la manda al fondo (como ManagedShell) para que no
                 // vuelva a quedar primera cuando el Explorador se la vuelve a poner "siempre visible".
-                if (Taskbar.IsHiddenByUs)
+                // 1.9.42: como mucho una vez cada 2 s (en la 1.9.41 podía repetirse sin parar si el Explorador volvía a subirse).
+                if (Taskbar.IsHiddenByUs && (DateTime.UtcNow - _lastSink).TotalSeconds >= 2)
                 {
+                    _lastSink = DateTime.UtcNow;
                     var ex = Taskbar.ExplorerTray();
                     if (ex != IntPtr.Zero)
                         Win32.SetWindowPos(ex, new IntPtr(1) /*HWND_BOTTOM*/, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
@@ -439,6 +442,13 @@ namespace McBar.Native
             return map;
         }
 
+        private string _lastDiag = "";
+
+        private static string NameByPid(uint pid)
+        {
+            try { return System.Diagnostics.Process.GetProcessById((int)pid).ProcessName + ".exe"; } catch { return ""; }
+        }
+
         public void AnnounceMissing()
         {
             _trayThread?.BeginInvoke(new Action(() =>
@@ -446,28 +456,55 @@ namespace McBar.Native
                 try
                 {
                     var known = KnownTrayApps();
-                    if (known.Count == 0) return;
+                    if (known.Count == 0) { Diag("NotifyIconSettings vacío o no legible"); return; }
                     uint own = (uint)Environment.ProcessId;
                     var have = new HashSet<string>(_icons.Select(i => System.IO.Path.GetFileName(i.ExePath)), StringComparer.OrdinalIgnoreCase);
                     var byPid = WindowsByProcess();
                     foreach (var dead in _announceTries.Keys.Where(k => !byPid.ContainsKey(k)).ToList()) _announceTries.Remove(dead);
+                    var missing = new List<string>();
+                    var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var kv in byPid)
                     {
                         if (kv.Key == own) continue;
                         var exe = ExeOf(kv.Value[0]);
-                        if (exe.Length == 0) continue;
-                        var file = System.IO.Path.GetFileName(exe);
-                        if (!known.Contains(file) || have.Contains(file)) continue;
+                        // 1.9.42: si no se puede leer la ruta (procesos de otro usuario o del sistema) se usa el nombre del proceso
+                        var file = exe.Length > 0 ? System.IO.Path.GetFileName(exe) : NameByPid(kv.Key);
+                        if (file.Length == 0 || !known.Contains(file)) continue;
                         if (file.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase)) continue;
+                        running.Add(file);
+                        if (have.Contains(file)) continue;
+                        missing.Add($"{file}[pid {kv.Key}, {kv.Value.Count} ventanas]");
                         _announceTries.TryGetValue(kv.Key, out int tries);
                         if (tries >= MaxAnnounceTries) continue;
                         _announceTries[kv.Key] = tries + 1;
-                        foreach (var h in kv.Value) Win32.PostMessage(h, _taskbarCreated, IntPtr.Zero, IntPtr.Zero);
-                        Log.Write($"Bandeja: aviso TaskbarCreated directo a {file} (pid {kv.Key}, {kv.Value.Count} ventanas, intento {tries + 1}/{MaxAnnounceTries})");
+                        int denied = 0;
+                        foreach (var h in kv.Value)
+                        {
+                            if (Win32.PostMessage(h, _taskbarCreated, IntPtr.Zero, IntPtr.Zero)) continue;
+                            // error 5 = la app corre con más permisos: se lo pedimos al ayudante de administrador (si está activado)
+                            if (Marshal.GetLastWin32Error() == 5)
+                            {
+                                denied++;
+                                if (SettingsStore.Current.TrayAdminHelper) TrayHelper.Forward(h, _taskbarCreated, IntPtr.Zero, IntPtr.Zero);
+                            }
+                        }
+                        Log.Write($"Bandeja: aviso TaskbarCreated directo a {file} (pid {kv.Key}, {kv.Value.Count} ventanas, intento {tries + 1}/{MaxAnnounceTries}" +
+                                  (denied > 0 ? $", {denied} rechazadas por permisos{(SettingsStore.Current.TrayAdminHelper ? ": reenviadas al ayudante" : ": el ayudante de administrador está apagado")}" : "") + ")");
                     }
+                    var notRunning = known.Where(k => !running.Contains(k)).OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
+                    Diag($"apps de bandeja que Windows recuerda: {known.Count}. Corriendo con ícono en McBar: {running.Count(r => have.Contains(r))}. " +
+                         $"Corriendo SIN ícono: {(missing.Count == 0 ? "ninguna" : string.Join(", ", missing))}. No corriendo: {string.Join(", ", notRunning)}");
                 }
                 catch (Exception ex) { Log.Write("Bandeja (aviso directo): " + ex.Message); }
             }));
+        }
+
+        // Deja una línea de diagnóstico en mcbar.log solo cuando cambia (para no llenar el registro).
+        private void Diag(string text)
+        {
+            if (text == _lastDiag) return;
+            _lastDiag = text;
+            Log.Write("Bandeja (diagnóstico): " + text);
         }
 
         /// <summary>Saca los íconos de apps que se cerraron sin avisar.</summary>
@@ -509,7 +546,10 @@ namespace McBar.Native
             // un solo mensaje por llamada. Para los íconos nuevos (versión 4) el menú se pide con WM_CONTEXTMENU
             // y la selección con NIN_SELECT; para los viejos, con el "arriba" común.
             // 1.9.33: los importados (versión desconocida) usan el set "nuevo" y además se mandan en los dos formatos.
-            bool modern = icon.Version >= 4 || icon.Imported;
+            // 1.9.42: desde la versión 3 (NOTIFYICON_VERSION) el Shell manda además NIN_SELECT (clic izquierdo) y WM_CONTEXTMENU
+            // (clic derecho). Solo la versión 4 cambia el formato de wParam/lParam; la 3 usa el clásico. Antes McBar solo
+            // mandaba NIN_SELECT/WM_CONTEXTMENU desde la 4, y las apps con versión 3 (como MagnAir) no reaccionaban.
+            bool modern = icon.Version >= 3 || icon.Imported;
             int[] msgs = click switch
             {
                 Click.LeftDown => new[] { WM_LBUTTONDOWN },
