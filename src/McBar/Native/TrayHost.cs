@@ -561,6 +561,7 @@ namespace McBar.Native
             };
             // 1.9.15: registro para diagnóstico (queda en mcbar.log). Dice qué se reenvía y a quién.
             Log.Write($"Tray {click} -> hwnd=0x{icon.HWnd.ToInt64():X} uid={icon.Uid} ver={icon.Version} imp={icon.Imported} cb=0x{icon.CallbackMessage:X} sys={icon.IsWindowsSystem} msgs=[{string.Join(",", msgs.Select(m => "0x" + m.ToString("X")))}]");
+            if (click == Click.LeftUp) AfterLeftClick(icon);
             foreach (var mm in msgs)
             {
                 // formato nuevo (v4): wParam = posición del ícono, lParam = mensaje + uid. formato clásico: wParam = uid, lParam = mensaje.
@@ -588,6 +589,48 @@ namespace McBar.Native
                     }
                 }
             }
+        }
+
+        // 1.9.43: algunas apps (MagnAir, Ultimaker Cura) reciben el clic izquierdo pero no logran pasar su ventana al frente
+        // porque la barra de McBar no es la ventana activa. Tras un clic izquierdo, si la app tiene una ventana normal
+        // visible que no está al frente, se la traemos nosotros (como haría la barra de Windows). Además deja en el
+        // registro qué ventanas tenía la app, para diagnosticar cuando no hay ninguna visible.
+        private void AfterLeftClick(TrayIcon icon)
+        {
+            var hwndIcon = icon.HWnd;
+            var name = System.IO.Path.GetFileName(icon.ExePath ?? "");
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay(400);
+                    uint pid = Win32.ProcessOf(hwndIcon);
+                    if (pid == 0) return;
+                    var fg = Win32.GetForegroundWindow();
+                    uint fgPid = Win32.ProcessOf(fg);
+                    var wins = new List<string>();
+                    IntPtr target = IntPtr.Zero;
+                    Win32.EnumWindows((h, _) =>
+                    {
+                        if (Win32.ProcessOf(h) != pid) return true;
+                        bool vis = Win32.IsWindowVisible(h), min = Win32.IsIconic(h);
+                        long st = Win32.GetStyle(h);
+                        bool caption = (st & 0x00C00000L) == 0x00C00000L;
+                        bool owned = Win32.GetWindow(h, 4 /*GW_OWNER*/) != IntPtr.Zero;
+                        if (vis || min) wins.Add($"0x{h.ToInt64():X}{(min ? " minimizada" : "")}{(caption ? "" : " sin-título")}");
+                        if (target == IntPtr.Zero && (vis || min) && caption && !owned) target = h;
+                        return true;
+                    }, IntPtr.Zero);
+                    Log.Write($"Tray: tras el clic izquierdo, {name} (pid {pid}) {(fgPid == pid ? "ya está al frente" : "NO está al frente")}; ventanas visibles: {(wins.Count == 0 ? "ninguna" : string.Join(", ", wins))}");
+                    if (fgPid != pid && target != IntPtr.Zero)
+                    {
+                        if (Win32.IsIconic(target)) Win32.ShowWindow(target, Win32.SW_RESTORE);
+                        Win32.SetForegroundWindow(target);
+                        Log.Write($"Tray: McBar trajo al frente la ventana 0x{target.ToInt64():X} de {name}");
+                    }
+                }
+                catch (Exception ex) { Log.Write("Tray: seguimiento del clic: " + ex.Message); }
+            });
         }
 
         // 1.9.19: baja el bloqueo de foco (una vez) para que los programas del área de notificaciones puedan

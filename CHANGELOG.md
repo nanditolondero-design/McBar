@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.43
+- Bandeja: tras un clic izquierdo, si la app (MagnAir, Ultimaker Cura…) tiene una ventana normal visible que no quedó al frente, McBar la trae al frente. El registro anota qué ventanas tenía la app y si quedó al frente, para diagnosticar los casos sin ventana visible.
+
 ## 1.9.42 — 25/11/2026 (bandeja: clic en apps de versión 3, aviso por el ayudante y diagnóstico)
 - **MagnAir (y toda app que registra su ícono con versión 3) no reaccionaba al clic.** Desde la versión 3 el Shell manda, además del clic clásico, `NIN_SELECT` (izquierdo) y `WM_CONTEXTMENU` (derecho), todavía con el formato viejo de parámetros; solo la versión 4 cambia el formato. McBar mandaba esos dos mensajes únicamente desde la versión 4, así que MagnAir recibía solo `WM_LBUTTONUP`/`WM_RBUTTONUP`, como se veía en el registro (`ver=3 ... msgs=[0x202]`). Ahora la versión 3 también los recibe.
 - **NVIDIA: el aviso `TaskbarCreated` ahora también sale por el ayudante de administrador.** Si Windows rechaza el aviso por permisos (error 5, la app corre con más privilegios), McBar se lo pide al ayudante (si está activado), que sí puede mandárselo. Además, si no se puede leer la ruta del programa (otro usuario o sistema), se busca por el nombre del proceso.
