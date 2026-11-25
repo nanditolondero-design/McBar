@@ -41,7 +41,7 @@ namespace McBar.Panels
             _path = path; _img = img;
             _w = img.PixelWidth; _h = img.PixelHeight;
             _pen = Math.Max(2.5, _w / 500.0); // grosor según el tamaño de la imagen
-            Title = "Marcar — " + Path.GetFileName(path);
+            Title = "Marcar — " + System.IO.Path.GetFileName(path);
             Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x22));
             FontFamily = (FontFamily)FindResource("Mc.Font");
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -60,7 +60,7 @@ namespace McBar.Panels
 
             var root = new DockPanel { LastChildFill = true };
             var bar = BuildToolbar();
-            DockPanel.SetDock(bar, Dock.Top);
+            DockPanel.SetDock(bar, System.Windows.Controls.Dock.Top);
             root.Children.Add(bar);
             root.Children.Add(box);
             Content = root;
