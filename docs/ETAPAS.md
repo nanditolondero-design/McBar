@@ -247,6 +247,9 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.20 (24/11/2026)
+`PostMessage` con `SetLastError`; `TrayHost.Send` registra cuando el envío falla (`Marshal.GetLastWin32Error`), con nota especial para error 5 (acceso denegado = ventana de mayor integridad; McBar normal no puede mandarle mensajes a un proceso elevado — límite UIPI). Confirma si el problema de los íconos que no abren es la elevación. Fix previsto: opción de reiniciar McBar como administrador.
+
 ## 1.9.19 (24/11/2026)
 El log de la 1.9.15/1.9.18 confirmó que `TrayHost.Send` reenvía bien (LeftUp/RightUp con el protocolo correcto por versión); el problema era el bloqueo de foco. `RelaxForegroundLock` (una vez, al primer clic): guarda `SPI_GETFOREGROUNDLOCKTIMEOUT` y lo pone en 0 con `SPI_SETFOREGROUNDLOCKTIMEOUT`; `RestoreForegroundLock` en `Dispose`. Se saca el `AttachThreadInput` de la 1.9.17 (se desenganchaba antes de que el programa procesara el mensaje asíncrono). Sigue el log. Pendiente aparte: íconos que no re-anuncian con TaskbarCreated (NVIDIA) → habría que leer los de la bandeja vieja.
 

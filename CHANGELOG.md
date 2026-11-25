@@ -1,5 +1,8 @@
 # Cambios
 
+## 1.9.20 — 24/11/2026 (diagnóstico del systray)
+- El log de la 1.9.19 mostró que, incluso con el arreglo del foco, algunos íconos no reaccionan (WhatsApp sí; los que corren como administrador no). Se agrega al registro si Windows rechaza el envío del clic por seguridad (UIPI, error 5 = el programa corre como administrador). Con eso se confirma la causa antes de agregar la opción de ejecutar McBar como administrador.
+
 ## 1.9.19 — 24/11/2026 (systray)
 - **Íconos del área de notificaciones que no abrían la app ni mostraban menú**: el registro confirmó que el clic se reenviaba bien, pero el programa no podía traer su ventana/menú al frente por el bloqueo de foco de Windows. Ahora McBar baja ese bloqueo mientras está abierto (y lo devuelve como estaba al cerrarse), que es lo que hace que el programa pueda pasar al frente. El intento de la 1.9.17 no servía porque soltaba el enganche antes de que el programa procesara el clic.
 

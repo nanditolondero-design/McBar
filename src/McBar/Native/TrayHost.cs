@@ -334,7 +334,14 @@ namespace McBar.Native
                     wParam = new IntPtr(icon.Uid);
                     lParam = new IntPtr(mm);
                 }
-                Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                bool ok = Win32.PostMessage(icon.HWnd, icon.CallbackMessage, wParam, lParam);
+                if (!ok)
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    // 1.9.20: err=5 (acceso denegado) = el programa corre como administrador y Windows no deja
+                    // que McBar (normal) le mande el clic. Es un límite de seguridad de Windows (UIPI).
+                    Log.Write($"Tray: Windows rechazó el envío a 0x{icon.HWnd.ToInt64():X} (error {err}{(err == 5 ? " = el programa corre como administrador" : "")})");
+                }
             }
         }
 
