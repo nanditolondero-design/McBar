@@ -8,6 +8,7 @@
 // (integridad media, igual que el Explorador); si corriera como administrador, no podría leerla.
 using System;
 using System.Collections.Generic;
+using McBar.Core;
 
 namespace McBar.Native
 {
