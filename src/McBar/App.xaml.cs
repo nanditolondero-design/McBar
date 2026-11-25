@@ -520,6 +520,7 @@ namespace McBar
                     if (++_watchdogTicks % 14 == 0) WorkArea.Verify(); // cada ~10 s
                     // 1.9.32: importar de la bandeja real los íconos que no se re-registran (NVIDIA, Defender, etc.)
                     if (_watchdogTicks % 14 == 7) TrayHost.Current?.ImportExisting(); // cada ~10 s, desfasado
+                    if (_watchdogTicks % 7 == 3) TrayHost.Current?.AnnounceMissing(); // 1.9.41: cada ~5 s, re-avisa a las apps de bandeja que faltan
                     if (_watchdogTicks % 4 == 0) KeepBarsOnTop();
                     if (_watchdogTicks % 3 == 0) foreach (var d in Docks) d.RefreshTrashIfChanged(); // 1.9.13: ícono de la Papelera (cada ~2 s)
                     // Con "apps por monitor": si una ventana se pasó a otro monitor, actualizar los Docks.
@@ -629,7 +630,7 @@ namespace McBar
             {
                 tray.Raise();
                 var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-                t.Tick += (_, _) => { t.Stop(); tray.Raise(); tray.Broadcast(); };
+                t.Tick += (_, _) => { t.Stop(); tray.Raise(); tray.Broadcast(); tray.AnnounceMissing(); };
                 t.Start();
             }
         }

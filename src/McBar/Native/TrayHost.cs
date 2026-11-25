@@ -30,7 +30,7 @@ namespace McBar.Native
     {
         public static TrayHost? Current { get; private set; }
 
-        private const uint WS_POPUP = 0x80000000;
+        private const uint WS_POPUP = 0x80000000, WS_CHILD = 0x40000000, WS_CLIPCHILDREN = 0x02000000, WS_CLIPSIBLINGS = 0x04000000;
         private const uint WS_EX_TOOLWINDOW = 0x80, WS_EX_TOPMOST = 0x8;
         private const uint ASFW_ANY = 0xFFFFFFFF; // 1.9.17: permitir que cualquier proceso pase al frente
         private const int WM_LBUTTONDOWN = 0x201, WM_LBUTTONUP = 0x202, WM_LBUTTONDBLCLK = 0x203,
@@ -86,6 +86,19 @@ namespace McBar.Native
             host.Raise();
             host.Broadcast();
             host.ImportExisting(); // 1.9.32: traer los íconos que ya estaban en la bandeja real de Windows
+            host.AnnounceMissing();
+            // 1.9.41: segunda, tercera y cuarta ola (apps ocupadas que no atendieron el primer aviso, o que arrancan junto
+            // con McBar). Los temporizadores se crean dentro del hilo de la bandeja.
+            host._trayThread?.BeginInvoke(new Action(() =>
+            {
+                foreach (var ms in new[] { 1500, 3500, 8000 })
+                {
+                    var delay = ms;
+                    var tm = new DispatcherTimer(DispatcherPriority.Background, host._trayThread!) { Interval = TimeSpan.FromMilliseconds(delay) };
+                    tm.Tick += (_, _) => { tm.Stop(); if (delay == 3500) host.Broadcast(); host.AnnounceMissing(); };
+                    tm.Start();
+                }
+            }));
             return host;
         }
 
@@ -95,20 +108,56 @@ namespace McBar.Native
             {
                 _taskbarCreated = Win32.RegisterWindowMessage("TaskbarCreated");
                 var hInst = Win32.GetModuleHandle(null);
+                // 1.9.41: igual que ManagedShell (Cairo/RetroBar): clase con estilo 0x8 y ventana con WS_CLIPCHILDREN/SIBLINGS,
+                // más un hijo "TrayNotifyWnd" (algunas apps lo buscan dentro de Shell_TrayWnd).
                 var wc = new Win32.WNDCLASSEX
                 {
                     cbSize = (uint)Marshal.SizeOf<Win32.WNDCLASSEX>(),
+                    style = 0x8,
                     lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
                     hInstance = hInst,
                     lpszClassName = "Shell_TrayWnd"
                 };
                 Win32.RegisterClassEx(ref wc);
-                _hwnd = Win32.CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, "Shell_TrayWnd", "", WS_POPUP, 0, 0, 0, 0,
+                _hwnd = Win32.CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, "Shell_TrayWnd", "", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 0, 0,
                                              IntPtr.Zero, IntPtr.Zero, hInst, IntPtr.Zero);
                 if (_hwnd == IntPtr.Zero) { Log.Write("Bandeja: no se pudo crear la ventana"); return false; }
+                var wn = wc;
+                wn.lpszClassName = "TrayNotifyWnd";
+                Win32.RegisterClassEx(ref wn);
+                Win32.CreateWindowEx(0, "TrayNotifyWnd", "", WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 0, 0,
+                                     _hwnd, IntPtr.Zero, hInst, IntPtr.Zero);
+                // 1.9.41: vigilante propio, cada 100 ms y en el hilo de la bandeja (ManagedShell hace lo mismo). Antes se
+                // revisaba cada 700 ms desde la interfaz, y todo ícono que se registraba en ese hueco iba al Explorador
+                // en vez de a McBar (y McBar nunca se enteraba).
+                _guard = new DispatcherTimer(DispatcherPriority.Background, _trayThread!) { Interval = TimeSpan.FromMilliseconds(100) };
+                _guard.Tick += (_, _) => Guard();
+                _guard.Start();
                 return true;
             }
             catch (Exception ex) { Log.Write("Bandeja: " + ex.Message); return false; }
+        }
+
+        private DispatcherTimer? _guard;
+
+        /// <summary>Mantiene nuestra Shell_TrayWnd primera (la que Windows encuentra) y la del Explorador al fondo.</summary>
+        private void Guard()
+        {
+            try
+            {
+                if (_hwnd == IntPtr.Zero) return;
+                if (Win32.FindWindow("Shell_TrayWnd", null) == _hwnd) return;
+                Raise();
+                // Con la barra de Windows escondida por McBar se la manda al fondo (como ManagedShell) para que no
+                // vuelva a quedar primera cuando el Explorador se la vuelve a poner "siempre visible".
+                if (Taskbar.IsHiddenByUs)
+                {
+                    var ex = Taskbar.ExplorerTray();
+                    if (ex != IntPtr.Zero)
+                        Win32.SetWindowPos(ex, new IntPtr(1) /*HWND_BOTTOM*/, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
+                }
+            }
+            catch { }
         }
 
         /// <summary>Pone nuestra ventana primera entre las "Shell_TrayWnd".</summary>
@@ -329,6 +378,95 @@ namespace McBar.Native
                     catch (Exception ex) { Log.Write("Importar ícono: " + ex.Message); }
                 }
                 if (changed) NotifyChanged();
+            }));
+        }
+
+        // ================== 1.9.41: re-avisar a las apps que no se registraron ==================
+        //
+        // En Windows 11 22H2 o posterior la bandeja del Explorador es XAML (ya no tiene SysPager/ToolbarWindow32),
+        // así que ManagedShell/RetroBar tampoco pueden "leer" lo que ya está puesto: dependen de que cada app se
+        // vuelva a registrar al recibir TaskbarCreated. Pero el aviso de difusión (HWND_BROADCAST) NO llega a las
+        // ventanas "solo de mensajes" (HWND_MESSAGE), que son justo las que usan muchos programas de bandeja
+        // (Seguridad de Windows, NVIDIA...). Por eso acá se manda TaskbarCreated directo a TODAS las ventanas de las
+        // apps que Windows recuerda como apps de bandeja (HKCU\Control Panel\NotifyIconSettings) y que están
+        // corriendo pero todavía no tienen ícono en McBar. Con tope de intentos por proceso para no insistir de más.
+
+        private readonly Dictionary<uint, int> _announceTries = new Dictionary<uint, int>();
+        private const int MaxAnnounceTries = 8;
+
+        private static HashSet<string> KnownTrayApps()
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\NotifyIconSettings");
+                if (key == null) return set;
+                foreach (var name in key.GetSubKeyNames())
+                {
+                    try
+                    {
+                        using var k = key.OpenSubKey(name);
+                        // la ruta suele empezar con el GUID de una carpeta conocida ({...}\NVIDIA...\nvtray.exe): alcanza con el nombre del .exe
+                        if (k?.GetValue("ExecutablePath") is string path && path.Length > 0)
+                        {
+                            var file = path.Substring(path.LastIndexOfAny(new[] { '\\', '/' }) + 1);
+                            if (file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) set.Add(file);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex) { Log.Write("Bandeja: no se pudo leer NotifyIconSettings: " + ex.Message); }
+            return set;
+        }
+
+        /// <summary>Todas las ventanas (de primer nivel y "solo de mensajes") agrupadas por proceso.</summary>
+        private static Dictionary<uint, List<IntPtr>> WindowsByProcess()
+        {
+            var map = new Dictionary<uint, List<IntPtr>>();
+            void Add(IntPtr h)
+            {
+                uint pid = Win32.ProcessOf(h);
+                if (pid == 0) return;
+                if (!map.TryGetValue(pid, out var l)) map[pid] = l = new List<IntPtr>();
+                l.Add(h);
+            }
+            Win32.EnumWindowsProc cb = (h, _) => { Add(h); return true; };
+            Win32.EnumWindows(cb, IntPtr.Zero);
+            GC.KeepAlive(cb);
+            IntPtr m = IntPtr.Zero;
+            while ((m = Win32.FindWindowEx(Win32.HWND_MESSAGE, m, null, null)) != IntPtr.Zero) Add(m);
+            return map;
+        }
+
+        public void AnnounceMissing()
+        {
+            _trayThread?.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var known = KnownTrayApps();
+                    if (known.Count == 0) return;
+                    uint own = (uint)Environment.ProcessId;
+                    var have = new HashSet<string>(_icons.Select(i => System.IO.Path.GetFileName(i.ExePath)), StringComparer.OrdinalIgnoreCase);
+                    var byPid = WindowsByProcess();
+                    foreach (var dead in _announceTries.Keys.Where(k => !byPid.ContainsKey(k)).ToList()) _announceTries.Remove(dead);
+                    foreach (var kv in byPid)
+                    {
+                        if (kv.Key == own) continue;
+                        var exe = ExeOf(kv.Value[0]);
+                        if (exe.Length == 0) continue;
+                        var file = System.IO.Path.GetFileName(exe);
+                        if (!known.Contains(file) || have.Contains(file)) continue;
+                        if (file.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase)) continue;
+                        _announceTries.TryGetValue(kv.Key, out int tries);
+                        if (tries >= MaxAnnounceTries) continue;
+                        _announceTries[kv.Key] = tries + 1;
+                        foreach (var h in kv.Value) Win32.PostMessage(h, _taskbarCreated, IntPtr.Zero, IntPtr.Zero);
+                        Log.Write($"Bandeja: aviso TaskbarCreated directo a {file} (pid {kv.Key}, {kv.Value.Count} ventanas, intento {tries + 1}/{MaxAnnounceTries})");
+                    }
+                }
+                catch (Exception ex) { Log.Write("Bandeja (aviso directo): " + ex.Message); }
             }));
         }
 
