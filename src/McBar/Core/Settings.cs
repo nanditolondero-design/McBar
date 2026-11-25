@@ -101,6 +101,7 @@ namespace McBar.Core
         public bool LiveText { get; set; } = true; // 1.9.24: Win+Mayús+T para copiar texto de la pantalla (OCR)
         public bool SpeakSelection { get; set; } = true; // 1.9.26: Win+Mayús+L para leer en voz alta
         public bool EmojiShortcut { get; set; } = true; // 1.9.27: Win+Mayús+E para el visor de emojis
+        public bool TrayUia { get; set; } = true; // 1.9.34: leer la bandeja de Windows 11 por UI Automation
         public bool TrayAdminHelper { get; set; } = false; // 1.9.28: ayudante (admin) para íconos de apps elevadas
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>

@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.34 — 25/11/2026 (bandeja de Windows 11 leída por UI Automation)
+- **Los íconos "siempre visibles" de la bandeja de Windows 11 (NVIDIA y similares) ahora aparecen.** Desde Windows 11 22H2 la bandeja dejó de ser una barra clásica y el método que usaba McBar (leer la memoria del Explorador) solo veía los íconos ocultos (los del "^"). Ahora McBar además recorre la bandeja nueva con **UI Automation**, la vía que Windows ofrece para eso, y suma esos íconos a su barra. Se revisa cada ~10 segundos junto con el método anterior; los íconos que ya llegaron por otro camino no se duplican.
+- **Cómo se abren.** Clic izquierdo: McBar "invoca" el botón real de la bandeja (igual que tocarlo). Clic derecho (menú): UI Automation no tiene clic derecho, así que McBar muestra la barra de Windows un momento (como Win+B), hace el clic con el mouse sobre el botón y deja el mouse donde estaba.
+- **El dibujo del ícono** no lo entrega UI Automation: McBar busca el programa dueño por el nombre del ícono y usa su ícono; si no lo encuentra, muestra un círculo con la inicial.
+- **Nuevo ajuste** en Preferencias → Bandeja del sistema: "Leer también los íconos de la bandeja de Windows 11". Viene prendido.
+- **Diagnóstico.** Si en tu versión de Windows no se encuentra ningún botón, McBar deja una sola vez en `mcbar.log` el árbol de la barra de Windows ("Bandeja UIA: no se encontró ningún botón…"), para poder ajustar los nombres de clase.
+- Interno: reglas puras en `Core/TrayUiaRules.cs` (con tests), lectura y clics en `Native/TrayUia.cs`.
+
 ## 1.9.33 — 25/11/2026 (bandeja: ahora SÍ abren al tocarlas)
 - **Los íconos que McBar importa de Windows (NVIDIA, Defender, MagnAir…) no abrían al tocarlos.** Como McBar los lee de la bandeja real, no sabe qué "formato de clic" esperan (las apps nuevas usan uno y las viejas otro). Ahora, para esos íconos, McBar manda el clic en **los dos formatos**: la app usa el que entiende y descarta el otro. Así abren y muestran su menú igual que WhatsApp.
 

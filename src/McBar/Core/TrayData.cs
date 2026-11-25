@@ -44,6 +44,14 @@ namespace McBar.Core
         /// manda en los dos formatos, el clásico y el nuevo).</summary>
         public bool Imported { get; set; }
 
+        /// <summary>1.9.34: ícono leído por UI Automation de la bandeja de Windows 11 (no tiene ventana ni mensaje de
+        /// retorno: se abre con Invoke / clic del mouse sobre el botón real). <see cref="UiaElement"/> es un
+        /// AutomationElement (se guarda como object para que esta clase no dependa de UI Automation).</summary>
+        public bool FromUia { get; set; }
+        public string UiaName { get; set; } = "";
+        public object? UiaElement { get; set; }
+        public bool UiaOverflow { get; set; }
+
         /// <summary>
         /// Íconos que pone el propio Windows (volumen, red, batería del Explorador). No se muestran: McBar
         /// tiene los suyos, y tocarlos abría paneles de Windows anclados a la barra escondida que trababan todo.
@@ -51,7 +59,7 @@ namespace McBar.Core
         public bool IsWindowsSystem => ExePath.EndsWith("\\explorer.exe", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Identificador que se mantiene entre reinicios (para recordar cuáles ocultar).</summary>
-        public string StableId => Guid != Guid.Empty ? "g:" + Guid.ToString("N") : (ExePath.ToLowerInvariant() + "|" + Uid);
+        public string StableId => FromUia ? "uia:" + TrayUiaRules.Normalize(UiaName) : Guid != Guid.Empty ? "g:" + Guid.ToString("N") : (ExePath.ToLowerInvariant() + "|" + Uid);
     }
 
     public static class TrayData
