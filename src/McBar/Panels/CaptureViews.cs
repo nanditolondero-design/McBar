@@ -33,10 +33,12 @@ namespace McBar.Panels
         private Point? _start;
         private readonly List<(IntPtr hwnd, Win32.RECT rect)> _windows;
         private IntPtr _hoverHwnd;
+        // 1.9.24: si está puesto, la zona elegida se le pasa acá (p. ej. para OCR) en vez de guardarse como captura
+        private readonly Action<BitmapSource>? _onRegion;
 
-        public CaptureOverlay(MonitorInfo m, BitmapSource frozen, bool windowMode)
+        public CaptureOverlay(MonitorInfo m, BitmapSource frozen, bool windowMode, Action<BitmapSource>? onRegion = null)
         {
-            _m = m; _frozen = frozen; _windowMode = windowMode;
+            _m = m; _frozen = frozen; _windowMode = windowMode; _onRegion = onRegion;
             _windows = ScreenCapture.TopWindows();
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
@@ -98,7 +100,7 @@ namespace McBar.Panels
                 var crop = new CroppedBitmap(_frozen, new Int32Rect(x, y, cw, ch));
                 crop.Freeze();
                 Close();
-                Screenshots.Save(crop, _m);
+                if (_onRegion != null) _onRegion(crop); else Screenshots.Save(crop, _m);
             };
             KeyDown += (_, e) =>
             {
@@ -162,7 +164,7 @@ namespace McBar.Panels
                 var c = new CroppedBitmap(_frozen, new Int32Rect(x, y, cw, ch)); c.Freeze();
                 img = c;
             }
-            Screenshots.Save(Screenshots.WithShadow(img, _m.Scale), _m);
+            if (_onRegion != null) _onRegion(img); else Screenshots.Save(Screenshots.WithShadow(img, _m.Scale), _m);
         }
     }
 

@@ -1,5 +1,17 @@
 # Cambios
 
+## 1.9.24 — 24/11/2026
+- **Texto en vivo (OCR, como Live Text de macOS)**: elegís una zona de la pantalla y McBar copia el texto que haya en la imagen (un cartel, un PDF escaneado, una foto) al portapapeles. Atajo **Win+Mayús+T**, o desde el menú de McBar → "Copiar texto de la pantalla (OCR)". Se puede apagar en Preferencias → Teclado. Usa el OCR que ya trae Windows.
+
+## 1.9.23 — 24/11/2026
+- **Modo noche (como Night Shift de macOS)**: entibia los colores de la pantalla de noche para descansar la vista. En Preferencias → General: "Modo noche (pantalla cálida de noche)", "Modo noche todo el día (no solo de noche)" e "Intensidad del modo noche". De fábrica va de 20:00 a 07:00. Al apagarlo o salir de McBar, la pantalla vuelve a los colores normales.
+
+## 1.9.22 — 24/11/2026
+- **Dock: "Abrir al iniciar sesión"**: al hacer clic derecho en una app fijada → Opciones, ahora hay "Abrir al iniciar sesión", como en macOS (Opciones → Open at Login). Si lo tildás, esa app arranca sola con Windows; si lo destildás, deja de hacerlo.
+
+## 1.9.21 — 24/11/2026
+- **Preferencias ordenadas**: las pestañas quedaron en un orden con criterio — primero General, después lo que se ve (Dock, Barra superior, Isla, Launchpad), después los comportamientos (Notificaciones, Teclado, Esquinas activas), después Bandeja del sistema, Widgets, Estilo Mac, Personalización y, al final, Diagnóstico. Las parientes quedan juntas (la barra con la isla, el teclado con las esquinas). No cambió ningún ajuste ni ningún texto, solo el orden.
+
 ## 1.9.20 — 24/11/2026 (diagnóstico del systray)
 - El log de la 1.9.19 mostró que, incluso con el arreglo del foco, algunos íconos no reaccionan (WhatsApp sí; los que corren como administrador no). Se agrega al registro si Windows rechaza el envío del clic por seguridad (UIPI, error 5 = el programa corre como administrador). Con eso se confirma la causa antes de agregar la opción de ejecutar McBar como administrador.
 

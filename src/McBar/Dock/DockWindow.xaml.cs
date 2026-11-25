@@ -1729,6 +1729,16 @@ namespace McBar.Dock
                     if (string.IsNullOrEmpty(path) && item.Target != null && File.Exists(item.Target)) path = item.Target;
                     if (!string.IsNullOrEmpty(path)) options.Items.Add(Mi("Mostrar en el Explorador", () => Launcher.ShowInExplorer(path!)));
                     options.Items.Add(IconMenu(item)); // 1.6.1
+                    // 1.9.22: "Abrir al iniciar sesión" (como Opciones → Open at Login en Mac), solo para apps fijadas
+                    if (item.IsPinned && item.Target != null)
+                    {
+                        string cmd = AppIdentity.IsAppsFolder(item.Target)
+                            ? "explorer.exe \"" + item.Target + "\""
+                            : "\"" + item.Target + "\"";
+                        var login = new MenuItem { Header = "Abrir al iniciar sesión", IsCheckable = true, IsChecked = SystemInfo.OpensAtLogin(item.Name) };
+                        login.Click += (_, _) => SystemInfo.SetOpenAtLogin(item.Name, cmd, login.IsChecked);
+                        options.Items.Add(login);
+                    }
                     if (item.IsPinned && item.Target != null) options.Items.Add(AddToFolderMenu(item)); // 1.8.3
                     cm.Items.Add(options);
                     cm.Items.Add(new Separator());

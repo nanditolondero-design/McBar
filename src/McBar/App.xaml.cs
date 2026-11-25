@@ -222,6 +222,7 @@ namespace McBar
             StartMacIcons(); // 1.4.0: íconos de macOSicons para las apps instaladas
             StartWatchdog();
             HangWatch.Start(Dispatcher); // 1.3.1: si la interfaz se traba, lo anota y McBar se reinicia solo
+            NightShift.Start(); // 1.9.23: Modo noche
             ScheduleTrim(6);
         }
 
@@ -1071,6 +1072,7 @@ namespace McBar
                 try { if (Taskbar.IsHiddenByUs || SettingsStore.Current.TaskbarModified) Taskbar.Restore(); } catch { }
             }
             try { ShellHook.RestoreAnimation(); } catch { }
+            try { NightShift.Stop(); } catch { }
         }
     }
 }

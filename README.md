@@ -4,7 +4,7 @@
 
 **El Dock, la barra de menú y la isla dinámica de macOS, en Windows 10 y 11.**
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.19-0A84FF)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-1.9.24-0A84FF)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2b2b2b)
 ![.NET](https://img.shields.io/badge/.NET-8%20%C2%B7%20WPF-512BD4)
 ![Sin administrador](https://img.shields.io/badge/instala-sin%20permisos%20de%20admin-30D158)
@@ -244,6 +244,11 @@ Más detalles:
 
 | Versión | Qué trajo |
 |---|---|
+| **1.9.24** | Texto en vivo (OCR): copiar texto de la pantalla |
+| **1.9.23** | Modo noche (Night Shift): pantalla cálida de noche |
+| **1.9.22** | Dock: "Abrir al iniciar sesión" por app (como en macOS) |
+| **1.9.21** | Preferencias reordenadas con criterio |
+| **1.9.20** | Diagnóstico del systray: registra si Windows rechaza el clic (apps como admin) |
 | **1.9.19** | Foco del área de notificaciones (menús/abrir app) — arreglo real con el log |
 | **1.9.18** | Accesos directos de instalación (forma nativa); abrir registro desde el menú |
 | **1.9.17** | Arreglo del foco del área de notificaciones (menús que no abrían) |

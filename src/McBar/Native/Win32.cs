@@ -144,6 +144,7 @@ namespace McBar.Native
 
         // ---------- gdi32 ----------
         [DllImport("gdi32.dll")] public static extern bool DeleteObject(IntPtr h);
+        [DllImport("gdi32.dll")] public static extern bool SetDeviceGammaRamp(IntPtr hdc, ushort[] ramp); // 1.9.23: Modo noche
         [DllImport("gdi32.dll")] public static extern int GetObject(IntPtr h, int size, out BITMAP bmp);
         [DllImport("gdi32.dll")] public static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint start, uint lines, [Out] byte[] bits, ref BITMAPINFOHEADER bmi, uint usage);
 

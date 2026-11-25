@@ -94,6 +94,11 @@ namespace McBar.Core
         public bool DockHideOnMaximized { get; set; } = true;
         /// <summary>1.9.7: las carpetas y pilas abiertas del Dock se cierran solas al sacar el mouse un momento.</summary>
         public bool DockPopupsAutoClose { get; set; } = true;
+        // 1.9.23: Modo noche (Night Shift)
+        public bool NightShift { get; set; } = false;
+        public bool NightShiftAllDay { get; set; } = false;
+        public int NightShiftStrength { get; set; } = 55;
+        public bool LiveText { get; set; } = true; // 1.9.24: Win+Mayús+T para copiar texto de la pantalla (OCR)
         public bool IslandMedia { get; set; } = true;
         /// <summary>"black" (negro, como el iPhone), "graphite", "glass" (vidrio con desenfoque) o "accent".</summary>
         public string IslandStyle { get; set; } = "black";

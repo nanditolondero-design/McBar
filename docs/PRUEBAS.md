@@ -240,6 +240,22 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.24
+- [ ] Win+Mayús+T → elegir una zona con texto (un cartel, un PDF) → aviso "Texto copiado al portapapeles" y Ctrl+V pega el texto. Lo mismo desde el menú de McBar → "Copiar texto de la pantalla (OCR)".
+- [ ] Una zona sin texto → avisa "No se encontró texto". Si Windows no tiene idioma de OCR, avisa eso.
+- [ ] Apagar el toggle en Preferencias → Teclado → Win+Mayús+T deja de hacer OCR.
+
+### Versión 1.9.23
+- [ ] Preferencias → General → "Modo noche": prenderlo de noche (o con "todo el día") entibia la pantalla; la intensidad cambia cuánto. Apagarlo devuelve los colores. Salir de McBar también los devuelve.
+- [ ] Con un monitor/driver que ignore la rampa de gamma, no pasa nada raro (no rompe).
+
+### Versión 1.9.22
+- [ ] Clic derecho en una app fijada del Dock → Opciones → "Abrir al iniciar sesión": tildarlo crea la entrada de inicio (se ve en Administrador de tareas → Inicio); destildarlo la saca. Reiniciar Windows → la app arranca sola cuando está tildado.
+- [ ] En una app de la Store fijada, lo mismo (arranca con `explorer.exe shell:AppsFolder`).
+
+### Versión 1.9.21
+- [ ] Abrir Preferencias: la primera pestaña es General; el orden de las pestañas es el nuevo; cada ajuste sigue en su lugar y funciona. Los botones Acerca de / Salir siguen abajo.
+
 ### Versión 1.9.19
 - [ ] Clic izquierdo en un ícono del área de notificaciones que antes no abría → abre la app. Clic derecho → el menú aparece y se queda.
 - [ ] Al cerrar McBar, el "tiempo de bloqueo de foco" de Windows vuelve a su valor (no quedan apps robando foco).

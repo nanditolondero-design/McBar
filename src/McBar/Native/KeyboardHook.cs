@@ -247,6 +247,14 @@ namespace McBar.Native
                             return (IntPtr)1;
                         }
 
+                        // ---- Texto en vivo / OCR (1.9.24): Win+Mayús+T ----
+                        if (s.LiveText && down && _winDown && Down(VK_SHIFT) && !Down(VK_CONTROL) && !Down(VK_MENU) && vk == 0x54)
+                        {
+                            if (!_winSwallowed) WindowOps.SendChord(VK_DUMMY);
+                            Ui(() => Core.LiveText.Start());
+                            return (IntPtr)1;
+                        }
+
                         // ---- Atajos estilo Mac (1.8.0): Alt izquierdo hace de Cmd ----
                         if (s.MacShortcuts && !_switching)
                         {

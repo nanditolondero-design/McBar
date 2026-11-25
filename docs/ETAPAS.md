@@ -247,6 +247,18 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.24 (24/11/2026)
+`Core/LiveText`: reusa `CaptureOverlay` (nuevo parámetro `onRegion`) para elegir zona; `ToSoftwareBitmap` (CopyPixels BGRA → `SoftwareBitmap.CreateCopyFromBuffer`), `OcrEngine.TryCreateFromUserProfileLanguages().RecognizeAsync`, junta las líneas, copia al portapapeles y avisa con `NotificationCenter`. Atajo Win+Mayús+T en `KeyboardHook` (gate `LiveText`, vk 0x54), ítem en el menú del sistema y toggle en Preferencias → Teclado. `CaptureOverlay` entrega la zona a `onRegion` tanto en arrastre como en modo ventana.
+
+## 1.9.23 (24/11/2026)
+`Core/NightShift`: `Start` (timer de 1 min + `SettingsStore.Changed`), `ShouldWarm(enabled, allDay, now)` pura (noche = hora ≥20 o <7), `BuildRamp(intensidad)` pura (256×3; rojo full, verde ×(1−0,28·i), azul ×(1−0,58·i)), `Apply`/`Reset`/`Stop` con `SetDeviceGammaRamp` sobre `GetDC(0)`. `Win32.SetDeviceGammaRamp` nuevo. Ajustes `NightShift`/`NightShiftAllDay`/`NightShiftStrength`. `App.OnStartup` llama `Start`; `SafeCleanup` llama `Stop` (devuelve la rampa). UI en General (3 controles). Tests en Stage26.
+
+## 1.9.22 (24/11/2026)
+`SystemInfo.OpensAtLogin`/`SetOpenAtLogin(appName, command, on)`: entrada propia en HKCU\…\Run con nombre `McBarLogin_<alfanum>`; el comando es la ruta del .exe entre comillas, o `explorer.exe "shell:AppsFolder\…"` para apps de la Store. En `ShowContextMenu` (App), dentro de "Opciones" y solo para apps fijadas con Target, ítem chequeable "Abrir al iniciar sesión".
+
+## 1.9.21 (24/11/2026)
+`SettingsWindow.Build`: se reordenaron los bloques de secciones (cada uno delimitado por su `Header(...)`) sin tocar su contenido ni los textos. Orden nuevo: General, Dock, Barra superior, Isla dinámica, Launchpad, Notificaciones, Teclado, Esquinas activas, Bandeja del sistema, Widgets, Estilo Mac, Personalización, Diagnóstico. `Tabbed()` sigue armando una pestaña por Header. El bloque de widgets de escritorio/calendario (sin Header) sigue dentro de Widgets.
+
 ## 1.9.20 (24/11/2026)
 `PostMessage` con `SetLastError`; `TrayHost.Send` registra cuando el envío falla (`Marshal.GetLastWin32Error`), con nota especial para error 5 (acceso denegado = ventana de mayor integridad; McBar normal no puede mandarle mensajes a un proceso elevado — límite UIPI). Confirma si el problema de los íconos que no abren es la elevación. Fix previsto: opción de reiniciar McBar como administrador.
 

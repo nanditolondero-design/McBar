@@ -61,6 +61,22 @@ namespace McBar.Panels
             var s = SettingsStore.Current;
             var root = new StackPanel();
 
+            // ---------- General ----------
+            root.Children.Add(Header("General"));
+            var gen = new StackPanel();
+            gen.Children.Add(Switch("Ocultar la barra de tareas de Windows", s.HideWindowsTaskbar, v => s.HideWindowsTaskbar = v));
+            gen.Children.Add(Switch("Abrir McBar al iniciar Windows", s.StartWithWindows, v => s.StartWithWindows = v));
+            // 1.9.1: que McBar abra antes y no se vea la barra de Windows al iniciar
+            gen.Children.Add(Switch("Abrir sin la espera de Windows al iniciar (también los otros programas de inicio)", s.FastStartup, v => s.FastStartup = v));
+            gen.Children.Add(ThemeSelector(s));
+            // 1.6.1: cuánto se transparenta el tema Vidrio (paneles, Dock, barra)
+            gen.Children.Add(SliderSetting("Transparencia del vidrio", 0, 100, s.GlassTransparency, v => s.GlassTransparency = (int)v));
+            // 1.9.23: Modo noche (Night Shift)
+            gen.Children.Add(Switch("Modo noche (pantalla cálida de noche)", s.NightShift, v => s.NightShift = v));
+            gen.Children.Add(Switch("Modo noche todo el día (no solo de noche)", s.NightShiftAllDay, v => s.NightShiftAllDay = v));
+            gen.Children.Add(SliderSetting("Intensidad del modo noche", 0, 100, s.NightShiftStrength, v => s.NightShiftStrength = (int)v));
+            root.Children.Add(Group(gen));
+
             // ---------- Dock ----------
             root.Children.Add(Header("Dock"));
             var dock = new StackPanel();
@@ -167,6 +183,16 @@ namespace McBar.Panels
             isl.Children.Add(mode);
             root.Children.Add(Group(isl));
 
+            // ---------- Launchpad (0.4.0) ----------
+            root.Children.Add(Header("Launchpad"));
+            var lp = new StackPanel();
+            lp.Children.Add(SliderSetting("Transparencia del fondo", 0, 100, s.LaunchpadTransparency, v => s.LaunchpadTransparency = (int)v));
+            lp.Children.Add(Switch("Desenfoque del fondo", s.LaunchpadBlur, v => s.LaunchpadBlur = v));
+            var tip = new TextBlock { Text = "Carpetas: arrastrá una app sobre otra. Clic derecho para más opciones.", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
+            tip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+            lp.Children.Add(tip);
+            root.Children.Add(Group(lp));
+
             // ---------- Notificaciones (0.4.0) ----------
             root.Children.Add(Header("Notificaciones"));
             var nt = new StackPanel();
@@ -185,6 +211,7 @@ namespace McBar.Panels
             kb.Children.Add(Switch("Win+Tab: ver todas las ventanas (Mission Control)", s.OwnWinTab, v => s.OwnWinTab = v));
             kb.Children.Add(Switch("Espacio en el Explorador: vista previa rápida (Quick Look)", s.QuickLook, v => s.QuickLook = v));
             kb.Children.Add(Switch("Ctrl+Alt+flechas: acomodar ventanas en mosaico", s.TileShortcuts, v => s.TileShortcuts = v));
+            kb.Children.Add(Switch("Win+Mayús+T: copiar texto de la pantalla (OCR)", s.LiveText, v => s.LiveText = v)); // 1.9.24
             var kbTip = new TextBlock { Text = "Win+N abre las notificaciones y Win+A el Centro de control (se cambian en Notificaciones).", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
             kbTip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             kb.Children.Add(kbTip);
@@ -202,16 +229,6 @@ namespace McBar.Panels
             hc.Children.Add(hcTip);
             root.Children.Add(Group(hc));
 
-            // ---------- Launchpad (0.4.0) ----------
-            root.Children.Add(Header("Launchpad"));
-            var lp = new StackPanel();
-            lp.Children.Add(SliderSetting("Transparencia del fondo", 0, 100, s.LaunchpadTransparency, v => s.LaunchpadTransparency = (int)v));
-            lp.Children.Add(Switch("Desenfoque del fondo", s.LaunchpadBlur, v => s.LaunchpadBlur = v));
-            var tip = new TextBlock { Text = "Carpetas: arrastrá una app sobre otra. Clic derecho para más opciones.", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
-            tip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
-            lp.Children.Add(tip);
-            root.Children.Add(Group(lp));
-
             // ---------- Bandeja ----------
             root.Children.Add(Header("Bandeja del sistema"));
             var tray = new StackPanel();
@@ -219,18 +236,6 @@ namespace McBar.Panels
             tray.Children.Add(Switch("Íconos en blanco y negro (estilo Mac)", s.TrayMonochrome, v => s.TrayMonochrome = v));
             tray.Children.Add(TrayList(s));
             root.Children.Add(Group(tray));
-
-            // ---------- General ----------
-            root.Children.Add(Header("General"));
-            var gen = new StackPanel();
-            gen.Children.Add(Switch("Ocultar la barra de tareas de Windows", s.HideWindowsTaskbar, v => s.HideWindowsTaskbar = v));
-            gen.Children.Add(Switch("Abrir McBar al iniciar Windows", s.StartWithWindows, v => s.StartWithWindows = v));
-            // 1.9.1: que McBar abra antes y no se vea la barra de Windows al iniciar
-            gen.Children.Add(Switch("Abrir sin la espera de Windows al iniciar (también los otros programas de inicio)", s.FastStartup, v => s.FastStartup = v));
-            gen.Children.Add(ThemeSelector(s));
-            // 1.6.1: cuánto se transparenta el tema Vidrio (paneles, Dock, barra)
-            gen.Children.Add(SliderSetting("Transparencia del vidrio", 0, 100, s.GlassTransparency, v => s.GlassTransparency = (int)v));
-            root.Children.Add(Group(gen));
 
             // ---------- Widgets ----------
             root.Children.Add(Header("Widgets"));

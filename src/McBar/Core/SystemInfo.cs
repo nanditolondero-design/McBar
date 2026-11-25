@@ -210,5 +210,28 @@ namespace McBar.Core
             }
             catch (Exception ex) { Log.Write("Inicio con Windows: " + ex.Message); }
         }
+
+        // ---------- 1.9.22: "Abrir al iniciar sesión" para apps del Dock (Opciones → Open at Login en Mac) ----------
+        private static string LoginValueName(string appName) =>
+            "McBarLogin_" + new string((appName ?? "").Where(char.IsLetterOrDigit).ToArray());
+
+        /// <summary>¿Esta app está puesta para abrirse al iniciar sesión (por McBar)?</summary>
+        public static bool OpensAtLogin(string appName)
+        {
+            try { using var k = Registry.CurrentUser.OpenSubKey(RunKey); return k?.GetValue(LoginValueName(appName)) != null; }
+            catch { return false; }
+        }
+
+        /// <summary>Prende o apaga que una app se abra al iniciar sesión. command es lo que ejecuta Windows.</summary>
+        public static void SetOpenAtLogin(string appName, string command, bool on)
+        {
+            try
+            {
+                using var k = Registry.CurrentUser.CreateSubKey(RunKey);
+                if (on) k.SetValue(LoginValueName(appName), command);
+                else k.DeleteValue(LoginValueName(appName), false);
+            }
+            catch (Exception ex) { Log.Write("Abrir al iniciar sesión: " + ex.Message); }
+        }
     }
 }
