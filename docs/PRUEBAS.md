@@ -240,6 +240,10 @@ Tema:
 - [ ] Bajar un archivo grande con Chrome → la isla muestra los MB que van; el panel muestra velocidad. Al terminar: "Descarga completa" con el nombre.
 - [ ] Apagar los tres interruptores en Preferencias → Isla dinámica → no se muestra nada de esto.
 
+### Versión 1.9.18
+- [ ] Instalar McBar → queda McBar en el menú Inicio de Windows; si se tildó, también en el escritorio. La carpeta está en %LocalAppData%\Programs\McBar.
+- [ ] Menú de McBar (arriba izquierda) → "Abrir registro (diagnóstico)" abre el mcbar.log.
+
 ### Versión 1.9.17
 - [ ] Clic izquierdo en un ícono del área de notificaciones que antes no abría → abre. Clic derecho → aparece y se queda el menú (no se cierra solo).
 - [ ] Probar con varios (antivirus, audio, utilidades). Si alguno sigue sin andar, mirar el log (líneas "Tray").

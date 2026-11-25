@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.18 — 24/11/2026
+- **Accesos directos de la instalación**: al instalar no quedaba el acceso directo en el menú Inicio (ni en el escritorio) porque se creaban con un método que fallaba sin aviso en la app de un solo archivo. Ahora se crean con la forma nativa de Windows. (McBar se instala en %LocalAppData%\Programs\McBar, no en "Archivos de programa", para no pedir permiso de administrador; eso es a propósito.)
+- **Menú → "Abrir registro (diagnóstico)"**: nueva opción en el menú de McBar (arriba a la izquierda, en el menú del sistema) que abre el `mcbar.log`, para diagnosticar cosas como los íconos del área de notificaciones sin tener que buscar el archivo a mano.
+
 ## 1.9.17 — 24/11/2026 (systray)
 - **Íconos del área de notificaciones que no abrían ni mostraban menú**: como la barra de McBar nunca toma el foco, Windows no dejaba que el programa trajera su menú al frente. Ahora McBar engancha su hilo al del programa y le habilita el paso al frente antes de reenviar el clic, que es lo que hace la barra de Windows. El registro de diagnóstico de la 1.9.15 sigue estando por si algún programa necesita algo más.
 

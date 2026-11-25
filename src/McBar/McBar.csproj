@@ -11,8 +11,8 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>McBar</AssemblyName>
     <RootNamespace>McBar</RootNamespace>
-    <Version>1.9.17</Version>
-    <FileVersion>1.9.17.0</FileVersion>
+    <Version>1.9.18</Version>
+    <FileVersion>1.9.18.0</FileVersion>
     <Authors>Londero</Authors>
     <Company>Londero</Company>
     <Product>McBar</Product>

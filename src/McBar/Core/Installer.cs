@@ -88,9 +88,11 @@ namespace McBar.Core
             RegisterUninstall();
 
             progress(0.7, "Creando accesos directos…");
-            if (o.StartMenuShortcut) CreateShortcut(StartMenuLink, InstalledExe, "Dock y barra estilo macOS");
+            bool menuOk = true;
+            if (o.StartMenuShortcut) menuOk = CreateShortcut(StartMenuLink, InstalledExe, "Dock y barra estilo macOS");
             else TryDelete(StartMenuLink);
             if (o.DesktopShortcut) CreateShortcut(DesktopLink, InstalledExe, "Dock y barra estilo macOS");
+            if (o.StartMenuShortcut && !menuOk) Log.Write("Aviso: el acceso directo del menú Inicio no se pudo crear.");
 
             progress(0.85, "Aplicando tus opciones…");
             var s = SettingsStore.Current;
@@ -186,21 +188,15 @@ namespace McBar.Core
             return list;
         }
 
-        public static void CreateShortcut(string linkPath, string target, string description)
+        public static bool CreateShortcut(string linkPath, string target, string description)
         {
-            try
-            {
-                var t = Type.GetTypeFromProgID("WScript.Shell");
-                if (t == null) return;
-                dynamic shell = Activator.CreateInstance(t)!;
-                dynamic lnk = shell.CreateShortcut(linkPath);
-                lnk.TargetPath = target;
-                lnk.WorkingDirectory = Path.GetDirectoryName(target);
-                lnk.Description = description;
-                lnk.IconLocation = target + ",0";
-                lnk.Save();
-            }
-            catch (Exception ex) { Log.Write("Acceso directo: " + ex.Message); }
+            // 1.9.18: forma nativa (IShellLink). El WScript.Shell por COM fallaba sin aviso en la app de un solo
+            // archivo y no quedaba el acceso directo.
+            var dir = Path.GetDirectoryName(target) ?? InstallDir;
+            bool ok = McBar.Native.ShellLink.Create(linkPath, target, dir, description, target, 0);
+            if (ok) Log.Write("Acceso directo creado: " + linkPath);
+            else Log.Write("No se pudo crear el acceso directo: " + linkPath);
+            return ok;
         }
 
         // ================== Desinstalar ==================

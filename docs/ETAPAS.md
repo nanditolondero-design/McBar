@@ -247,6 +247,9 @@ La 1.9.8 no alcanzó: con la barra de menú, nada se acomodaba. `Native/TopAppBa
 ## 1.9.13 (24/11/2026)
 `DockWindow.RefreshTrashIfChanged` (lo llama el vigilante de App cada ~2 s): compara `SystemInfo.RecycleBinHasItems()` con `_trashFull` y recarga el ícono de la Papelera si cambió; `LoadIcon(Trash)` sincroniza `_trashFull`. Ícono de apps empaquetadas: en `LoadIcon` (App), si la ventana existe, `IconSource` no es `shell:AppsFolder\…` y apunta a un .exe en `\WindowsApps\`, se usa `IconLoader.FromWindow(hwnd)` (con forma Mac si corresponde) en vez del ícono genérico del .exe.
 
+## 1.9.18 (24/11/2026)
+`Native/ShellLink`: creación de .lnk con IShellLink + IPersistFile (reemplaza WScript.Shell, que fallaba callado en single-file). `Installer.CreateShortcut` lo usa y devuelve bool; `Install` avisa en el log si el del menú Inicio no se creó. Menú del sistema (`MenuBarContent.BuildSystemMenu`): "Abrir registro (diagnóstico)" abre `mcbar.log` (o la carpeta de McBar).
+
 ## 1.9.17 (24/11/2026)
 `TrayHost.Send`: antes de reenviar, `AttachThreadInput(hilo McBar, hilo del dueño del ícono, true)` + `AllowSetForegroundWindow(ASFW_ANY)` para saltear el bloqueo de foco (la barra no toma foco, así que el programa no podía hacer `SetForegroundWindow` para su menú); se desengancha al final. Sigue el log de la 1.9.15.
 
