@@ -185,7 +185,7 @@ namespace McBar.Native
                     {
                         if (m.Message == TrayData.NIM_MODIFY && (m.Flags & TrayData.NIF_ICON) == 0) return false;
                         // 1.9.32: si lo habíamos importado de la bandeja real (otro Id, por ej. con GUID), sacar el duplicado
-                        _icons.RemoveAll(i => i.HWnd == new IntPtr(unchecked((int)m.HWnd)) && i.Uid == m.Uid);
+                        _icons.RemoveAll(i => i.HWnd == new IntPtr(unchecked((int)m.HWnd)) && (i.Uid == m.Uid || i.Imported));
                         icon = new TrayIcon
                         {
                             Id = id,
@@ -319,125 +319,17 @@ namespace McBar.Native
                         };
                         _icons.Add(icon);
                         changed = true;
+                        // 1.9.39: el aviso "se creó una barra nueva" de difusión no llega a las ventanas internas (message-only)
+                        // que usan muchos programas de bandeja. Se lo mandamos directo a la ventana de este ícono: si la app
+                        // se vuelve a registrar, reemplaza al importado y McBar pasa a tener sus datos reales (versión,
+                        // mensaje de retorno, GUID). Si corre como administrador Windows lo rechaza y no pasa nada.
+                        Win32.PostMessage(e.Hwnd, _taskbarCreated, IntPtr.Zero, IntPtr.Zero);
                         Log.Write($"Bandeja: importado de Windows 0x{e.Hwnd.ToInt64():X} uid={e.Uid} cb=0x{e.Callback:X} ({System.IO.Path.GetFileName(exe)})");
                     }
                     catch (Exception ex) { Log.Write("Importar ícono: " + ex.Message); }
                 }
                 if (changed) NotifyChanged();
             }));
-            ImportUia();
-        }
-
-        /// <summary>
-        /// 1.9.34: Windows 11 (22H2+): lee por UI Automation los íconos de la bandeja nueva (los "siempre visibles",
-        /// como NVIDIA, que el método clásico de arriba no ve). La lectura corre en el ThreadPool y el resultado se
-        /// mezcla en el hilo de la bandeja.
-        /// </summary>
-        private int _uiaRunning;
-        private DateTime _lastUia = DateTime.MinValue;
-        private void ImportUia(bool force = false)
-        {
-            if (!SettingsStore.Current.TrayUiaEnabled) return;
-            // 1.9.35: cada lectura estaciona la barra de Windows un instante, así que se hace cada ~45 s (no cada 10 s)
-            if (!force && (DateTime.Now - _lastUia).TotalSeconds < 45) return;
-            if (Interlocked.Exchange(ref _uiaRunning, 1) == 1) return;
-            _lastUia = DateTime.Now;
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                TrayUia.Result res;
-                try { res = TrayUia.Read(); }
-                catch (Exception ex) { Log.Write("Bandeja UIA: " + ex.Message); Interlocked.Exchange(ref _uiaRunning, 0); return; }
-                // buscar el programa dueño de cada ícono nuevo (fuera del hilo de la bandeja: recorre procesos)
-                var owners = new Dictionary<string, string?>();
-                foreach (var e in res.Entries)
-                {
-                    try { if (!owners.ContainsKey(e.Name)) owners[e.Name] = TrayUia.ResolveExe(e.Name); } catch { }
-                }
-                var t = _trayThread;
-                if (t == null) { Interlocked.Exchange(ref _uiaRunning, 0); return; }
-                t.BeginInvoke(new Action(() =>
-                {
-                    try { MergeUia(res, owners); }
-                    catch (Exception ex) { Log.Write("Bandeja UIA (mezcla): " + ex.Message); }
-                    finally { Interlocked.Exchange(ref _uiaRunning, 0); }
-                }));
-            });
-        }
-
-        /// <summary>Mezcla lo leído por UI Automation con los íconos que ya tenemos. Corre en el hilo de la bandeja.</summary>
-        private void MergeUia(TrayUia.Result res, Dictionary<string, string?> owners)
-        {
-            bool changed = false;
-            // 1) los que ya no están en la barra visible se sacan (solo si la lectura anduvo y trajo algo; los que
-            //    vinieron de la ventana de íconos ocultos no se sacan porque esa ventana solo existe mientras está abierta)
-            if (res.TaskbarReadable && res.Entries.Any(e => !e.Overflow))
-            {
-                var seenNames = res.Entries.Select(e => e.Name).ToList();
-                changed |= _icons.RemoveAll(i => i.FromUia && !i.UiaOverflow && !seenNames.Any(n => TrayUiaRules.SameIcon(n, i.UiaName))) > 0;
-            }
-            foreach (var e in res.Entries)
-            {
-                var have = _icons.FirstOrDefault(i => i.FromUia && TrayUiaRules.SameIcon(i.UiaName, e.Name));
-                if (have != null) { have.UiaElement = e.Element; continue; } // refrescar el botón (puede cambiar si se reinicia el Explorador)
-                // ya lo tenemos por Shell_NotifyIcon o por el método clásico: no duplicar
-                if (_icons.Any(i => !i.FromUia && (TrayUiaRules.SameIcon(i.Tooltip, e.Name) ||
-                                                    (i.Tooltip.Length == 0 && TrayUiaRules.SameIcon(System.IO.Path.GetFileNameWithoutExtension(i.ExePath), e.Name))))) continue;
-                owners.TryGetValue(e.Name, out var exe);
-                // 1.9.36: sin programa dueño identificado no se importa (antes salían círculos con una letra: R, P, M…
-                // que eran botones del propio Windows y al tocarlos abrían la barra de Windows)
-                if (string.IsNullOrEmpty(exe)) { Log.Write($"Bandeja UIA: se ignora '{e.Name}' (no se encontró su programa)"); continue; }
-                if (_icons.Any(i => !i.FromUia && string.Equals(i.ExePath, exe, StringComparison.OrdinalIgnoreCase))) continue;
-                var icon = new TrayIcon
-                {
-                    Id = "u:" + TrayUiaRules.Normalize(e.Name),
-                    FromUia = true,
-                    UiaName = e.Name,
-                    UiaElement = e.Element,
-                    UiaOverflow = e.Overflow,
-                    Tooltip = e.Name,
-                    ExePath = exe
-                };
-                if (icon.IsWindowsSystem) continue;
-                _icons.Add(icon);
-                Log.Write($"Bandeja: importado por UI Automation '{e.Name}' (id={e.AutomationId}, clase={e.ClassName}) exe={System.IO.Path.GetFileName(exe)}");
-                var captured = icon;
-                McBar.Core.IconLoader.Request(exe, 32, img =>
-                {
-                    if (img == null) { _icons.Remove(captured); return; }
-                    captured.Icon = img;
-                    NotifyChanged();
-                });
-            }
-            if (changed) NotifyChanged();
-        }
-
-        /// <summary>Ícono de reemplazo cuando no se encontró el programa: un círculo con la inicial.</summary>
-        private static System.Windows.Media.ImageSource? MakeLetterIcon(string name)
-        {
-            try
-            {
-                var letter = (name.Trim().Length > 0 ? name.Trim().Substring(0, 1).ToUpperInvariant() : "?");
-                var dv = new System.Windows.Media.DrawingVisual();
-                using (var dc = dv.RenderOpen())
-                {
-                    dc.DrawEllipse(new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(110, 118, 130)), null, new Point(16, 16), 15, 15);
-                    var ft = new System.Windows.Media.FormattedText(letter, System.Globalization.CultureInfo.CurrentUICulture,
-                        FlowDirection.LeftToRight, new System.Windows.Media.Typeface("Segoe UI Semibold"), 18,
-                        System.Windows.Media.Brushes.White, 1.0);
-                    dc.DrawText(ft, new Point(16 - ft.Width / 2, 16 - ft.Height / 2));
-                }
-                var rtb = new RenderTargetBitmap(32, 32, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
-                rtb.Render(dv);
-                rtb.Freeze();
-                return rtb;
-            }
-            catch { return null; }
-        }
-
-        /// <summary>Saca un ícono UI Automation cuyo botón ya no existe (lo llama el clic si no lo encuentra).</summary>
-        private void RemoveUia(TrayIcon icon)
-        {
-            _trayThread?.BeginInvoke(new Action(() => { if (_icons.Remove(icon)) NotifyChanged(); }));
         }
 
         /// <summary>Saca los íconos de apps que se cerraron sin avisar.</summary>
@@ -445,7 +337,7 @@ namespace McBar.Native
         {
             _trayThread?.BeginInvoke(new Action(() =>
             {
-                if (_icons.RemoveAll(i => !i.FromUia && !Win32.IsWindow(i.HWnd)) > 0) NotifyChanged();
+                if (_icons.RemoveAll(i => !Win32.IsWindow(i.HWnd)) > 0) NotifyChanged();
             }));
         }
 
@@ -466,16 +358,6 @@ namespace McBar.Native
                     catch (Exception ex) { Log.Write("Tray: no se pudo abrir Seguridad de Windows: " + ex.Message); }
                 }
                 if (click == Click.LeftDown || click == Click.LeftUp || click == Click.LeftDouble) return;
-            }
-            if (icon.FromUia)
-            {
-                // 1.9.34: ícono leído por UI Automation: se abre con Invoke (izquierdo) o con el mouse (derecho).
-                // Se actúa solo al soltar; el "abajo" y el doble clic se ignoran para no abrir dos veces.
-                if (click != Click.LeftUp && click != Click.RightUp) return;
-                RelaxForegroundLock();
-                Win32.AllowSetForegroundWindow(ASFW_ANY);
-                TrayUia.Click(icon, click == Click.RightUp, RemoveUia);
-                return;
             }
             if (icon.CallbackMessage == 0 || !Win32.IsWindow(icon.HWnd)) { Prune(); return; }
             // 1.9.19: la barra de McBar nunca toma el foco, así que Windows le prohíbe al programa traer su menú

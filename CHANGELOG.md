@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.9.40 — 25/11/2026 (se quita por completo la lectura por UI Automation)
+- **Se elimina la lectura de la bandeja por UI Automation (1.9.34 a 1.9.37).** El registro mostró que no encontraba ningún ícono de app y que, en cada lectura, mostraba y escondía la barra de Windows: el Explorador cambiaba el área de trabajo, McBar la corregía una y otra vez, la interfaz llegó a trabarse 6 segundos en `DockWindow.ApplyGeometry` y el menú de McBar quedaba inaccesible. Se borran el lector, el "estacionar la barra", el ajuste "Experimental…" y los campos que usaba.
+- Se mantiene lo útil: al importar un ícono de la bandeja se le manda directo el aviso "se creó una barra nueva" (1.9.39), y el clic izquierdo en Seguridad de Windows abre la app (1.9.38).
+
+## 1.9.39 — 25/11/2026 (íconos importados: se les pide que se registren)
+- **Los íconos importados de la bandeja de Windows ahora reciben el aviso "se creó una barra nueva" directo en su ventana.** El aviso de difusión no llega a las ventanas internas (sin pantalla) que usan muchos programas de bandeja, por eso no se re-registraban. Si la app se registra, reemplaza al ícono importado y McBar pasa a tener sus datos reales, y el clic funciona para cualquier programa, sin casos especiales. Si el programa corre como administrador, Windows lo rechaza y todo queda como antes.
+- Al registrarse un ícono real se descartan los importados de la misma ventana.
+- El caso especial de Seguridad de Windows (1.9.38) se mantiene como respaldo.
+
 ## 1.9.38 — 25/11/2026 (Seguridad de Windows abre al tocar su ícono)
 - **El ícono de Seguridad de Windows (Defender) no hacía nada al tocarlo.** Ignora el clic que McBar le reenvía, así que ahora el clic izquierdo abre Windows Security directamente con su protocolo (`windowsdefender:`). El clic derecho sigue por el camino de antes.
 - Se descartó leer la bandeja desde `HKCU\Control Panel\NotifyIconSettings`: esas entradas solo traen GUID y ruta del programa (sin tooltip, UID ni estado), así que no sirven para saber qué íconos están activos ni para hacerles clic.

@@ -236,7 +236,6 @@ namespace McBar.Panels
             var tray = new StackPanel();
             tray.Children.Add(Switch("Mostrar los íconos de las apps en la barra de McBar", s.UseOwnTray, v => s.UseOwnTray = v));
             tray.Children.Add(Switch("Íconos en blanco y negro (estilo Mac)", s.TrayMonochrome, v => s.TrayMonochrome = v));
-            tray.Children.Add(Switch("Experimental: leer también la bandeja de Windows 11 (UI Automation)", s.TrayUiaEnabled, v => { s.TrayUiaEnabled = v; }));
             // 1.9.28: ayudante para los íconos de apps que corren como administrador (NVIDIA y similares)
             tray.Children.Add(Switch("Permitir abrir íconos de apps que corren como administrador (pide permiso una sola vez)", s.TrayAdminHelper, v =>
             {
