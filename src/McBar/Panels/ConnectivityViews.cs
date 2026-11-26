@@ -329,7 +329,13 @@ namespace McBar.Panels
             Kind = kind;
             Title = kind;
             view.Margin = new Thickness(4);
-            Card.Child = view;
+            // 1.9.44: en pantallas chicas el panel no pasa del borde de abajo: si la lista es larga, se desplaza con la rueda.
+            Card.Child = new ScrollViewer
+            {
+                Content = view,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            };
         }
     }
 }

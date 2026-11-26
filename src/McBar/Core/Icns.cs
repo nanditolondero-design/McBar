@@ -155,6 +155,7 @@ namespace McBar.Core
         }
 
         /// <summary>1.8.5: decodifica un PNG (de memoria) de la forma más tolerante posible. Null si no se puede.</summary>
+        private static bool _pngLogged;
         private static BitmapSource? DecodePng(byte[] png, int decodeWidth)
         {
             try
@@ -169,7 +170,7 @@ namespace McBar.Core
                 bi.Freeze();
                 return bi;
             }
-            catch (Exception ex) { Log.Write("Ícono .icns (PNG): " + ex.Message); }
+            catch (Exception ex) { if (!_pngLogged) { _pngLogged = true; Log.Write("Ícono .icns (PNG, se usa el decodificador alternativo): " + ex.Message); } }
             try
             {
                 var dec = new PngBitmapDecoder(new MemoryStream(png), BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);

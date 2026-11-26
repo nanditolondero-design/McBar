@@ -586,7 +586,15 @@ namespace McBar.MenuBar
             _collapseTimer.Stop();
             _drawerKind = kind;
             UpdateMiniMedia();
-            _drawer.Child = BuildDrawer(kind);
+            // 1.9.44: en pantallas chicas el cajón no puede ser más alto que la pantalla: el contenido se desplaza con la
+            // rueda en vez de quedar cortado abajo.
+            _drawer.Child = new ScrollViewer
+            {
+                Content = BuildDrawer(kind),
+                VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                MaxHeight = DrawerMaxHeight()
+            };
             _drawer.SizeChanged -= OnDrawerResized;
             _drawer.SizeChanged += OnDrawerResized;
             _drawer.Visibility = Visibility.Visible;
@@ -594,7 +602,7 @@ namespace McBar.MenuBar
             ShowLayer(_expanded);
             _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), (kind == DrawerKind.Notifications ? 410 : 380));
-            double maxH = _monitor.Bounds.Height / _monitor.Scale * 0.8;
+            double maxH = MaxPillHeight();
             double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
             _drawerW = w; _drawerH = h;
             EnsureWindowHeight(h);
@@ -612,6 +620,16 @@ namespace McBar.MenuBar
         }
 
         private double _drawerW, _drawerH;
+
+        /// <summary>Alto máximo de la isla: lo que entra en este monitor debajo del borde de arriba.</summary>
+        private double MaxPillHeight() => Math.Max(200, _monitor.Bounds.Height / _monitor.Scale - TopMargin - 30);
+
+        /// <summary>Alto máximo del contenido del cajón: la isla menos las filas de arriba (menú, bandeja, mini reproductor).</summary>
+        private double DrawerMaxHeight()
+        {
+            double head = (_content.IsTwoRowsNow ? 80 : 48) + (_miniMedia.Visibility == Visibility.Visible ? 54 : 0);
+            return Math.Max(140, MaxPillHeight() - head - 22 - 8);
+        }
         private bool _refitPending;
 
         /// <summary>
@@ -627,7 +645,7 @@ namespace McBar.MenuBar
                 _refitPending = false;
                 if (_state != State.Drawer) return;
                 _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                double maxH = _monitor.Bounds.Height / _monitor.Scale * 0.8;
+                double maxH = MaxPillHeight();
                 double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
                 if (Math.Abs(h - _drawerH) < 2) return;
                 _drawerH = h;

@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.46 — 26/11/2026 (ventanas maximizadas)
+- **Maximizada + ventana común.** Con una ventana maximizada y otra grande sin maximizar, cada cambio de foco prendía y apagaba la marca "hay una maximizada": el Dock se escondía y volvía, el área de trabajo cambiaba y la maximizada se sacudía. Ahora cuenta cualquier maximizada visible del monitor, así que el estado ya no parpadea.
+- **Registro:** el aviso del ícono .icns (PNG) se escribe una sola vez.
+
+## 1.9.45 — 26/11/2026 (pantallas chicas)
+- **Isla en pantallas chicas.** Los cajones (clima, Wi-Fi, sonido, Centro de control…) ya no pueden ser más altos que la pantalla: si el contenido no entra, se desplaza con la rueda del mouse en vez de quedar cortado abajo (el clima de 7 días se cortaba en un notebook de 768 px de alto).
+- **Paneles de la barra** (Wi-Fi, Bluetooth, sonido, temporizador): también se desplazan si no entran.
+
 ## 1.9.44 — 26/11/2026 (isla, buscador, Launchpad, Stage Manager y animaciones)
 - **Isla: bordes.** La isla se dibuja siempre con transparencia por píxel (suavizada); la "ventana rápida" la recortaba con una región de Windows, que no suaviza, y los bordes se veían dentados. Además el contenido se recorta con la misma curva de la píldora.
 - **Isla: botón del menú de McBar.** Queda siempre a la izquierda, con o sin app abierta (antes saltaba a la derecha cuando no había apps).
