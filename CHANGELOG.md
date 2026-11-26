@@ -1,5 +1,16 @@
 # Cambios
 
+## 1.9.44 — 26/11/2026 (isla, buscador, Launchpad, Stage Manager y animaciones)
+- **Isla: bordes.** La isla se dibuja siempre con transparencia por píxel (suavizada); la "ventana rápida" la recortaba con una región de Windows, que no suaviza, y los bordes se veían dentados. Además el contenido se recorta con la misma curva de la píldora.
+- **Isla: botón del menú de McBar.** Queda siempre a la izquierda, con o sin app abierta (antes saltaba a la derecha cuando no había apps).
+- **Wi-Fi cortado.** En la isla, el cajón se vuelve a medir cuando aparece la lista de redes (llega unos segundos después de abrirlo). En la barra, el panel era 6 px más angosto que su contenido.
+- **Volumen.** El ícono cambia al de silencio (con la X) cuando el volumen llega a 0 y vuelve al normal al subir a 1 % o más; se actualiza al instante, también con cambios hechos fuera de McBar. El umbral anterior dejaba el 1 % con el ícono de silencio.
+- **Isla y buscador.** Con el Launchpad o el buscador abiertos la isla se pliega y no se despliega. La lupa de la isla la pliega y le da el foco al buscador. En el Launchpad el cuadro de búsqueda queda siempre debajo de la isla.
+- **Activación de la isla.** Espera 420 ms (antes 170) y hay que quedarse quieto: si el mouse sigue moviéndose, la espera se reinicia.
+- **Stage Manager.** Arrastrando un archivo, la franja aparece al acercarse a menos de 48 px del borde izquierdo aunque una ventana la tape; la miniatura se agranda y se ilumina, y su ventana viene al frente a los 380 ms (antes 500).
+- **Animaciones.** El tamaño de los íconos del Dock usa un resorte amortiguado (arranca y frena suave, sin tirón); la isla y los paneles rebotan menos y duran un poco más.
+- **Launchpad: grilla.** Preferencias → Launchpad: tamaño de los íconos, de la letra, columnas y filas (0 = automático). Los íconos nunca se agrandan más de lo que entra en pantalla.
+
 ## 1.9.43
 - Bandeja: tras un clic izquierdo, si la app (MagnAir, Ultimaker Cura…) tiene una ventana normal visible que no quedó al frente, McBar la trae al frente. El registro anota qué ventanas tenía la app y si quedó al frente, para diagnosticar los casos sin ventana visible.
 

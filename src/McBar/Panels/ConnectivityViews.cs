@@ -324,7 +324,7 @@ namespace McBar.Panels
     {
         public string Kind { get; }
 
-        public ViewWindow(string kind, FrameworkElement view) : base(340, false)
+        public ViewWindow(string kind, FrameworkElement view) : base(356, false) // 1.9.43: 340 era más angosto que la vista (320 + márgenes) y cortaba el borde derecho del Wi-Fi
         {
             Kind = kind;
             Title = kind;

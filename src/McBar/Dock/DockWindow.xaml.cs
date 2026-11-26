@@ -707,7 +707,7 @@ namespace McBar.Dock
             for (int i = 0; i < n; i++)
             {
                 var it = items[i];
-                double v = Magnifier.Approach(it.CurrentSize, targets[i], dt, mouse != null ? 18 : 12);
+                double v = Magnifier.SmoothDamp(it.CurrentSize, ref it.SizeVelocity, targets[i], dt, mouse != null ? 24 : 15); // 1.9.43: resorte suave
                 if (v != targets[i]) moving = true;
                 it.CurrentSize = v;
                 cur[i] = v;
@@ -1441,7 +1441,7 @@ namespace McBar.Dock
             popup.Opened += (_, _) =>
             {
                 _menuOpen = true; EnsureAnimating();
-                var a = new DoubleAnimation(0.85, 1, TimeSpan.FromMilliseconds(200)) { EasingFunction = new BackEase { Amplitude = 0.3, EasingMode = EasingMode.EaseOut } };
+                var a = new DoubleAnimation(0.85, 1, TimeSpan.FromMilliseconds(240)) { EasingFunction = new BackEase { Amplitude = 0.12, EasingMode = EasingMode.EaseOut } };
                 grow.BeginAnimation(ScaleTransform.ScaleXProperty, a);
                 grow.BeginAnimation(ScaleTransform.ScaleYProperty, a);
             };

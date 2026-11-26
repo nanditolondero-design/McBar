@@ -122,6 +122,23 @@ namespace McBar.Core
             return Math.Abs(target - v) < 0.25 ? target : v;
         }
 
+        /// <summary>
+        /// 1.9.43: acerca <paramref name="current"/> a <paramref name="target"/> con un resorte críticamente amortiguado
+        /// (arranca y frena suave, sin tirón al empezar como el acercamiento exponencial). Guarda la velocidad en
+        /// <paramref name="velocity"/>. <paramref name="omega"/> mayor = más rápido.
+        /// </summary>
+        public static double SmoothDamp(double current, ref double velocity, double target, double dtSeconds, double omega = 16)
+        {
+            double x = omega * dtSeconds;
+            double e = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+            double change = current - target;
+            double temp = (velocity + omega * change) * dtSeconds;
+            velocity = (velocity - omega * temp) * e;
+            double v = target + (change + temp) * e;
+            if (Math.Abs(target - v) < 0.25 && Math.Abs(velocity) < 3) { velocity = 0; return target; }
+            return v;
+        }
+
         /// <summary>Altura del rebote al abrir una app (en px), o 0 cuando terminó.</summary>
         public static double Bounce(double elapsedSeconds, double height, int bounces = 3, double period = 0.62)
         {

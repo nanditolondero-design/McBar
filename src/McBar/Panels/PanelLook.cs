@@ -22,7 +22,7 @@ namespace McBar.Panels
         public const double Radius = 18;
 
         /// <summary>Curva del resorte (rebote suave) usada en todas las entradas de McBar.</summary>
-        public static IEasingFunction Spring => new BackEase { Amplitude = 0.32, EasingMode = EasingMode.EaseOut };
+        public static IEasingFunction Spring => new BackEase { Amplitude = 0.14, EasingMode = EasingMode.EaseOut }; // 1.9.43: rebote más suave (antes 0,32)
 
         /// <summary>Borde con brillo arriba (va ENCIMA del contenido, no recibe clics).</summary>
         public static Border Highlight(double radius = Radius)

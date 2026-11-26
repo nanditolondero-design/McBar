@@ -69,7 +69,13 @@ namespace McBar.MenuBar
             WifiButton.Click += (_, _) => App.ShowConnectivity("wifi", _monitor); // 0.7.0: Wi-Fi propio
             BatteryButton.Click += (_, _) => { if (InIsland) App.ToggleIslandDrawer(_monitor, IslandWindow.DrawerKind.Battery); else OpenMenu(BatteryButton, BuildBatteryMenu()); };
             VolumeButton.Click += (_, _) => App.ShowConnectivity("sound", _monitor); // 0.7.0: sonido propio
-            SearchButton.Click += (_, _) => App.ToggleSpotlight(_monitor); // 0.6.0: buscador tipo Spotlight
+            // 0.6.0: buscador tipo Spotlight. 1.9.43: desde la isla, la píldora se pliega enseguida y el foco pasa al buscador.
+            SearchButton.Click += (_, _) =>
+            {
+                if (InIsland) IslandWindow.Suppress(true); // se pliega; el buscador la mantiene chica mientras esté abierto
+                App.ToggleSpotlight(_monitor);
+                if (InIsland) IslandWindow.Suppress(false); // Spotlight suma su propio bloqueo mientras está abierto
+            };
             ControlCenterButton.Click += (_, _) => App.ToggleControlCenter(_monitor);
             ClockButton.Click += (_, _) => App.ToggleWidgets(_monitor);
             LiveButton.Click += (_, _) => App.ShowConnectivity("timer", _monitor); // 1.2.0
@@ -81,6 +87,16 @@ namespace McBar.MenuBar
             _onNetwork = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
             _onPower = (_, _) => Dispatcher.BeginInvoke(new Action(RefreshStatus));
             SettingsStore.Changed += _onSettings;
+            // 1.9.43: el ícono de volumen se actualiza al instante (cambios de McBar y de afuera: teclas, mezclador de Windows…)
+            _onVolume = () => Dispatcher.BeginInvoke(new Action(RefreshVolumeGlyph));
+            CoreAudio.Changed += _onVolume;
+            try
+            {
+                _volWatcher = new VolumeWatcher();
+                _volWatcher.Changed += (_, _) => _onVolume();
+                if (!_volWatcher.Start()) { _volWatcher.Dispose(); _volWatcher = null; }
+            }
+            catch { _volWatcher = null; }
             App.Tracker.ForegroundChanged += _onForeground;
             // 1.6.2: al minimizar la app elegida, sus menús se van enseguida (antes había que tocar el escritorio).
             // Se mira dos veces porque Windows termina de minimizar un momento después.
@@ -175,28 +191,31 @@ namespace McBar.MenuBar
         private void ApplyRows()
         {
             bool twoRows = _wantTwoRows && _hasApp;
-            bool logoRight = _wantTwoRows && !_hasApp;
-            if (logoRight && LogoButton.Parent == LeftGroup)
-            {
-                LeftGroup.Children.Remove(LogoButton);
-                RightGroup.Children.Add(LogoButton);
-            }
-            else if (!logoRight && LogoButton.Parent == RightGroup)
+            // 1.9.43: sin app activa, todo queda en UN solo renglón PERO el botón del menú de McBar sigue a la izquierda
+            // (antes saltaba a la derecha del todo y cambiaba de lado según hubiera o no una app abierta).
+            bool oneRow = _wantTwoRows && !_hasApp;
+            if (LogoButton.Parent == RightGroup)
             {
                 RightGroup.Children.Remove(LogoButton);
                 LeftGroup.Children.Insert(0, LogoButton);
             }
-            LeftGroup.Visibility = logoRight ? Visibility.Collapsed : Visibility.Visible;
+            LeftGroup.Visibility = Visibility.Visible;
             bool changed = IsTwoRowsNow != twoRows;
             IsTwoRowsNow = twoRows;
 
             LayoutGrid.RowDefinitions.Clear();
             LayoutGrid.ColumnDefinitions.Clear();
-            if (logoRight)
+            if (oneRow)
             {
                 LayoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
-                Grid.SetRow(RightGroup, 0); Grid.SetColumn(RightGroup, 0);
-                RightGroup.HorizontalAlignment = HorizontalAlignment.Center;
+                LayoutGrid.ColumnDefinitions.Add(new ColumnDefinition());
+                LayoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                LayoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                LayoutGrid.ColumnDefinitions.Add(new ColumnDefinition());
+                Grid.SetRow(LeftGroup, 0); Grid.SetColumn(LeftGroup, 1);
+                Grid.SetRow(RightGroup, 0); Grid.SetColumn(RightGroup, 2);
+                LeftGroup.HorizontalAlignment = HorizontalAlignment.Left;
+                RightGroup.HorizontalAlignment = HorizontalAlignment.Left;
             }
             else if (twoRows)
             {
@@ -220,8 +239,14 @@ namespace McBar.MenuBar
             if (changed) RowsChanged?.Invoke();
         }
 
+        private Action? _onVolume;
+        private VolumeWatcher? _volWatcher;
+
         public void Teardown()
         {
+            if (_onVolume != null) CoreAudio.Changed -= _onVolume;
+            try { _volWatcher?.Dispose(); } catch { }
+            _volWatcher = null;
             _clockTimer.Stop();
             SettingsStore.Changed -= _onSettings;
             App.Tracker.ForegroundChanged -= _onForeground;
@@ -416,7 +441,8 @@ namespace McBar.MenuBar
             var v = CoreAudio.GetVolume();
             bool mute = CoreAudio.GetMute();
             VolumeButton.Visibility = v == null ? Visibility.Collapsed : Visibility.Visible;
-            VolumeGlyph.Text = mute || (v ?? 0) < 0.01 ? "" : "";
+            // 1.9.43: el umbral era 0,01 y 1 % (0,01f) quedaba apenas por debajo: seguía con el ícono de silencio.
+            VolumeGlyph.Text = mute || (v ?? 0) <= 0.001f ? "" : "";
             VolumeButton.ToolTip = v == null ? null : $"Volumen: {Math.Round(v.Value * 100)} %";
         }
 

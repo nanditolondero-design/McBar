@@ -106,6 +106,9 @@ namespace McBar.Native
         /// <summary>Marca de los cambios de volumen que hace McBar (para no mostrarlos en la isla).</summary>
         public static readonly Guid McBarContext = new Guid("6D63B4A0-7C1E-4E5B-9A2F-4D6342617221");
 
+        /// <summary>1.9.43: se dispara cuando McBar cambia el volumen o el silencio (así el ícono se actualiza al instante).</summary>
+        public static event Action? Changed;
+
         internal static IAudioEndpointVolume? GetEndpoint()
         {
             try
@@ -147,6 +150,7 @@ namespace McBar.Native
                 if (value > 0.001f) ep.SetMute(false, ref g);
             }
             finally { Marshal.ReleaseComObject(ep); }
+            try { Changed?.Invoke(); } catch { }
         }
 
         public static void SetMute(bool mute)
@@ -155,6 +159,7 @@ namespace McBar.Native
             if (ep == null) return;
             try { var g = McBarContext; ep.SetMute(mute, ref g); }
             finally { Marshal.ReleaseComObject(ep); }
+            try { Changed?.Invoke(); } catch { }
         }
     }
 }

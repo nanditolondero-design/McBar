@@ -125,8 +125,12 @@ namespace McBar.Panels
 
             PreviewKeyDown += OnKey;
             Deactivated += (_, _) => CloseAnimated();
+            // 1.9.43: mientras el buscador está abierto la isla queda chica (no se pisa con el cuadro de búsqueda)
+            bool islandLocked = false;
+            Closed += (_, _) => { if (islandLocked) { islandLocked = false; McBar.MenuBar.IslandWindow.Suppress(false); } };
             Loaded += async (_, _) =>
             {
+                if (!islandLocked) { islandLocked = true; McBar.MenuBar.IslandWindow.Suppress(true); }
                 WindowOps.Activate(new System.Windows.Interop.WindowInteropHelper(this).Handle);
                 _box.Focus();
                 Keyboard.Focus(_box);

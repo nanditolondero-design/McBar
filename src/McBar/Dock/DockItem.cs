@@ -35,6 +35,8 @@ namespace McBar.Dock
         /// <summary>Cuánto más arriba de la barra se soltó (para que la "nubecita" salga ahí).</summary>
         public double PoofUp { get; set; }
         public double CurrentSize { get; set; }
+        /// <summary>1.9.43: velocidad del resorte del tamaño (ver Magnifier.SmoothDamp).</summary>
+        public double SizeVelocity;
         public double BounceStart { get; set; } = -1;
 
         // Última posición dibujada (en el lienzo del Dock), para saber qué hay bajo el mouse.

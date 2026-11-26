@@ -110,8 +110,20 @@ namespace McBar.Panels
             _content.RenderTransformOrigin = new Point(0.5, 0.5);
             _content.RenderTransform = _zoom;
             var fit = Fit(monitor.Bounds.Width / sc, monitor.Bounds.Height / sc, dockHeight); // 1.9.10
-            Cols = fit.cols; Rows = fit.rows; _iconSize = fit.icon;
-            _labelFont = _iconSize < 66 ? 11.5 : 12.5;
+            // 1.9.43: Preferencias → Launchpad: tamaño de íconos, de letra y cantidad de columnas y filas (0 = automático).
+            var lps = SettingsStore.Current;
+            Cols = lps.LaunchpadColumns > 0 ? Math.Clamp(lps.LaunchpadColumns, 3, 10) : fit.cols;
+            Rows = lps.LaunchpadRows > 0 ? Math.Clamp(lps.LaunchpadRows, 2, 8) : fit.rows;
+            _iconSize = fit.icon;
+            if (lps.LaunchpadColumns > 0 || lps.LaunchpadRows > 0 || lps.LaunchpadIconSize > 0)
+            {
+                double aw = Math.Max(300, monitor.Bounds.Width / sc - 140);
+                double ah = Math.Max(200, monitor.Bounds.Height / sc - fit.top - fit.bottom - Math.Max(0, dockHeight));
+                double room = Math.Min(aw / Cols - 44, ah / Rows - 52);           // lo que entra sin cortarse
+                double want = lps.LaunchpadIconSize > 0 ? lps.LaunchpadIconSize : 80;
+                _iconSize = Math.Floor(Math.Clamp(Math.Min(want, room), 32, 128));
+            }
+            _labelFont = lps.LaunchpadLabelSize > 0 ? Math.Clamp(lps.LaunchpadLabelSize, 9, 20) : (_iconSize < 66 ? 11.5 : 12.5);
             _labelMax = Math.Max(84, Math.Min(140, (monitor.Bounds.Width / sc - 140) / Cols - 24));
             _content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(fit.top) });
             _content.RowDefinitions.Add(new RowDefinition());
@@ -120,7 +132,9 @@ namespace McBar.Panels
 
             // Búsqueda (píldora arriba al centro)
             // (abajo de la fila para no quedar debajo de la isla dinámica)
-            var searchHost = new Grid { Width = 260, Height = 32, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 20) };
+            // 1.9.43: la fila de arriba nunca es más chica que la isla (6 + 42) más un respiro, así el cuadro no queda debajo de ella.
+            double searchTop = Math.Max(fit.top - 52, 6 + McBar.MenuBar.IslandWindow.CompactHeightFor(lps) + 10);
+            var searchHost = new Grid { Width = 260, Height = 32, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, searchTop, 0, 0) };
             _search.SetResourceReference(StyleProperty, "McTextBox");
             // 1.9.10: píldora de vidrio oscuro propia (con el tema Claro el cuadro salía blanco con letras blancas)
             _search.Template = SearchTemplate();
@@ -167,8 +181,12 @@ namespace McBar.Panels
                 if (_folderLayer.Visibility == Visibility.Visible) { CloseFolder(); return; }
                 CloseAnimated();
             };
+            // 1.9.43: con el Launchpad abierto la isla queda chica y no se despliega encima del cuadro de búsqueda
+            bool islandLocked = false;
+            Closed += (_, _) => { if (islandLocked) { islandLocked = false; McBar.MenuBar.IslandWindow.Suppress(false); } };
             Loaded += async (_, _) =>
             {
+                if (!islandLocked) { islandLocked = true; McBar.MenuBar.IslandWindow.Suppress(true); }
                 _search.Focus();
                 if (AppCatalog.Cached != null) { _all = AppCatalog.Cached.ToList(); Filter(); }
                 else ShowPage(0, 0);

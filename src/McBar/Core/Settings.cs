@@ -124,6 +124,11 @@ namespace McBar.Core
         /// <summary>0 = fondo bien oscuro, 100 = fondo totalmente transparente.</summary>
         public int LaunchpadTransparency { get; set; } = 50;
         public bool LaunchpadBlur { get; set; } = true;
+        /// <summary>1.9.43: tamaño de íconos (0 = automático), de la letra de los nombres (0 = automático), columnas y filas (0 = automático).</summary>
+        public int LaunchpadIconSize { get; set; } = 0;
+        public int LaunchpadLabelSize { get; set; } = 0;
+        public int LaunchpadColumns { get; set; } = 0;
+        public int LaunchpadRows { get; set; } = 0;
         public List<LaunchpadFolder> LaunchpadFolders { get; set; } = new List<LaunchpadFolder>();
         /// <summary>Apps ocultas del Launchpad (Target). 0.4.2.</summary>
         public List<string> LaunchpadHidden { get; set; } = new List<string>();
@@ -386,6 +391,10 @@ namespace McBar.Core
             if (s.TopBarMode == "drop") s.TopBarMode = "island"; // la gota se quitó en la 0.4.3
             if (s.TopBarMode != "island") s.TopBarMode = "menubar";
             s.LaunchpadTransparency = Math.Clamp(s.LaunchpadTransparency, 0, 100);
+            s.LaunchpadIconSize = s.LaunchpadIconSize <= 0 ? 0 : Math.Clamp(s.LaunchpadIconSize, 32, 128);
+            s.LaunchpadLabelSize = s.LaunchpadLabelSize <= 0 ? 0 : Math.Clamp(s.LaunchpadLabelSize, 9, 20);
+            s.LaunchpadColumns = s.LaunchpadColumns <= 0 ? 0 : Math.Clamp(s.LaunchpadColumns, 3, 10);
+            s.LaunchpadRows = s.LaunchpadRows <= 0 ? 0 : Math.Clamp(s.LaunchpadRows, 2, 8);
             s.LaunchpadFolders ??= new List<LaunchpadFolder>();
             s.LaunchpadHidden ??= new List<string>();
             s.LaunchpadOrder ??= new List<string>();

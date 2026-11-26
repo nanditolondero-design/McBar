@@ -65,6 +65,23 @@ namespace McBar.MenuBar
         }
         private static readonly CultureInfo Es = new CultureInfo("es-AR");
 
+        // 1.9.43: mientras el Launchpad o el buscador están abiertos la isla queda chica y no se despliega (se pisaba con
+        // el cuadro de búsqueda). Cada ventana suma 1 al abrirse y resta 1 al cerrarse.
+        private static readonly System.Collections.Generic.List<IslandWindow> Instances = new System.Collections.Generic.List<IslandWindow>();
+        public static int SuppressCount { get; private set; }
+        private Point _enterPoint;
+
+        public static void Suppress(bool on)
+        {
+            SuppressCount = Math.Max(0, SuppressCount + (on ? 1 : -1));
+            if (!on) return;
+            foreach (var i in Instances.ToArray())
+            {
+                var isl = i;
+                isl.Dispatcher.BeginInvoke(new Action(() => { if (isl._state != State.Compact) isl.GoCompact(); else isl._expandTimer.Stop(); }));
+            }
+        }
+
         private enum State { Compact, Expanded, Activity, Media, Drawer }
         public enum DrawerKind { ControlCenter, Notifications, Wifi, Sound, Battery, Weather, Bluetooth, Timer }
         private DrawerKind _drawerKind;
@@ -127,7 +144,9 @@ namespace McBar.MenuBar
         public IslandWindow(MonitorInfo monitor)
         {
             _monitor = monitor;
-            _fast = SettingsStore.Current.FastWindows;
+            // 1.9.43: la isla siempre usa transparencia por píxel (con suavizado). La "ventana rápida" la recortaba con una
+            // región de Windows, que no suaviza los bordes: se veían dentados y cortados.
+            _fast = false;
             WindowStyle = WindowStyle.None;
             AllowsTransparency = !_fast;
             Background = Brushes.Transparent;
@@ -160,10 +179,15 @@ namespace McBar.MenuBar
             _pill.Width = CompactWidth;
             _pill.Height = CompactHeight;
             _pill.CornerRadius = Corners(CompactHeight);
-            _pill.ClipToBounds = true;
+            _pill.UseLayoutRounding = false;
+            _pill.SnapsToDevicePixels = false;
             _pill.SizeChanged += (_, _) =>
             {
                 _pill.CornerRadius = Corners(_pill.ActualHeight);
+                // 1.9.43: el contenido se recorta con la MISMA curva de la píldora (antes un recorte rectangular dejaba
+                // asomar las esquinas de lo de adentro).
+                double cr = Math.Min(_pill.ActualHeight / 2, 26);
+                _pill.Clip = new RectangleGeometry(new Rect(0, 0, _pill.ActualWidth, _pill.ActualHeight), cr, cr);
 
                 PlaceBackdrop();
                 UpdateShape();
@@ -186,8 +210,8 @@ namespace McBar.MenuBar
             root.Children.Add(_pill);
             Content = root;
 
-            _expandTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(170) };
-            _expandTimer.Tick += (_, _) => { _expandTimer.Stop(); if (_state == State.Compact) GoExpanded(); };
+            _expandTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(420) }; // 1.9.43: antes 170 ms (se abría sin querer)
+            _expandTimer.Tick += (_, _) => { _expandTimer.Stop(); if (_state == State.Compact && SuppressCount == 0) GoExpanded(); };
             _collapseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(480) };
             _collapseTimer.Tick += (_, _) =>
             {
@@ -217,7 +241,23 @@ namespace McBar.MenuBar
             {
                 _peekHide.Stop();
                 _collapseTimer.Stop();
-                if (_state == State.Compact) _expandTimer.Start();
+                if (_state == State.Compact && SuppressCount == 0)
+                {
+                    _enterPoint = Mouse.GetPosition(this);
+                    _expandTimer.Start();
+                }
+            };
+            // 1.9.43: tiene que quedarse quieto encima: si el mouse sigue moviéndose (de paso hacia otro lado), se reinicia la espera.
+            _pill.MouseMove += (_, _) =>
+            {
+                if (_state != State.Compact || !_expandTimer.IsEnabled) return;
+                var pt = Mouse.GetPosition(this);
+                if (Math.Abs(pt.X - _enterPoint.X) + Math.Abs(pt.Y - _enterPoint.Y) > 6)
+                {
+                    _enterPoint = pt;
+                    _expandTimer.Stop();
+                    _expandTimer.Start();
+                }
             };
             _pill.MouseLeave += (_, _) =>
             {
@@ -228,6 +268,7 @@ namespace McBar.MenuBar
             _compact.MouseLeftButtonUp += (_, e) =>
             {
                 _expandTimer.Stop();
+                if (SuppressCount > 0) { e.Handled = true; return; }
                 if (SettingsStore.Current.LiveActivities && (LiveStatus.TimerActive || LiveStatus.StopwatchActive || GameMode.On)) ToggleDrawer(DrawerKind.Timer);
                 else if (ActivityHub.Media?.Current != null) GoMedia();
                 else if (NotificationCenter.UnreadCount > 0) ToggleDrawer(DrawerKind.Notifications);
@@ -261,6 +302,7 @@ namespace McBar.MenuBar
             UpdateCompact();
             OnMediaChanged();
             ScheduleClock();
+            Instances.Add(this);
         }
 
         // ================== Apariencia ==================
@@ -431,6 +473,7 @@ namespace McBar.MenuBar
 
         public void Teardown()
         {
+            Instances.Remove(this);
             _peekHide.Stop();
             try { _handle?.Close(); } catch { }
             _handle = null;
@@ -455,8 +498,9 @@ namespace McBar.MenuBar
 
         private void AnimateSize(double w, double h)
         {
-            var ease = new BackEase { Amplitude = 0.28, EasingMode = EasingMode.EaseOut };
-            var dur = TimeSpan.FromMilliseconds(420);
+            // 1.9.43: resorte más suave (rebote chico y un poco más de duración) para que se sienta más fluido.
+            var ease = new BackEase { Amplitude = 0.1, EasingMode = EasingMode.EaseOut };
+            var dur = TimeSpan.FromMilliseconds(470);
             w = Math.Min(w, Width - 12);
             // 1.5.0: durante la animación la forma de la ventana queda FIJA (la más grande entre antes y después,
             // con margen para el rebote) en vez de recalcularse en cada cuadro: cambiar la forma 60 veces por
@@ -543,6 +587,8 @@ namespace McBar.MenuBar
             _drawerKind = kind;
             UpdateMiniMedia();
             _drawer.Child = BuildDrawer(kind);
+            _drawer.SizeChanged -= OnDrawerResized;
+            _drawer.SizeChanged += OnDrawerResized;
             _drawer.Visibility = Visibility.Visible;
             _state = State.Drawer;
             ShowLayer(_expanded);
@@ -550,6 +596,7 @@ namespace McBar.MenuBar
             double w = Math.Max(Math.Max(520, _content.DesiredSize.Width + 40), (kind == DrawerKind.Notifications ? 410 : 380));
             double maxH = _monitor.Bounds.Height / _monitor.Scale * 0.8;
             double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
+            _drawerW = w; _drawerH = h;
             EnsureWindowHeight(h);
             AnimateSize(w, h);
             UpdateEqualizer();
@@ -560,7 +607,32 @@ namespace McBar.MenuBar
                 if (_state != State.Drawer || _drawerKind != kind) return;
                 _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 double h2 = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
-                if (Math.Abs(h2 - h) > 2) { EnsureWindowHeight(h2); AnimateSize(w, h2); }
+                if (Math.Abs(h2 - h) > 2) { _drawerH = h2; EnsureWindowHeight(h2); AnimateSize(w, h2); }
+            }), DispatcherPriority.Loaded);
+        }
+
+        private double _drawerW, _drawerH;
+        private bool _refitPending;
+
+        /// <summary>
+        /// 1.9.43: el contenido del cajón puede crecer DESPUÉS de abrirse (Wi-Fi tarda en buscar redes y la lista
+        /// aparece recién entonces): se vuelve a medir y la isla se agranda para que no quede cortado abajo.
+        /// </summary>
+        private void OnDrawerResized(object? sender, SizeChangedEventArgs e)
+        {
+            if (_state != State.Drawer || _refitPending) return;
+            _refitPending = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _refitPending = false;
+                if (_state != State.Drawer) return;
+                _expanded.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                double maxH = _monitor.Bounds.Height / _monitor.Scale * 0.8;
+                double h = Math.Min(maxH, _expanded.DesiredSize.Height + 22);
+                if (Math.Abs(h - _drawerH) < 2) return;
+                _drawerH = h;
+                EnsureWindowHeight(h);
+                AnimateSize(_drawerW, h);
             }), DispatcherPriority.Loaded);
         }
 

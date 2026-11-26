@@ -21,7 +21,7 @@ namespace McBar.Panels
         private readonly StackPanel _list = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 10, 0) };
         private bool _shown;
         // 1.9.14: traer una ventana al frente al dejar un archivo arrastrado un momento sobre su miniatura
-        private readonly DispatcherTimer _spring = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        private readonly DispatcherTimer _spring = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(380) }; // 1.9.43: antes 500 ms
         private StageManager.Stage? _springOver;
 
         public StageStrip(MonitorInfo m)
@@ -112,9 +112,19 @@ namespace McBar.Panels
                 // 1.9.14: resorte al arrastrar (como la barra de Windows): se para un momento sobre la miniatura
                 // con un archivo y esa ventana viene al frente para soltarlo adentro.
                 grid.AllowDrop = true;
-                grid.DragEnter += (_, e) => { _springOver = stage; _spring.Stop(); _spring.Start(); e.Effects = DragDropEffects.None; e.Handled = true; };
+                // 1.9.43: al pasar el archivo por encima la miniatura se agranda y se ilumina (se nota que va a abrirse)
+                // y la ventana viene al frente cuando se queda un momento (380 ms).
+                void Highlight(bool on)
+                {
+                    shot.BorderBrush = new SolidColorBrush(on ? Color.FromArgb(0xE0, 0x0A, 0x84, 0xFF) : Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF));
+                    shot.BorderThickness = new Thickness(on ? 2 : 1);
+                    var to = on ? 1.1 : 1.0;
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(160)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(160)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                }
+                grid.DragEnter += (_, e) => { _springOver = stage; _spring.Stop(); _spring.Start(); Highlight(true); e.Effects = DragDropEffects.None; e.Handled = true; };
                 grid.DragOver += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
-                grid.DragLeave += (_, _) => { if (_springOver == stage) { _springOver = null; _spring.Stop(); } };
+                grid.DragLeave += (_, _) => { Highlight(false); if (_springOver == stage) { _springOver = null; _spring.Stop(); } };
                 grid.Drop += (_, e) => { _spring.Stop(); _springOver = null; StageManager.Bring(stage); e.Handled = true; };
                 _list.Children.Add(grid);
             }

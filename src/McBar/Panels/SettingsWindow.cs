@@ -188,6 +188,11 @@ namespace McBar.Panels
             var lp = new StackPanel();
             lp.Children.Add(SliderSetting("Transparencia del fondo", 0, 100, s.LaunchpadTransparency, v => s.LaunchpadTransparency = (int)v));
             lp.Children.Add(Switch("Desenfoque del fondo", s.LaunchpadBlur, v => s.LaunchpadBlur = v));
+            // 1.9.43: grilla del Launchpad (0 = automático según la pantalla; se aplica la próxima vez que se abra)
+            lp.Children.Add(SliderSetting("Tamaño de los íconos (0 = automático)", 0, 128, s.LaunchpadIconSize, v => s.LaunchpadIconSize = (int)v == 0 ? 0 : Math.Max(32, (int)v)));
+            lp.Children.Add(SliderSetting("Tamaño de la letra (0 = automático)", 0, 20, s.LaunchpadLabelSize, v => s.LaunchpadLabelSize = (int)v == 0 ? 0 : Math.Max(9, (int)v), 1));
+            lp.Children.Add(SliderSetting("Columnas (0 = automático)", 0, 10, s.LaunchpadColumns, v => s.LaunchpadColumns = (int)v == 0 ? 0 : Math.Max(3, (int)v), 1));
+            lp.Children.Add(SliderSetting("Filas (0 = automático)", 0, 8, s.LaunchpadRows, v => s.LaunchpadRows = (int)v == 0 ? 0 : Math.Max(2, (int)v), 1));
             var tip = new TextBlock { Text = "Carpetas: arrastrá una app sobre otra. Clic derecho para más opciones.", FontSize = 11.5, Margin = new Thickness(0, 4, 0, 2), TextWrapping = TextWrapping.Wrap };
             tip.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
             lp.Children.Add(tip);

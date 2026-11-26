@@ -170,7 +170,11 @@ namespace McBar.Core
                 var r = ScreenCapture.VisibleBounds(fg);
                 covered = r.left < stripRight && r.right > m.Work.Left && r.bottom > m.Work.Top && r.top < m.Work.Bottom;
             }
-            bool edge = Win32.GetCursorPos(out var p) && p.x <= m.Bounds.Left + 1 && p.y >= m.Bounds.Top && p.y < m.Bounds.Bottom;
+            // 1.9.43: arrastrando algo (botón izquierdo apretado) la franja se muestra aunque la ventana la tape cuando el
+            // mouse se acerca al borde izquierdo (a menos de 48 px), así hay donde pasar el archivo por encima de una miniatura.
+            bool dragging = (Win32.GetAsyncKeyState(0x01) & 0x8000) != 0;
+            int reach = dragging ? (int)Math.Round(48 * sc) : 1;
+            bool edge = Win32.GetCursorPos(out var p) && p.x <= m.Bounds.Left + reach && p.y >= m.Bounds.Top && p.y < m.Bounds.Bottom;
             _strip.SetVisible(!covered || edge);
         }
     }
