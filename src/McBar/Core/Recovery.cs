@@ -49,6 +49,8 @@ namespace McBar.Core
             catch { return null; }
         }
 
+        public static List<DateTime> RecentCrashTimes() => CrashTimes();
+
         private static List<DateTime> CrashTimes()
         {
             try

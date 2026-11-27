@@ -39,7 +39,7 @@ namespace McBar.Core
         };
 
         /// <summary>La lista de perfiles en sí (no se copia al cambiar de perfil).</summary>
-        public static readonly string[] ProfileFields = { nameof(AppSettings.Profiles), nameof(AppSettings.ActiveProfile) };
+        public static readonly string[] ProfileFields = { nameof(AppSettings.Profiles), nameof(AppSettings.ActiveProfile), nameof(AppSettings.ProfileOneMonitor), nameof(AppSettings.ProfileManyMonitors) };
 
         /// <summary>Foto de los ajustes para guardar en un perfil (sin los perfiles adentro). Pura.</summary>
         public static string Capture(AppSettings s)
@@ -107,6 +107,19 @@ namespace McBar.Core
             GameMode.Set(Find(s, name)?.GameMode == true);
             ProfileChanged?.Invoke();
             return true;
+        }
+
+        /// <summary>
+        /// 1.9.55: perfil que corresponde según la cantidad de monitores, o null si no hay que cambiar nada (no hay perfil
+        /// elegido, no existe, o ya es el que está en uso). Pura, se prueba.
+        /// </summary>
+        public static string? ForMonitorCount(AppSettings s, int monitors)
+        {
+            string want = monitors > 1 ? s.ProfileManyMonitors : s.ProfileOneMonitor;
+            if (string.IsNullOrEmpty(want)) return null;
+            var p = Find(s, want);
+            if (p == null || p.Name == s.ActiveProfile) return null;
+            return p.Name;
         }
 
         /// <summary>Se dispara al cambiar de perfil o importar (para rehacer widgets del escritorio y Preferencias).</summary>

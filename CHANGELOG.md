@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.9.55 — 27/11/2026 (actualizaciones, perfiles por monitor y buscador)
+- **Aviso de versión nueva:** McBar consulta las versiones publicadas en GitHub (a los 40 s de abrir y cada 24 h) y avisa con una notificación. En Preferencias → Diagnóstico hay «Buscar actualizaciones» (abre la página de la versión) y un interruptor para apagar el aviso. No descarga ni instala nada solo. Con la edición de la Store no se usa. **Hace falta subir a mano el `build.yml` nuevo** (ver abajo), que publica cada versión como Release.
+- **Perfil automático por monitores:** en Preferencias → Perfiles se elige qué perfil usar con un solo monitor y cuál con varios; al enchufar o desenchufar uno, McBar cambia solo.
+- **Buscador de Preferencias:** arriba de la lista de secciones; escribí «volumen» o «bateria» (sin importar tildes) y salta a la opción.
+- Pruebas nuevas para todo lo anterior.
+
+## 1.9.54 — 26/11/2026 (diagnóstico y modo seguro)
+- **Copiar diagnóstico** (Preferencias → Diagnóstico): copia un resumen con la versión, Windows, monitores (tamaño, escala y área de trabajo), ajustes clave, consumo y las últimas líneas del registro sin el ruido de la bandeja, listo para pegar en un mensaje.
+- **Modo seguro:** McBar arranca solo con lo básico (Dock, barra y bandeja), sin teclas globales, esquinas activas, widgets, actividades en vivo, modo noche, estilo Mac ni íconos descargados. Se activa abriendo McBar con `--seguro`, manteniendo Mayús al abrirlo, o solo después de 3 errores en 10 minutos. Queda anotado en el registro. Para salir, reabrí McBar normalmente.
+
 ## 1.9.53 — 26/11/2026 (ventanas)
 - **Barra, isla y Dock siempre arriba, sin reordenar de más:** cada ~3 s McBar las volvía a subir aunque ya estuvieran arriba de todo, lo que podía hacer parpadear ventanas "siempre visibles" o menús cercanos. Ahora solo sube la que realmente quedó tapada por otra ventana.
 

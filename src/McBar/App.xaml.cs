@@ -59,6 +59,12 @@ namespace McBar
         {
             base.OnStartup(e);
             SettingsStore.Load();
+            // 1.9.54: modo seguro: arranca solo con lo básico (Dock, barra y bandeja), sin teclas globales, widgets, lupa,
+            // modo noche ni íconos descargados. Se activa con --seguro, manteniendo Mayús al abrir, o tras 3 errores seguidos.
+            SafeMode = e.Args.Any(a => a.Equals("--seguro", StringComparison.OrdinalIgnoreCase))
+                       || (Win32.GetAsyncKeyState(0x10 /*VK_SHIFT*/) & 0x8000) != 0
+                       || Recovery.TooManyRecentCrashes(Recovery.RecentCrashTimes(), DateTime.Now);
+            if (SafeMode) Log.Write("Modo seguro: McBar arranca solo con lo básico (sin teclas globales, widgets, modo noche ni íconos descargados).");
 
             // 1.9.28: "McBar.exe --trayhelper <pid>": copia abierta como administrador que solo reenvía clics del
             // área de notificaciones a los programas que corren como administrador. No muestra ventanas.
@@ -247,26 +253,28 @@ namespace McBar
                 BuildMonitors();
                 // Al enchufar/desenchufar un monitor, Windows a veces termina de acomodarse un poco después: revisar de nuevo.
                 var again = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-                again.Tick += (_, _) => { again.Stop(); Scale = Win32.SystemScale(); BuildMonitors(); };
+                again.Tick += (_, _) => { again.Stop(); Scale = Win32.SystemScale(); BuildMonitors(); AutoProfileForMonitors(); };
                 again.Start();
             }));
 
             if (s.OwnNotifications) NotificationCenter.Start();
-            if (s.NeedsKeyboardHook) KeyboardHook.Start();
+            if (s.NeedsKeyboardHook && !SafeMode) KeyboardHook.Start();
             StartWeather();
             StartHealth();
-            HotCorners.Apply();
-            StartDesktopWidgets();
+            if (!SafeMode) { HotCorners.Apply(); StartDesktopWidgets(); }
             StartReminders();
-            LiveStatus.Start(); // 1.2.0: temporizador, cronómetro, micrófono/cámara y descargas
-            StartPersonalization(); // 1.3.0: perfiles, modo juego y fondo según la hora
-            StartMacIcons(); // 1.4.0: íconos de macOSicons para las apps instaladas
+            if (!SafeMode) LiveStatus.Start(); // 1.2.0: temporizador, cronómetro, micrófono/cámara y descargas
+            if (!SafeMode) { StartPersonalization(); StartMacIcons(); } // 1.3.0 / 1.4.0
             StartWatchdog();
             HangWatch.Start(Dispatcher); // 1.3.1: si la interfaz se traba, lo anota y McBar se reinicia solo
-            NightShift.Start(); // 1.9.23: Modo noche
+            if (!SafeMode) NightShift.Start(); // 1.9.23: Modo noche
+            UpdateCheck.Start(); // 1.9.55
+            AutoProfileForMonitors();
             ScheduleTrim(6);
         }
 
+        /// <summary>1.9.54: arranque con lo mínimo (ver OnStartup).</summary>
+        public static bool SafeMode { get; private set; }
         private static int _compositionErrors, _sameErrors;
         private static string _lastErrorKey = "";
 
@@ -626,10 +634,10 @@ namespace McBar
                 foreach (var d in Docks) d.RefreshIcons();
             }
             if (s.OwnNotifications) NotificationCenter.Start(); else NotificationCenter.Stop();
-            if (s.NeedsKeyboardHook) KeyboardHook.Start(); else KeyboardHook.Stop();
-            HotCorners.Apply();
+            if (s.NeedsKeyboardHook && !SafeMode) KeyboardHook.Start(); else KeyboardHook.Stop();
+            if (!SafeMode) HotCorners.Apply();
             DynamicWallpaper.Apply(); // 1.3.0
-            MacLook.Apply();          // 1.8.0: opciones de Estilo Mac
+            if (!SafeMode) MacLook.Apply();          // 1.8.0: opciones de Estilo Mac
             ApplyFullscreen(); // 1.6.1: por si cambió "Esconder la isla con ventanas maximizadas"
             if (IslandKey(s) != _lastIslandKey)
             {
@@ -932,6 +940,19 @@ namespace McBar
         }
 
         /// <summary>Usar un perfil (desde el menú de McBar, Preferencias o el buscador).</summary>
+        /// <summary>1.9.55: pasa al perfil elegido para «un monitor» o «varios monitores» (Preferencias → Perfiles).</summary>
+        private static void AutoProfileForMonitors()
+        {
+            try
+            {
+                var name = Profiles.ForMonitorCount(SettingsStore.Current, Monitors.All().Count);
+                if (name == null) return;
+                Log.Write($"Perfil automático por monitores: {name}");
+                Profiles.Use(name);
+            }
+            catch (Exception ex) { Log.Write("Perfil por monitores: " + ex.Message); }
+        }
+
         public static void UseProfile(string name)
         {
             if (!Profiles.Use(name)) McDialog.Info("No se pudo usar el perfil", $"El perfil «{name}» está vacío o dañado.");

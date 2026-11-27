@@ -383,6 +383,53 @@ namespace McBar.Panels
                 side.Children.Add(b);
             }
 
+            // 1.9.55: buscador (escribí «volumen», «bateria»…): lista las opciones que coinciden y lleva hasta ellas
+            var search = new TextBox { Margin = new Thickness(0, 0, 0, 8), Height = 28, VerticalContentAlignment = VerticalAlignment.Center, ToolTip = "Buscar una opción" };
+            search.SetResourceReference(StyleProperty, "McTextBox");
+            search.TextChanged += (_, _) =>
+            {
+                var q = search.Text.Trim();
+                if (q.Length < 2) { Select(Math.Max(0, sections.FindIndex(x => x.title == _lastTab))); return; }
+                var results = new StackPanel();
+                int found = 0;
+                for (int si = 0; si < sections.Count && found < 40; si++)
+                {
+                    int sIdx = si;
+                    foreach (var tb in FindTexts(sections[si].body))
+                    {
+                        if (found >= 40) break;
+                        if (Equals(tb.Tag, "header") || !SettingsSearch.Matches(tb.Text, q)) continue;
+                        found++;
+                        var target = tb;
+                        var line = new TextBlock { Text = tb.Text.Length > 110 ? tb.Text.Substring(0, 110) + "…" : tb.Text, TextWrapping = TextWrapping.Wrap, FontSize = 13 };
+                        line.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                        var where = new TextBlock { Text = sections[si].title, FontSize = 11, Margin = new Thickness(0, 0, 0, 2) };
+                        where.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+                        var card = new StackPanel();
+                        card.Children.Add(where);
+                        card.Children.Add(line);
+                        var hit = new Border { Child = card, Padding = new Thickness(12, 8, 12, 8), Margin = new Thickness(0, 0, 0, 6), CornerRadius = new CornerRadius(8), Cursor = Cursors.Hand, BorderThickness = new Thickness(1) };
+                        hit.SetResourceReference(Border.BackgroundProperty, "Mc.TileBg");
+                        hit.SetResourceReference(Border.BorderBrushProperty, "Mc.TileBorder");
+                        hit.MouseLeftButtonUp += (_, _) =>
+                        {
+                            Select(sIdx);
+                            Dispatcher.BeginInvoke(new Action(() => target.BringIntoView()), DispatcherPriority.Loaded);
+                        };
+                        results.Children.Add(hit);
+                    }
+                }
+                if (found == 0)
+                {
+                    var none = new TextBlock { Text = "No hay opciones con «" + q + "».", Margin = new Thickness(4, 6, 0, 0) };
+                    none.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+                    results.Children.Add(none);
+                }
+                content.Content = results;
+                content.ScrollToTop();
+            };
+            side.Children.Insert(0, search);
+
             var sideHost = new Border { Child = side, BorderThickness = new Thickness(0, 0, 1, 0) };
             sideHost.SetResourceReference(Border.BackgroundProperty, "Mc.TileBg");
             sideHost.SetResourceReference(Border.BorderBrushProperty, "Mc.TileBorder");
@@ -404,6 +451,15 @@ namespace McBar.Panels
             int start = Math.Max(0, sections.FindIndex(x => x.title == _lastTab));
             if (sections.Count > 0) Select(start);
             return grid;
+        }
+
+        /// <summary>Todos los textos (TextBlock) de un árbol lógico, en orden. Para el buscador.</summary>
+        private static IEnumerable<TextBlock> FindTexts(DependencyObject root)
+        {
+            if (root is TextBlock tb && !string.IsNullOrEmpty(tb.Text)) yield return tb;
+            foreach (var child in LogicalTreeHelper.GetChildren(root))
+                if (child is DependencyObject d)
+                    foreach (var t in FindTexts(d)) yield return t;
         }
 
         private static TextBlock Header(string text)
@@ -540,8 +596,35 @@ namespace McBar.Panels
                     quick.Children.Add(Btn("+ Juegos (con modo juego)", () => SaveNew("Juegos", true)));
                     sp.Children.Add(quick);
                 }
+                if (s.Profiles.Count > 0) sp.Children.Add(MonitorProfilesRow(s));
             }
             Render();
+            return sp;
+        }
+
+        /// <summary>1.9.55: elegir qué perfil se usa solo con un monitor y cuál con varios (se cambia solo al enchufar o desenchufar).</summary>
+        private UIElement MonitorProfilesRow(AppSettings s)
+        {
+            var sp = new StackPanel { Margin = new Thickness(0, 8, 0, 2) };
+            sp.Children.Add(Tip("Perfil automático: al enchufar o desenchufar un monitor, McBar pasa solo al perfil que elijas (por ejemplo, otro tamaño de Dock para la notebook sola)."));
+            UIElement Row(string text, Func<string> get, Action<string> set)
+            {
+                var g = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+                g.ColumnDefinitions.Add(new ColumnDefinition());
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
+                var t = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+                t.SetResourceReference(TextBlock.ForegroundProperty, "Mc.Text");
+                var cb = new ComboBox { Height = 28 };
+                cb.Items.Add(new ComboBoxItem { Content = "No cambiar", Tag = "", IsSelected = get().Length == 0 });
+                foreach (var p in s.Profiles) cb.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Name, IsSelected = p.Name == get() });
+                cb.SelectionChanged += (_, _) => { if (cb.SelectedItem is ComboBoxItem it && it.Tag is string k) { set(k); SettingsStore.Save(); } };
+                Grid.SetColumn(cb, 1);
+                g.Children.Add(t);
+                g.Children.Add(cb);
+                return g;
+            }
+            sp.Children.Add(Row("Con un solo monitor", () => s.ProfileOneMonitor, v => s.ProfileOneMonitor = v));
+            sp.Children.Add(Row("Con varios monitores", () => s.ProfileManyMonitors, v => s.ProfileManyMonitors = v));
             return sp;
         }
 
@@ -896,10 +979,49 @@ namespace McBar.Panels
                 System.IO.Directory.CreateDirectory(Recovery.Folder);
                 Launcher.Open(Recovery.Folder);
             };
+            // 1.9.54: resumen para pegar en un mensaje (versión, monitores, ajustes clave y el final del registro)
+            var copy = new Button { Content = "Copiar diagnóstico", Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
+                                    ToolTip = "Copia un resumen (versión, monitores, ajustes y últimas líneas del registro) para pegarlo en un mensaje" };
+            copy.SetResourceReference(StyleProperty, "McButton");
+            copy.Click += (_, _) =>
+            {
+                try { Clipboard.SetText(Core.DiagnosticReport.Build()); copy.Content = "Copiado ✓"; }
+                catch (Exception ex) { Log.Write("Copiar diagnóstico: " + ex.Message); copy.Content = "No se pudo copiar"; }
+                var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                back.Tick += (_, _) => { back.Stop(); copy.Content = "Copiar diagnóstico"; };
+                back.Start();
+            };
             sp.Children.Add(usageTitle);
             sp.Children.Add(usage);
             sp.Children.Add(version);
             sp.Children.Add(errors);
+            sp.Children.Add(copy);
+            // 1.9.55: buscar actualizaciones (solo avisa; abre la página de la versión)
+            if (!Edition.IsStore)
+            {
+                var upd = new Button { Content = "Buscar actualizaciones", Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+                upd.SetResourceReference(StyleProperty, "McButton");
+                var updInfo = new TextBlock { FontSize = 12, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap };
+                updInfo.SetResourceReference(TextBlock.ForegroundProperty, "Mc.TextDim");
+                upd.Click += async (_, _) =>
+                {
+                    upd.IsEnabled = false; updInfo.Text = "Buscando…";
+                    var r = await UpdateCheck.CheckAsync();
+                    upd.IsEnabled = true;
+                    if (!r.ok) updInfo.Text = "No se pudo consultar GitHub (¿sin internet, o todavía no hay versiones publicadas?).";
+                    else if (!r.newer) updInfo.Text = "Ya tenés la última versión (" + Installer.CurrentVersion.ToString(3) + ").";
+                    else
+                    {
+                        updInfo.Text = "Hay una versión nueva: " + r.tag + ". Se abre la página para descargarla.";
+                        if (!string.IsNullOrEmpty(r.url)) Launcher.Open(r.url);
+                    }
+                };
+                sp.Children.Add(upd);
+                sp.Children.Add(updInfo);
+                var autoUpd = Switch("Avisar cuando haya una versión nueva", SettingsStore.Current.CheckUpdates, v => SettingsStore.Current.CheckUpdates = v);
+                autoUpd.Margin = new Thickness(0, 8, 0, 0);
+                sp.Children.Add(autoUpd);
+            }
             var cur = SettingsStore.Current;
             var hang = Switch("Si McBar se traba, reiniciarlo solo (a los 20 segundos)", cur.RestartIfHung, v => cur.RestartIfHung = v); // 1.3.1
             hang.Margin = new Thickness(0, 10, 0, 0);

@@ -142,6 +142,9 @@ namespace McBar.Core
         public string PortableVersion { get; set; } = "";
         /// <summary>Si la interfaz se traba 20 s, McBar se reinicia solo (Core/HangWatch). 1.3.1.</summary>
         public bool RestartIfHung { get; set; } = true;
+        /// <summary>Avisar cuando hay una versión nueva en GitHub (Core/UpdateCheck). 1.9.55.</summary>
+        public bool CheckUpdates { get; set; } = true;
+        public string LastUpdateNotified { get; set; } = "";
         /// <summary>La tecla Windows sola abre el Launchpad (en vez del menú Inicio). 0.6.0.</summary>
         public bool WinKeyLaunchpad { get; set; } = true;
         /// <summary>Win+S abre el buscador de McBar. 0.6.0.</summary>
@@ -176,6 +179,9 @@ namespace McBar.Core
         public List<SettingsProfile> Profiles { get; set; } = new List<SettingsProfile>();
         /// <summary>Nombre del perfil en uso ("" = ninguno). 1.3.0.</summary>
         public string ActiveProfile { get; set; } = "";
+        /// <summary>1.9.55: perfil que se usa solo con un monitor / con varios ("" = no cambiar). Ver App.AutoProfileForMonitors.</summary>
+        public string ProfileOneMonitor { get; set; } = "";
+        public string ProfileManyMonitors { get; set; } = "";
         /// <summary>Cambiar el fondo de pantalla según la hora. 1.3.0.</summary>
         public bool WallpaperByTime { get; set; } = false;
         /// <summary>Imágenes de mañana, tarde, atardecer y noche (ver Core/DynamicWallpaper.Slots). 1.3.0.</summary>
@@ -409,6 +415,7 @@ namespace McBar.Core
             if (s.IconShape != "mac") s.IconShape = "none";
             s.CustomIcons = new Dictionary<string, string>(s.CustomIcons ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
             s.GlassTransparency = Math.Clamp(s.GlassTransparency, 0, 100);
+            s.LastUpdateNotified ??= "";
             s.NightShiftStrength = Math.Clamp(s.NightShiftStrength, 0, 100);
             s.BackdropBlur = false; // 1.6.1: la opción se quitó (rompía el Dock)
             s.MacIconsKey ??= "";
@@ -428,6 +435,8 @@ namespace McBar.Core
             s.Profiles ??= new List<SettingsProfile>();
             s.Profiles.RemoveAll(p => p == null || string.IsNullOrWhiteSpace(p.Name));
             s.ActiveProfile ??= "";
+            s.ProfileOneMonitor ??= "";
+            s.ProfileManyMonitors ??= "";
             if (s.ActiveProfile.Length > 0 && !s.Profiles.Any(p => p.Name == s.ActiveProfile)) s.ActiveProfile = "";
             s.WallpaperImages ??= new List<string>();
             s.WallpaperImages = s.WallpaperImages.Select(x => x ?? "").Take(4).ToList();
