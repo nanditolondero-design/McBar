@@ -147,6 +147,15 @@ namespace McBar
 
             DispatcherUnhandledException += (_, a) =>
             {
+                // 1.9.47: si Windows se queda sin memoria de composición gráfica (OutOfMemory dentro de WPF/DUCE) la
+                // interfaz no se recupera sola y repetía el error decenas de veces: se anota una vez y McBar se reinicia.
+                if (a.Exception is OutOfMemoryException && (a.Exception.StackTrace ?? "").Contains("DUCE"))
+                {
+                    if (++_compositionErrors == 1) Log.Write("Error: Windows se quedó sin memoria de composición gráfica; McBar se reinicia. " + a.Exception.Message);
+                    a.Handled = true;
+                    if (_compositionErrors >= 4) HangWatch.RestartNow();
+                    return;
+                }
                 Log.Write("Error: " + a.Exception);
                 a.Handled = true; // seguir funcionando ante errores menores
             };
@@ -252,6 +261,8 @@ namespace McBar
             NightShift.Start(); // 1.9.23: Modo noche
             ScheduleTrim(6);
         }
+
+        private static int _compositionErrors;
 
         protected override void OnExit(ExitEventArgs e)
         {

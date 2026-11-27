@@ -81,7 +81,9 @@ namespace McBar.Core
                         case "restart":
                             var what = Describe();
                             Log.Write($"La interfaz sigue trabada ({s:0} s) en: {what}. McBar se reinicia.");
-                            Recovery.SaveReport($"McBar se trabó {s:0} segundos y se reinició solo.\r\nOcupada en: {what}");
+                            // 1.9.48: el informe va en otro hilo y se espera poco: si algo lo traba, McBar igual se reinicia
+                            var rep = new Thread(() => { try { Recovery.SaveReport($"McBar se trabó {s:0} segundos y se reinició solo.\r\nOcupada en: {what}"); } catch { } }) { IsBackground = true };
+                            rep.Start(); rep.Join(1500);
                             RestartNow();
                             return;
                     }
@@ -91,7 +93,7 @@ namespace McBar.Core
         }
 
         /// <summary>Abre una copia nueva (que espera a que esta se cierre) y cierra esta de golpe.</summary>
-        private static void RestartNow()
+        internal static void RestartNow()
         {
             try
             {

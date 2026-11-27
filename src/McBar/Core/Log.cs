@@ -13,7 +13,9 @@ namespace McBar.Core
         {
             try
             {
-                lock (Lock)
+                // 1.9.48: nunca quedarse esperando el candado (si la interfaz trabada lo tiene, el vigilante no se traba también)
+                if (!System.Threading.Monitor.TryEnter(Lock, 1000)) return;
+                try
                 {
                     Directory.CreateDirectory(SettingsStore.Folder);
                     var path = Path.Combine(SettingsStore.Folder, "mcbar.log");
@@ -21,6 +23,7 @@ namespace McBar.Core
                     if (fi.Exists && fi.Length > 512 * 1024) fi.Delete();
                     File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {message}{Environment.NewLine}");
                 }
+                finally { System.Threading.Monitor.Exit(Lock); }
             }
             catch { }
         }

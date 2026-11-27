@@ -1,5 +1,12 @@
 # Cambios
 
+## 1.9.48 — 26/11/2026 (cuelgues)
+- **Seguridad de Windows** (clic en su ícono de la bandeja) ya no se abre desde la interfaz de McBar: en tu log ese clic dejaba la interfaz trabada 20 s y McBar se reiniciaba.
+- **Vigilante más firme:** el registro ya no puede dejar esperando al vigilante y el informe del cuelgue no demora el reinicio automático.
+
+## 1.9.47 — 26/11/2026 (memoria gráfica)
+- **Sin memoria de composición.** Si Windows se queda sin memoria gráfica para las ventanas de WPF (error OutOfMemory dentro de la composición), la interfaz no se recupera sola y el error se repetía decenas de veces. Ahora se anota una sola vez y McBar se reinicia solo.
+
 ## 1.9.46 — 26/11/2026 (ventanas maximizadas)
 - **Maximizada + ventana común.** Con una ventana maximizada y otra grande sin maximizar, cada cambio de foco prendía y apagaba la marca "hay una maximizada": el Dock se escondía y volvía, el área de trabajo cambiaba y la maximizada se sacudía. Ahora cuenta cualquier maximizada visible del monitor, así que el estado ya no parpadea.
 - **Registro:** el aviso del ícono .icns (PNG) se escribe una sola vez.

@@ -529,8 +529,12 @@ namespace McBar.Native
             {
                 if (click == Click.LeftUp)
                 {
-                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("windowsdefender:") { UseShellExecute = true }); Log.Write("Tray: Seguridad de Windows abierta con windowsdefender:"); }
-                    catch (Exception ex) { Log.Write("Tray: no se pudo abrir Seguridad de Windows: " + ex.Message); }
+                    // 1.9.48: fuera de la interfaz: abrir una app de la Store con ShellExecute puede tardar y trababa a McBar
+                    System.Threading.Tasks.Task.Run(() =>
+                    {
+                        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("windowsdefender:") { UseShellExecute = true }); Log.Write("Tray: Seguridad de Windows abierta con windowsdefender:"); }
+                        catch (Exception ex) { Log.Write("Tray: no se pudo abrir Seguridad de Windows: " + ex.Message); }
+                    });
                 }
                 if (click == Click.LeftDown || click == Click.LeftUp || click == Click.LeftDouble) return;
             }
