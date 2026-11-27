@@ -99,7 +99,9 @@ namespace McBar.MenuBar
         private void ApplyBlur()
         {
             if (_hwnd == IntPtr.Zero) return;
-            WindowOps.EnableBlur(this, ThemeManager.GetColor("Mc.BlurTint"));
+            // 1.9.56: con el tema Vidrio el tinte blanco del Dock dejaba la barra casi blanca (y el texto blanco no se leía)
+            var tint = ThemeManager.IsGlass ? System.Windows.Media.Color.FromArgb(0x66, 0x1E, 0x1E, 0x26) : ThemeManager.GetColor("Mc.BlurTint");
+            WindowOps.EnableBlur(this, tint);
         }
     }
 }

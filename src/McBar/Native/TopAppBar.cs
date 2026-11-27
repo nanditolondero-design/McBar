@@ -19,6 +19,8 @@ namespace McBar.Native
         private readonly IntPtr _hwnd;
         private readonly uint _callback;
         private bool _registered;
+        private Win32.RECT _last;
+        private bool _sent;
 
         public TopAppBar(IntPtr hwnd)
         {
@@ -46,7 +48,12 @@ namespace McBar.Native
                 Win32.SHAppBarMessage(ABM_QUERYPOS, ref d);
                 // si otra barra ya ocupa arriba, Windows la corre: se respeta el alto pedido
                 d.rc.bottom = d.rc.top + heightPx;
+                // 1.9.56: si ya está reservado el mismo rectángulo no se vuelve a pedir: cada ABM_SETPOS hace que Windows
+                // recalcule el área de trabajo (y se pierde el lugar del Dock) y avise a las otras barras, que
+                // vuelven a pedir... y las ventanas quedaban tapadas o se sacudían.
+                if (_sent && _last.left == d.rc.left && _last.top == d.rc.top && _last.right == d.rc.right && _last.bottom == d.rc.bottom) return;
                 Win32.SHAppBarMessage(ABM_SETPOS, ref d);
+                _last = d.rc; _sent = true;
             }
             catch (Exception ex) { Log.Write("Barra de arriba (AppBar): " + ex.Message); }
         }
@@ -55,11 +62,11 @@ namespace McBar.Native
         {
             if (!_registered) return;
             try { var d = Data(); Win32.SHAppBarMessage(ABM_REMOVE, ref d); } catch { }
-            _registered = false;
+            _registered = false; _sent = false;
         }
 
         /// <summary>El Explorador se reinició y se olvidó de las barras registradas: hay que volver a registrar.</summary>
-        public void Forget() => _registered = false;
+        public void Forget() { _registered = false; _sent = false; }
 
         /// <summary>true si el mensaje es el aviso de Windows de que hay que volver a acomodar la barra.</summary>
         public bool IsReposition(int msg, IntPtr wParam) =>

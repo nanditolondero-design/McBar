@@ -1,5 +1,9 @@
 # Cambios
 
+## 1.9.56 — 27/11/2026 (barra superior)
+- **Ventanas tapadas con la barra superior (en vez de la píldora):** McBar le pedía a Windows el mismo lugar una y otra vez; cada pedido hacía que Windows recalculara el área de trabajo y se perdiera el lugar del Dock, y McBar terminaba dándose por vencido y las ventanas quedaban debajo de la barra. Ahora el pedido se hace una sola vez mientras el rectángulo no cambie, y el vigilante insiste más antes de rendirse (4 pausas de 3 minutos en vez de 2).
+- **Tema Vidrio:** la barra superior se veía casi blanca (el tinte blanco del Dock, pensado para el Dock). Ahora usa un tinte oscuro translúcido y el texto se lee bien.
+
 ## 1.9.55 — 27/11/2026 (actualizaciones, perfiles por monitor y buscador)
 - **Aviso de versión nueva:** McBar consulta las versiones publicadas en GitHub (a los 40 s de abrir y cada 24 h) y avisa con una notificación. En Preferencias → Diagnóstico hay «Buscar actualizaciones» (abre la página de la versión) y un interruptor para apagar el aviso. No descarga ni instala nada solo. Con la edición de la Store no se usa. **Hace falta subir a mano el `build.yml` nuevo** (ver abajo), que publica cada versión como Release.
 - **Perfil automático por monitores:** en Preferencias → Perfiles se elige qué perfil usar con un solo monitor y cuál con varios; al enchufar o desenchufar uno, McBar cambia solo.

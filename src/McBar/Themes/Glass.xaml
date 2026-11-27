@@ -52,8 +52,8 @@
 
     <!-- Barra de menú, etiquetas y Launchpad -->
     <LinearGradientBrush x:Key="Mc.MenuBarBg" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#40FFFFFF" Offset="0"/>
-        <GradientStop Color="#26101014" Offset="1"/>
+        <GradientStop Color="#1FFFFFFF" Offset="0"/>
+        <GradientStop Color="#33101014" Offset="1"/>
     </LinearGradientBrush>
     <SolidColorBrush x:Key="Mc.LabelBg" Color="#B8343440"/>
     <SolidColorBrush x:Key="Mc.LaunchpadBg" Color="#40000000"/>

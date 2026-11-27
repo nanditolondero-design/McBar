@@ -157,7 +157,7 @@ namespace McBar.Native
                 {
                     // 0.4.1: después de la segunda vez, McBar deja de pelear hasta que cambie algo (monitores,
                     // Preferencias, reinicio del Explorador). Pelear es lo que hacía "temblar" las ventanas.
-                    if (++_pauses >= 2)
+                    if (++_pauses >= 4)
                     {
                         _gaveUp = true;
                         Log.Write("El Explorador sigue cambiando el área de trabajo; McBar deja de corregirla hasta que cambie algo.");
