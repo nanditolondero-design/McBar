@@ -253,7 +253,7 @@ namespace McBar.Core
         {
             if (_hiding) return;
             _hiding = true;
-            var shrink = new DoubleAnimation(1, 0.25, TimeSpan.FromMilliseconds(180));
+            var shrink = new DoubleAnimation(1, 0.25, TimeSpan.FromMilliseconds(180)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
             shrink.Completed += (_, _) => { _follow.Stop(); Close(); };
             _scale.BeginAnimation(ScaleTransform.ScaleXProperty, shrink);
             _scale.BeginAnimation(ScaleTransform.ScaleYProperty, shrink.Clone());

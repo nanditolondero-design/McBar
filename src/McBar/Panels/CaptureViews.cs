@@ -326,7 +326,7 @@ namespace McBar.Panels
         private void SlideOut()
         {
             _life.Stop();
-            var a = new DoubleAnimation(0, 260, TimeSpan.FromMilliseconds(220));
+            var a = new DoubleAnimation(0, 260, TimeSpan.FromMilliseconds(220)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
             a.Completed += (_, _) => Close();
             _slide.BeginAnimation(TranslateTransform.XProperty, a);
         }

@@ -125,11 +125,14 @@ namespace McBar.Core
 
         private static void RunElevated(string arg)
         {
-            try
+            // 1.9.50: en otro hilo: el aviso de permisos (UAC) espera la respuesta y congelaba la interfaz
+            var t = new Thread(() =>
             {
-                Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? "", arg) { UseShellExecute = true, Verb = "runas" });
-            }
-            catch (Exception ex) { Log.Write("Ayudante (permiso): " + ex.Message); }
+                try { Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? "", arg) { UseShellExecute = true, Verb = "runas" }); }
+                catch (Exception ex) { Log.Write("Ayudante (permiso): " + ex.Message); }
+            }) { IsBackground = true, Name = "McBar.Permiso" };
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
         }
 
         // ---------- modos elevados (McBar.exe --installtask / --uninstalltask) ----------

@@ -1,5 +1,18 @@
 # Cambios
 
+## 1.9.51 — 26/11/2026 (animaciones más suaves)
+- **Movimientos con curva:** el humo al soltar un ícono fuera del Dock, el panel de notificaciones al salir, el deslizamiento de las capturas, el zoom al cerrar el Launchpad y el achicado de la lupa de pantalla se movían a velocidad constante (se sentían "mecánicos"). Ahora arrancan o frenan con curva, igual que el resto de McBar.
+
+## 1.9.50 — 26/11/2026 (estabilidad: la interfaz no espera a nadie)
+- **Abrir apps, carpetas y enlaces** (Dock, Launchpad, buscador, Configuración de Windows) se hace en un hilo aparte: abrir una app de la Store o algo en red que tarda ya no congela la barra, el Dock ni la isla.
+- **Cambiar de escritorio virtual** desde Vista de ventanas ya no frena la interfaz (esperaba 120 ms por escritorio).
+- **Permiso de administrador** (ayudante de la bandeja): el aviso de Windows ya no deja McBar esperando.
+- **Control Center:** si falla la lectura del brillo ya no produce un error.
+
+## 1.9.49 — 26/11/2026 (rendimiento y estabilidad)
+- **Menos trabajo en reposo:** la revisión de ventanas maximizadas / pantalla completa (que recorre todas las ventanas abiertas) corre cada ~1,4 s en vez de cada 0,7 s. Cuando cambia la ventana con foco se sigue revisando al instante.
+- **Errores repetidos:** si el mismo error se repite (un fallo en un cuadro de animación puede disparar cientos por segundo), se anotan los 3 primeros y después un resumen cada 200, para no llenar y alentar el registro.
+
 ## 1.9.48 — 26/11/2026 (cuelgues)
 - **Seguridad de Windows** (clic en su ícono de la bandeja) ya no se abre desde la interfaz de McBar: en tu log ese clic dejaba la interfaz trabada 20 s y McBar se reiniciaba.
 - **Vigilante más firme:** el registro ya no puede dejar esperando al vigilante y el informe del cuelgue no demora el reinicio automático.

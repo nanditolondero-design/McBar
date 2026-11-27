@@ -156,7 +156,12 @@ namespace McBar
                     if (_compositionErrors >= 4) HangWatch.RestartNow();
                     return;
                 }
-                Log.Write("Error: " + a.Exception);
+                // 1.9.49: el mismo error repetido (por ejemplo desde un cuadro de animación) se anota las primeras 3 veces y
+                // después un resumen cada 200: antes un solo fallo llenaba el registro y lo hacía más lento.
+                string errKey = a.Exception.GetType().Name + "|" + (a.Exception.StackTrace ?? "").Split('\n').FirstOrDefault();
+                if (errKey == _lastErrorKey) _sameErrors++; else { _lastErrorKey = errKey; _sameErrors = 1; }
+                if (_sameErrors <= 3) Log.Write("Error: " + a.Exception);
+                else if (_sameErrors % 200 == 0) Log.Write($"Error repetido {_sameErrors} veces: {a.Exception.GetType().Name}: {a.Exception.Message}");
                 a.Handled = true; // seguir funcionando ante errores menores
             };
             AppDomain.CurrentDomain.UnhandledException += (_, a) =>
@@ -262,7 +267,8 @@ namespace McBar
             ScheduleTrim(6);
         }
 
-        private static int _compositionErrors;
+        private static int _compositionErrors, _sameErrors;
+        private static string _lastErrorKey = "";
 
         protected override void OnExit(ExitEventArgs e)
         {
@@ -527,7 +533,7 @@ namespace McBar
                     var s = SettingsStore.Current;
                     if (s.HideWindowsTaskbar) Taskbar.Enforce();
                     TrayHost.Current?.EnsureFirst();
-                    Fullscreen?.Check();
+                    if (_watchdogTicks % 2 == 0) Fullscreen?.Check(); // 1.9.49: el cambio de foco ya lo dispara; esto es solo una red de seguridad (cada ~1,4 s)
                     if (++_watchdogTicks % 14 == 0) WorkArea.Verify(); // cada ~10 s
                     // 1.9.32: importar de la bandeja real los íconos que no se re-registran (NVIDIA, Defender, etc.)
                     if (_watchdogTicks % 14 == 7) TrayHost.Current?.ImportExisting(); // cada ~10 s, desfasado

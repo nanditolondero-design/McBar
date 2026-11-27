@@ -67,7 +67,11 @@ namespace McBar.Core
         private const ushort VK_CONTROL = 0x11, VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_D = 0x44, VK_F4 = 0x73;
 
         /// <summary>Pasa del escritorio actual al de índice <paramref name="target"/>.</summary>
-        public static void SwitchTo(int from, int target)
+        /// <summary>1.9.50: en otro hilo (cada paso espera 120 ms y antes frenaba la interfaz).</summary>
+        public static void SwitchTo(int from, int target) =>
+            System.Threading.Tasks.Task.Run(() => { try { SwitchToBlocking(from, target); } catch (Exception ex) { Log.Write("Cambiar de escritorio: " + ex.Message); } });
+
+        private static void SwitchToBlocking(int from, int target)
         {
             int steps = target - from;
             for (int i = 0; i < Math.Abs(steps); i++)
@@ -88,7 +92,7 @@ namespace McBar.Core
             {
                 try
                 {
-                    if (target != from) { SwitchTo(from, target); Thread.Sleep(250); }
+                    if (target != from) { SwitchToBlocking(from, target); Thread.Sleep(250); }
                     CloseCurrent();
                 }
                 catch (Exception ex) { Log.Write("Cerrar escritorio: " + ex.Message); }

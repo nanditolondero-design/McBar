@@ -81,7 +81,7 @@ namespace McBar.Dock
             _done = true;
             _label.Visibility = Visibility.Hidden;
             var dur = TimeSpan.FromMilliseconds(280);
-            var grow = new DoubleAnimation(1, 1.8, dur);
+            var grow = new DoubleAnimation(1, 1.8, dur) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
             var fade = new DoubleAnimation(_icon.Opacity, 0, dur);
             fade.Completed += (_, _) => Close();
             _icon.RenderTransform.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
@@ -108,8 +108,8 @@ namespace McBar.Dock
                     e.RenderTransform = t;
                     puff.Children.Add(e);
                     double ang = i * Math.PI / 4 + rnd.NextDouble() * 0.4, dist = _size * 0.55;
-                    t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, Math.Cos(ang) * dist, dur));
-                    t.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, Math.Sin(ang) * dist, dur));
+                    t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, Math.Cos(ang) * dist, dur) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                    t.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, Math.Sin(ang) * dist, dur) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
                     e.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, dur));
                 }
             }

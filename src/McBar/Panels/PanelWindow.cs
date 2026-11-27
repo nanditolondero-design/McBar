@@ -109,7 +109,7 @@ namespace McBar.Panels
             {
                 var t = new TranslateTransform();
                 Card.RenderTransform = t;
-                t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, 40, TimeSpan.FromMilliseconds(130)));
+                t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, 40, TimeSpan.FromMilliseconds(130)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } });
             }
         }
 

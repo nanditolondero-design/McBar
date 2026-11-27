@@ -80,7 +80,7 @@ namespace McBar.Panels
             root.Children.Add(brightnessTile);
             Task.Run(() => SystemInfo.GetBrightness()).ContinueWith(t =>
             {
-                if (t.Result is int b)
+                if (t.IsCompletedSuccessfully && t.Result is int b)
                 {
                     brightnessSlider.Value = b;
                     brightnessTile.Visibility = Visibility.Visible;

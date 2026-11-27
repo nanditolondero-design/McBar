@@ -225,10 +225,10 @@ namespace McBar.Panels
             var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(160));
             fade.Completed += (_, _) => { Close(); _icons.Clear(); App.ScheduleTrim(); };
             Fader.BeginAnimation(OpacityProperty, fade);
-            var zx = new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160));
+            var zx = new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
             CacheWhile(_content, zx);
             _zoom.BeginAnimation(ScaleTransform.ScaleXProperty, zx);
-            _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)));
+            _zoom.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 1.06, TimeSpan.FromMilliseconds(160)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
         }
 
         private static bool IsInside<T>(DependencyObject? d) where T : DependencyObject

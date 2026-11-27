@@ -9,34 +9,45 @@ namespace McBar.Core
 {
     public static class Launcher
     {
+        /// <summary>
+        /// 1.9.50: ShellExecute en un hilo aparte (STA). Abrir una app de la Store, un archivo en red o un programa que
+        /// tarda en arrancar podía dejar la interfaz de McBar congelada; ahora solo se dispara y se sigue.
+        /// Devuelve true si se disparó (los errores se anotan en el registro).
+        /// </summary>
         public static bool Launch(string target)
         {
-            try
+            if (string.IsNullOrWhiteSpace(target)) return false;
+            OnOwnThread("abrir " + target, () =>
             {
                 if (AppIdentity.IsAppsFolder(target))
                 {
                     Process.Start(new ProcessStartInfo("explorer.exe", "\"" + target + "\"") { UseShellExecute = true });
-                    return true;
+                    return;
                 }
                 var expanded = Environment.ExpandEnvironmentVariables(target);
                 var psi = new ProcessStartInfo(expanded) { UseShellExecute = true };
                 var dir = Path.GetDirectoryName(expanded);
                 if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) psi.WorkingDirectory = dir;
                 Process.Start(psi);
-                return true;
-            }
-            catch (Exception ex)
+            });
+            return true;
+        }
+
+        private static void OnOwnThread(string what, Action work)
+        {
+            var t = new System.Threading.Thread(() =>
             {
-                Log.Write($"No se pudo abrir {target}: {ex.Message}");
-                return false;
-            }
+                try { work(); }
+                catch (Exception ex) { Log.Write($"No se pudo {what}: {ex.Message}"); }
+            }) { IsBackground = true, Name = "McBar.Abrir" };
+            t.SetApartmentState(System.Threading.ApartmentState.STA);
+            t.Start();
         }
 
         /// <summary>Abre una página de Configuración de Windows, p. ej. "ms-settings:bluetooth".</summary>
         public static void Open(string uri)
         {
-            try { Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); }
-            catch (Exception ex) { Log.Write($"No se pudo abrir {uri}: {ex.Message}"); }
+            OnOwnThread("abrir " + uri, () => Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }));
         }
 
         public static void ShowInExplorer(string path)
