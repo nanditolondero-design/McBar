@@ -315,7 +315,12 @@ namespace McBar.Core
                     if (loaded != null) { Current = Migrate(Sanitize(loaded)); return Current; }
                 }
             }
-            catch (Exception ex) { Log.Write("No se pudieron leer los ajustes: " + ex.Message); }
+            catch (Exception ex)
+            {
+                Log.Write("No se pudieron leer los ajustes: " + ex.Message);
+                // 1.9.52: se guarda una copia del archivo dañado antes de que los ajustes por defecto lo pisen
+                try { if (File.Exists(FilePath)) File.Copy(FilePath, FilePath + ".danado", true); Log.Write("Copia del archivo de ajustes dañado: " + FilePath + ".danado"); } catch { }
+            }
             Current = new AppSettings { LookVersion = CurrentLook };
             return Current;
         }
@@ -404,6 +409,7 @@ namespace McBar.Core
             if (s.IconShape != "mac") s.IconShape = "none";
             s.CustomIcons = new Dictionary<string, string>(s.CustomIcons ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
             s.GlassTransparency = Math.Clamp(s.GlassTransparency, 0, 100);
+            s.NightShiftStrength = Math.Clamp(s.NightShiftStrength, 0, 100);
             s.BackdropBlur = false; // 1.6.1: la opción se quitó (rompía el Dock)
             s.MacIconsKey ??= "";
             s.MacIconsMonth ??= "";

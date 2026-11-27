@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.9.53 — 26/11/2026 (ventanas)
+- **Barra, isla y Dock siempre arriba, sin reordenar de más:** cada ~3 s McBar las volvía a subir aunque ya estuvieran arriba de todo, lo que podía hacer parpadear ventanas "siempre visibles" o menús cercanos. Ahora solo sube la que realmente quedó tapada por otra ventana.
+
+## 1.9.52 — 26/11/2026 (preferencias)
+- **Ajustes dañados:** si el archivo de preferencias no se puede leer, McBar guarda una copia (`settings.json.danado`) antes de arrancar con los valores por defecto, así no se pierde todo lo configurado.
+- **Intensidad del modo noche** con límites (0–100) como el resto de los valores, para que un archivo editado a mano no la deje fuera de rango.
+- **Texto:** la opción de "Animaciones rápidas" ahora dice que es solo del Dock (la isla ya se dibuja siempre suavizada).
+
 ## 1.9.51 — 26/11/2026 (animaciones más suaves)
 - **Movimientos con curva:** el humo al soltar un ícono fuera del Dock, el panel de notificaciones al salir, el deslizamiento de las capturas, el zoom al cerrar el Launchpad y el achicado de la lupa de pantalla se movían a velocidad constante (se sentían "mecánicos"). Ahora arrancan o frenan con curva, igual que el resto de McBar.
 

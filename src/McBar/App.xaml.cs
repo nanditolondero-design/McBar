@@ -555,11 +555,21 @@ namespace McBar
             if (PopupGuard.AnyOpen) return; // 1.3.1: con un menú abierto, no subir la isla por encima de él
             if (Screenshots.Busy) return;   // 1.8.0: eligiendo la zona de una captura
             // 1.6.2: también con el Launchpad abierto (Dock e isla quedan encima de él, como en macOS)
+            // 1.9.53: solo se vuelve a subir la que de verdad quedó tapada (arriba de ella hay una ventana que no es de
+            // McBar); antes se reordenaban las tres cada ~3 s aunque ya estuvieran arriba de todo.
+            var mine = new List<IntPtr>();
             foreach (Window w in MenuBars.Cast<Window>().Concat(Islands).Concat(Docks))
             {
                 if (!w.IsVisible) continue;
                 var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
-                if (h != IntPtr.Zero) Win32.SetWindowPos(h, Win32.HWND_TOPMOST, 0, 0, 0, 0, flags);
+                if (h != IntPtr.Zero) mine.Add(h);
+            }
+            foreach (var h in mine)
+            {
+                var above = Win32.GetWindow(h, Win32.GW_HWNDPREV);
+                while (above != IntPtr.Zero && mine.Contains(above)) above = Win32.GetWindow(above, Win32.GW_HWNDPREV);
+                if (above == IntPtr.Zero) continue; // ya está arriba de todo (salvo otras de McBar)
+                Win32.SetWindowPos(h, Win32.HWND_TOPMOST, 0, 0, 0, 0, flags);
             }
         }
 

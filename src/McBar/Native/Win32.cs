@@ -16,6 +16,7 @@ namespace McBar.Native
         public const long WS_EX_TOPMOST = 0x00000008;
 
         public const uint GW_OWNER = 4;
+        public const uint GW_HWNDPREV = 3;
         public const uint GA_PARENT = 1;
 
         public const int SW_HIDE = 0;
